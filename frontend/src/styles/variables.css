@@ -1,29 +1,36 @@
 :root {
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
 
+  /* Claude-style Warm Cream Theme */
   --bg-primary: #f7f4ee;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f0ede6;
   --bg-inset: #faf8f3;
   --bg-card: #ffffff;
+  --bg-glass: rgba(247, 244, 238, 0.75);
 
   --text-primary: #191f24;
   --text-secondary: #52606b;
   --text-muted: #87919b;
   --text-inverse: #ffffff;
 
-  --color-primary: #059669;
-  --color-primary-hover: #047857;
-  --color-primary-soft: #e8f7ef;
+  --color-primary: #191f24; /* Bold warm-charcoal primary */
+  --color-primary-hover: #2d363d;
+  --color-primary-soft: #f0ede6;
+
+  /* Product-specific brandings */
+  --color-plus: #10b981;
+  --color-plus-soft: #e8f7ef;
   --color-team: #2563eb;
   --color-team-soft: #eaf1ff;
-  --color-pro: #d97706;
-  --color-pro-soft: #fff3d8;
-  --color-plus: #059669;
-  --color-plus-soft: #e8f7ef;
+  --color-pro: #8b5cf6; /* Keep premium Pro violet */
+  --color-pro-soft: #f5f3ff;
+
   --color-danger: #dc2626;
   --color-danger-soft: #fff1f1;
+  --color-danger-hover: #fee2e2;
+  --color-danger-border-hover: #f87171;
   --color-warning: #d97706;
   --color-warning-soft: #fff7e6;
   --color-info: #0f6abf;
@@ -33,16 +40,21 @@
   --border-color: #ded8cd;
   --border-color-strong: #c9c1b4;
   --border-color-hover: #b8afa1;
+  --border-glass: rgba(255, 255, 255, 0.4);
+  --focus-ring: rgba(25, 31, 36, 0.1);
 
-  --card-shadow: 0 1px 2px rgba(25, 31, 36, 0.04), 0 10px 28px rgba(25, 31, 36, 0.06);
-  --card-shadow-hover: 0 2px 4px rgba(25, 31, 36, 0.05), 0 18px 40px rgba(25, 31, 36, 0.1);
+  /* Premium shadows */
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.02), 0 8px 24px -4px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 40px -4px rgba(0, 0, 0, 0.08);
   --sidebar-shadow: 1px 0 0 var(--border-color);
+  --glow-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
 
-  --border-radius-xs: 4px;
-  --border-radius-sm: 6px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 8px;
-  --border-radius-full: 999px;
+  --border-radius-xs: 6px;
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  --border-radius-full: 9999px;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -51,6 +63,57 @@
   --spacing-xl: 32px;
   --spacing-xxl: 48px;
 
-  --transition-fast: 120ms ease;
-  --transition-normal: 180ms ease;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+[data-theme="dark"] {
+  /* Claude-style Warm Charcoal Theme */
+  --bg-primary: #181816;
+  --bg-secondary: #22221f;
+  --bg-tertiary: #2e2e2a;
+  --bg-inset: #1c1c1a;
+  --bg-card: #22221f;
+  --bg-glass: rgba(24, 24, 22, 0.75);
+
+  --text-primary: #f3f0e9;
+  --text-secondary: #b2aba0;
+  --text-muted: #736d63;
+  --text-inverse: #191f24;
+
+  --color-primary: #f3f0e9;
+  --color-primary-hover: #dedad2;
+  --color-primary-soft: #2e2e2a;
+
+  /* Product-specific brandings - optimized transparency for dark theme */
+  --color-plus: #34d399;
+  --color-plus-soft: rgba(52, 211, 153, 0.12);
+  --color-team: #60a5fa;
+  --color-team-soft: rgba(96, 165, 250, 0.12);
+  --color-pro: #a78bfa;
+  --color-pro-soft: rgba(167, 139, 250, 0.12);
+
+  --color-danger: #f87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.12);
+  --color-danger-hover: rgba(248, 113, 113, 0.22);
+  --color-danger-border-hover: #f87171;
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgba(251, 191, 36, 0.12);
+  --color-info: #38bdf8;
+  --color-info-soft: rgba(56, 189, 248, 0.12);
+  --color-success: #34d399;
+
+  --border-color: #383833;
+  --border-color-strong: #4d4d46;
+  --border-color-hover: #5e5e55;
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --focus-ring: rgba(243, 240, 233, 0.15);
+
+  /* Dark theme shadows */
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2), 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 20px 40px -4px rgba(0, 0, 0, 0.5);
+  --sidebar-shadow: 1px 0 0 var(--border-color);
+  --glow-shadow: 0 0 20px rgba(243, 240, 233, 0.08);
+}
+

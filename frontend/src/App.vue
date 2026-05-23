@@ -50,7 +50,7 @@ onMounted(() => {
 
 .main-content {
   flex-grow: 1;
-  padding: var(--spacing-xl) 0 var(--spacing-xxl);
+  padding: 0 0 var(--spacing-xxl);
 }
 
 /* Global transitions */
@@ -71,7 +71,7 @@ onMounted(() => {
     padding-top: 56px;
   }
   .main-content {
-    padding: var(--spacing-lg) 0;
+    padding: 0 0 var(--spacing-lg);
   }
 }
 </style>

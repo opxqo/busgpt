@@ -18,7 +18,7 @@ export const useUserStore = defineStore('user', () => {
       try {
         const response = await authApi.getMe()
         user.value = response.data
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to load user profile on init', err)
         logout()
       } finally {
@@ -41,8 +41,9 @@ export const useUserStore = defineStore('user', () => {
       localStorage.setItem('user', JSON.stringify(userProfile.data))
       
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || '登录失败，请检查账号密码'
+    } catch (err) {
+      const errorVal = err as { response?: { data?: { detail?: string } } }
+      error.value = errorVal.response?.data?.detail || '登录失败，请检查账号密码'
       return false
     } finally {
       loading.value = false
@@ -56,8 +57,9 @@ export const useUserStore = defineStore('user', () => {
       await authApi.register(phone, nickname, password)
       // Auto login after registration
       return await login(phone, password)
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || '注册失败，请检查输入'
+    } catch (err) {
+      const errorVal = err as { response?: { data?: { detail?: string } } }
+      error.value = errorVal.response?.data?.detail || '注册失败，请检查输入'
       return false
     } finally {
       loading.value = false
@@ -78,8 +80,9 @@ export const useUserStore = defineStore('user', () => {
       user.value = response.data
       localStorage.setItem('user', JSON.stringify(response.data))
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || '修改资料失败'
+    } catch (err) {
+      const errorVal = err as { response?: { data?: { detail?: string } } }
+      error.value = errorVal.response?.data?.detail || '修改资料失败'
       return false
     } finally {
       loading.value = false

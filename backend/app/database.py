@@ -54,13 +54,53 @@ def _ensure_column(conn, table_name: str, column_name: str, definition: str):
         conn.execute(text(f"ALTER TABLE `{table_name}` ADD COLUMN `{column_name}` {definition}"))
 
 
+def _ensure_index(conn, table_name: str, index_name: str, definition: str):
+    exists = conn.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.STATISTICS
+            WHERE TABLE_SCHEMA = :schema
+              AND TABLE_NAME = :table_name
+              AND INDEX_NAME = :index_name
+            """
+        ),
+        {
+            "schema": settings.DB_NAME,
+            "table_name": table_name,
+            "index_name": index_name,
+        },
+    ).scalar()
+    if not exists:
+        conn.execute(text(f"ALTER TABLE `{table_name}` ADD INDEX `{index_name}` ({definition})"))
+
+
 def _run_lightweight_migrations():
     with sync_engine.begin() as conn:
         _ensure_column(conn, "users", "role", "VARCHAR(20) NOT NULL DEFAULT 'user'")
         _ensure_column(conn, "rides", "contact_info", "TEXT")
         _ensure_column(conn, "rides", "contact_price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
+        _ensure_column(conn, "orders", "payment_provider", "VARCHAR(30) NOT NULL DEFAULT 'mock'")
+        _ensure_column(conn, "orders", "payment_no", "VARCHAR(64)")
+        _ensure_column(conn, "orders", "payment_status", "VARCHAR(20) NOT NULL DEFAULT 'paid'")
+        _ensure_column(conn, "orders", "paid_at", "DATETIME NULL")
+        _ensure_column(conn, "orders", "expired_at", "DATETIME NULL")
+        _ensure_column(conn, "orders", "idempotency_key", "VARCHAR(64)")
+        _ensure_column(conn, "orders", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+        _ensure_index(conn, "orders", "ix_orders_status", "`status`")
+        _ensure_index(conn, "orders", "ix_orders_payment_status", "`payment_status`")
+        _ensure_index(conn, "orders", "ix_orders_expired_at", "`expired_at`")
+        _ensure_index(conn, "orders", "ix_orders_paid_at", "`paid_at`")
+        _ensure_index(conn, "orders", "ix_orders_idempotency_key", "`idempotency_key`")
+        _ensure_index(conn, "rides", "ix_rides_created_at", "`created_at`")
+        _ensure_index(conn, "rides", "ix_rides_product_created_at", "`product`, `created_at`")
+        _ensure_index(conn, "rides", "ix_rides_status_created_at", "`status`, `created_at`")
         conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
         conn.execute(text("UPDATE rides SET status = 'open' WHERE status = 'full'"))
+        conn.execute(text("UPDATE orders SET status = 'paid' WHERE status IS NULL OR status = ''"))
+        conn.execute(text("UPDATE orders SET payment_status = status WHERE payment_status IS NULL OR payment_status = ''"))
+        conn.execute(text("UPDATE orders SET payment_provider = 'mock' WHERE payment_provider IS NULL OR payment_provider = ''"))
+        conn.execute(text("UPDATE orders SET paid_at = created_at WHERE status = 'paid' AND paid_at IS NULL"))
 
 
 # Synchronously ensure the database exists and create all tables

@@ -24,8 +24,9 @@ export const useRidesStore = defineStore('rides', () => {
     try {
       const res = await ridesApi.getRides(filters)
       rides.value = res.data
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || '获取车位列表失败'
+    } catch (err) {
+      const errorVal = err as { response?: { data?: { detail?: string } } }
+      error.value = errorVal.response?.data?.detail || '获取车位列表失败'
     } finally {
       loading.value = false
     }

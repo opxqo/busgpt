@@ -1,68 +1,91 @@
 <template>
   <div class="market-page container">
+    <!-- Header -->
     <header class="page-header">
-      <div>
-        <span class="eyebrow">商品市场</span>
-        <h1 class="page-title">发现车位</h1>
-        <p class="page-subtitle">筛选公开展示的 AI 订阅车位。联系方式需支付信息服务费后查看。</p>
+      <div class="header-info">
+        <span class="eyebrow">共享市场</span>
+        <h1 class="page-title">发现可用订阅车位</h1>
+        <p class="page-subtitle">筛选展示中的 ChatGPT 拼车车位。支付信息服务费即可解锁车主的详细联络方式。</p>
       </div>
-      <router-link to="/create" class="btn btn-primary">
-        <PlusCircle :size="17" />
-        发布车位
+      <router-link to="/create" class="btn btn-primary publish-btn">
+        <PlusCircle :size="16" />
+        <span>发布我的车位</span>
       </router-link>
     </header>
 
-    <section class="toolbar surface-card">
-      <div class="search-box">
-        <Search :size="17" />
-        <input v-model="searchQuery" type="search" placeholder="搜索车位标题或公开说明" @input="handleSearch" />
-      </div>
-
-      <div class="product-tabs">
-        <button
-          v-for="tab in productTabs"
-          :key="tab.value"
-          type="button"
-          class="tab-btn"
-          :class="{ active: activeProduct === tab.value }"
-          @click="selectProduct(tab.value)"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-
-      <select v-model="selectedStatus" class="status-select" @change="fetchData">
-        <option value="">仅可解锁</option>
-        <option value="open">可解锁</option>
-        <option value="closed">已关闭</option>
-        <option value="expired">已过期</option>
-      </select>
-    </section>
-
+    <!-- Metrics Stats Section -->
     <section class="market-metrics">
-      <div class="metric surface-card">
-        <span>展示车位</span>
-        <strong>{{ ridesStore.rides.length }}</strong>
+      <div class="metric-card surface-card">
+        <div class="metric-info">
+          <span class="metric-label">展示车位</span>
+          <strong class="metric-value">
+            <span class="indicator-dot success"></span>
+            {{ ridesStore.rides.length }} 个
+          </strong>
+        </div>
       </div>
-      <div class="metric surface-card">
-        <span>平均月费</span>
-        <strong>¥{{ avgPrice }}</strong>
+      <div class="metric-card surface-card">
+        <div class="metric-info">
+          <span class="metric-label">平均租金参考</span>
+          <strong class="metric-value">
+            <span class="indicator-dot primary"></span>
+            ¥{{ avgPrice }}/月
+          </strong>
+        </div>
       </div>
-      <div class="metric surface-card">
-        <span>信息服务费</span>
-        <strong>¥{{ avgUnlockFee }}</strong>
+      <div class="metric-card surface-card">
+        <div class="metric-info">
+          <span class="metric-label">平均解锁门槛</span>
+          <strong class="metric-value">
+            <span class="indicator-dot warning"></span>
+            ¥{{ avgUnlockFee }}
+          </strong>
+        </div>
       </div>
     </section>
 
+    <!-- Filter Control Toolbar -->
+    <section class="toolbar-panel surface-card">
+      <div class="search-input-wrapper">
+        <Search :size="18" class="search-icon" />
+        <input v-model="searchQuery" type="search" placeholder="搜索车位标题、公开描述或说明" @input="handleSearch" />
+      </div>
+
+      <div class="filter-actions">
+        <div class="product-tabs" role="tablist">
+          <button
+            v-for="tab in productTabs"
+            :key="tab.value"
+            type="button"
+            class="tab-btn"
+            :class="{ active: activeProduct === tab.value }"
+            @click="selectProduct(tab.value)"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <div class="select-wrapper">
+          <select v-model="selectedStatus" class="status-select" @change="fetchData">
+            <option value="">全部状态</option>
+            <option value="open">可解锁</option>
+            <option value="closed">已关闭</option>
+            <option value="expired">已过期</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grid / Content -->
     <div v-if="ridesStore.loading" class="loading-container">
       <div class="spinner"></div>
-      <p>加载车位中</p>
+      <p>正在搜索匹配的车位...</p>
     </div>
 
     <div v-else-if="ridesStore.rides.length === 0" class="empty-state surface-card">
-      <PackageOpen :size="34" />
-      <h3>暂无匹配车位</h3>
-      <p>可以调整筛选条件，或发布一个新的展示车位。</p>
+      <PackageOpen :size="38" class="empty-icon" />
+      <h3>暂无匹配的拼车车位</h3>
+      <p>没有找到符合条件的车位。您可以调整筛选条件，或者直接发布一个车位。</p>
       <router-link to="/create" class="btn btn-primary">发布车位</router-link>
     </div>
 
@@ -137,94 +160,175 @@ onMounted(() => {
 
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-lg);
-}
-
-.toolbar {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto;
   gap: var(--spacing-md);
-  align-items: center;
-  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-lg);
 }
 
-.search-box {
+.header-info {
   display: flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-inset);
-  color: var(--text-muted);
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
-.search-box input {
-  width: 100%;
-  color: var(--text-primary);
-  font-size: 14px;
+.publish-btn {
+  flex-shrink: 0;
 }
 
-.product-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-inset);
-}
-
-.tab-btn {
-  min-height: 34px;
-  padding: 0 13px;
-  border-radius: var(--border-radius-sm);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.tab-btn.active {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  box-shadow: 0 1px 2px rgba(25, 31, 36, 0.08);
-}
-
-.status-select {
-  min-height: 42px;
-  padding: 0 34px 0 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 800;
-}
-
+/* Metrics Section */
 .market-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-md);
 }
 
-.metric {
-  padding: var(--spacing-md);
+.metric-card {
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  align-items: center;
 }
 
-.metric span {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text-muted);
+.metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  color: var(--text-secondary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
-.metric strong {
+.metric-value {
   color: var(--text-primary);
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+/* Indicator dots */
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--border-radius-full);
+}
+
+.indicator-dot.success {
+  background: var(--color-success);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.indicator-dot.primary {
+  background: var(--color-team);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.indicator-dot.warning {
+  background: var(--color-pro);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+/* Toolbar Panel */
+.toolbar-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spacing-md);
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-color: var(--border-color-strong);
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  height: 42px;
+  padding: 0 var(--spacing-md);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--text-primary);
+}
+
+.search-icon {
+  color: var(--text-muted);
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.product-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+.tab-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn.active {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.select-wrapper select {
+  height: 42px;
+  padding: 0 32px 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  transition: border-color var(--transition-fast);
+}
+
+.select-wrapper select:hover {
+  border-color: var(--border-color-strong);
 }
 
 .rides-grid {
@@ -233,11 +337,18 @@ onMounted(() => {
   gap: var(--spacing-md);
 }
 
+.empty-icon {
+  color: var(--text-muted);
+}
+
 @media (max-width: 1080px) {
-  .toolbar {
+  .toolbar-panel {
     grid-template-columns: 1fr;
   }
-
+  .filter-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
   .rides-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -246,13 +357,25 @@ onMounted(() => {
 @media (max-width: 680px) {
   .page-header {
     flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
   }
-
+  .market-metrics {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  .filter-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
   .product-tabs {
+    width: 100%;
     overflow-x: auto;
   }
-
-  .market-metrics,
+  .select-wrapper select {
+    width: 100%;
+  }
   .rides-grid {
     grid-template-columns: 1fr;
   }

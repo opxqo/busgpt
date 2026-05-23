@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.utils.security import verify_password, get_password_hash, create_access_token
+from app.utils.rate_limit import check_auth_rate_limit, record_auth_failure, record_auth_success
 from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -50,11 +51,13 @@ async def get_current_admin_user(current_user: User = Depends(get_current_user))
     return current_user
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user_in: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    rate_limit_key = check_auth_rate_limit(request, user_in.phone)
     # Check if user already exists
     result = await db.execute(select(User).filter(User.phone == user_in.phone))
     existing_user = result.scalars().first()
     if existing_user:
+        record_auth_failure(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Phone number already registered"
@@ -73,6 +76,7 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.flush()  # Populates db_user.id
     await db.commit()
     await db.refresh(db_user)
+    record_auth_success(rate_limit_key)
     
     return db_user
 
@@ -84,31 +88,41 @@ class LoginRequest(BaseModel):
     password: str
 
 @router.post("/login", response_model=Token)
-async def login_json(login_in: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login_json(login_in: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    rate_limit_key = check_auth_rate_limit(request, login_in.phone)
     result = await db.execute(select(User).filter(User.phone == login_in.phone))
     user = result.scalars().first()
     if not user or not verify_password(login_in.password, user.password_hash):
+        record_auth_failure(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect phone or password"
         )
     
     access_token = create_access_token(subject=user.id)
+    record_auth_success(rate_limit_key)
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Supporting OAuth2 standard login form (for Swagger `/docs`)
 @router.post("/login-oauth2", response_model=Token)
-async def login_oauth2(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+async def login_oauth2(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    rate_limit_key = check_auth_rate_limit(request, form_data.username)
     # OAuth2 form_data.username will contain the phone number
     result = await db.execute(select(User).filter(User.phone == form_data.username))
     user = result.scalars().first()
     if not user or not verify_password(form_data.password, user.password_hash):
+        record_auth_failure(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect phone or password"
         )
     
     access_token = create_access_token(subject=user.id)
+    record_auth_success(rate_limit_key)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UserResponse)

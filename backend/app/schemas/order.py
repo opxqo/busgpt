@@ -13,7 +13,14 @@ class OrderResponse(BaseModel):
     ride_id: int
     amount: Decimal
     status: str
+    payment_provider: str = "mock"
+    payment_no: Optional[str] = None
+    payment_status: str = "pending"
+    paid_at: Optional[datetime] = None
+    expired_at: Optional[datetime] = None
+    idempotency_key: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

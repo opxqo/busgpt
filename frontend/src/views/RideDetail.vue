@@ -1,179 +1,217 @@
 <template>
   <div class="detail-page container">
+    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="spinner"></div>
-      <p>加载车位详情中</p>
+      <p>正在获取车位详细信息...</p>
     </div>
 
+    <!-- Error State -->
     <div v-else-if="error" class="error-container surface-card">
-      <CircleAlert :size="34" />
-      <h3>加载失败</h3>
+      <CircleAlert :size="38" class="error-icon" />
+      <h3>详情获取失败</h3>
       <p>{{ error }}</p>
-      <router-link to="/market" class="btn btn-primary">返回市场</router-link>
+      <router-link to="/market" class="btn btn-primary">返回拼车市场</router-link>
     </div>
 
+    <!-- Main Content -->
     <div v-else-if="ride" class="detail-grid">
-      <main class="detail-main">
+      <div class="detail-main">
+        <!-- Main Info Header -->
         <section class="listing-header surface-card">
           <div class="header-tags">
             <span class="product-chip" :class="ride.product">{{ productLabel }}</span>
             <span class="status-chip" :class="ride.status">{{ statusLabel }}</span>
           </div>
-          <h1>{{ ride.title }}</h1>
-          <p>{{ ride.description || '车主暂未填写公开说明。支付信息服务费后可查看隐藏联系方式。' }}</p>
+          <h1 class="ride-title">{{ ride.title }}</h1>
+          <p class="ride-description">
+            {{ ride.description || '该车位主人比较神秘，暂未填写详细的公开说明。支付信息服务费解锁后可以直接添加车主交流。' }}
+          </p>
 
           <div class="metric-grid">
-            <div class="metric-primary">
-              <span>车位月费</span>
-              <strong>¥{{ formatMoney(ride.price_per_month) }}<small>/月</small></strong>
+            <div class="metric-box highlighted">
+              <span class="metric-label">车位租金</span>
+              <strong class="metric-val">¥{{ formatMoney(ride.price_per_month) }}<small>/月</small></strong>
             </div>
-            <div>
-              <span>已拼人数</span>
-              <strong>{{ ride.purchase_count || 0 }}<small> 人</small></strong>
+            <div class="metric-box">
+              <span class="metric-label">已拼人数</span>
+              <strong class="metric-val">{{ ride.purchase_count || 0 }}<small> 人</small></strong>
             </div>
-            <div>
-              <span>还差人数</span>
-              <strong>{{ ride.remaining_seats ?? ride.total_seats }}<small> 人</small></strong>
+            <div class="metric-box">
+              <span class="metric-label">剩余空位</span>
+              <strong class="metric-val highlight-green">{{ ride.remaining_seats ?? ride.total_seats }}<small> 人</small></strong>
             </div>
-            <div>
-              <span>总名额</span>
-              <strong>{{ ride.total_seats }}<small> 个</small></strong>
+            <div class="metric-box">
+              <span class="metric-label">拼车期限</span>
+              <strong class="metric-val">{{ ride.duration }}<small> 个月</small></strong>
             </div>
-            <div>
-              <span>有效期</span>
-              <strong>{{ ride.duration }}<small> 个月</small></strong>
-            </div>
-            <div>
-              <span>服务费</span>
-              <strong class="fee">¥{{ formatMoney(ride.contact_price) }}</strong>
+            <div class="metric-box">
+              <span class="metric-label">信息解锁费</span>
+              <strong class="metric-val highlight-purple">¥{{ formatMoney(ride.contact_price) }}</strong>
             </div>
           </div>
         </section>
 
+        <!-- Specifications -->
         <section class="surface-card info-card">
           <div class="section-title">
-            <FileText :size="18" />
-            <h2>公开展示信息</h2>
+            <FileText :size="18" class="section-icon" />
+            <h2>拼车基本参数</h2>
           </div>
-          <div class="info-list">
-            <div>
-              <span>产品类型</span>
-              <strong>{{ productLabel }}</strong>
+          <div class="spec-list">
+            <div class="spec-item">
+              <span class="spec-label">订阅产品</span>
+              <strong class="spec-val">{{ productLabel }}</strong>
             </div>
-            <div>
-              <span>最近更新</span>
-              <strong>{{ formattedCreatedAt }}</strong>
+            <div class="spec-item">
+              <span class="spec-label">最近更新</span>
+              <strong class="spec-val">{{ formattedCreatedAt }}</strong>
             </div>
-            <div>
-              <span>到期时间</span>
-              <strong>{{ formattedExpiryDate }}</strong>
+            <div class="spec-item">
+              <span class="spec-label">预期到期时间</span>
+              <strong class="spec-val">{{ formattedExpiryDate }}</strong>
             </div>
-            <div>
-              <span>已解锁次数</span>
-              <strong>{{ ride.purchase_count || 0 }} 次</strong>
-            </div>
-            <div>
-              <span>拼车进度</span>
-              <strong>{{ ride.purchase_count || 0 }}/{{ ride.total_seats }} 人</strong>
+            <div class="spec-item">
+              <span class="spec-label">车位总容量</span>
+              <strong class="spec-val">{{ ride.total_seats }} 人位</strong>
             </div>
           </div>
         </section>
 
-        <section class="surface-card info-card">
+        <!-- Disclaimer -->
+        <section class="surface-card info-card disclaimer-card">
           <div class="section-title">
-            <ShieldCheck :size="18" />
-            <h2>服务边界</h2>
+            <ShieldCheck :size="18" class="section-icon-safety" />
+            <h2>服务边界与免责声明</h2>
           </div>
-          <div class="disclaimer-grid">
-            <p>平台仅提供商品信息展示和联系方式展示服务，不提供站内聊天。</p>
-            <p>信息服务费不是订阅款，也不代表平台代收后续费用。</p>
-            <p>解锁后请自行与车主沟通，谨慎确认订阅周期、账号规则和付款方式。</p>
+          <div class="disclaimer-content">
+            <p>1. 平台仅提供共享信息的发布与展示服务，我们不组织拼车，亦无站内交谈渠道。</p>
+            <p>2. 信息解锁服务费由平台收取引导对接，非拼车月租金，解锁后平台不介入后续交易。</p>
+            <p>3. 拼车具有一定的线下风险，请添加车主后自行核实订阅账号的性质、周期及支付方式。</p>
           </div>
         </section>
-      </main>
+      </div>
 
-      <aside class="detail-side">
+      <!-- Sidebar Sticky Controls -->
+      <div class="detail-side">
+        <!-- Seller Info -->
         <section class="surface-card owner-card">
-          <div class="owner-head">
+          <div class="owner-header">
             <img :src="ride.owner?.avatar || defaultAvatar" alt="车主头像" class="avatar" />
-            <div>
-              <strong>{{ ride.owner?.nickname || '车主' }}</strong>
-              <span>车主已验证</span>
+            <div class="owner-meta">
+              <strong>{{ ride.owner?.nickname || '认证车友' }}</strong>
+              <span class="badge"><BadgeCheck :size="12" /> 车主已认证</span>
             </div>
           </div>
-          <div class="owner-facts">
-            <span><BadgeCheck :size="14" /> 手机号已绑定</span>
-            <span><ReceiptText :size="14" /> {{ ride.purchase_count || 0 }} 次信息解锁</span>
+          <div class="owner-stats">
+            <div class="owner-stat-item">
+              <ReceiptText :size="14" />
+              <span>已成功发出 {{ ride.purchase_count || 0 }} 个车位</span>
+            </div>
           </div>
         </section>
 
+        <!-- Contact Reveal Info Box -->
         <section class="surface-card unlock-card" :class="{ revealed: canSeeContact }">
-          <div class="unlock-head">
-            <div class="lock-icon">
-              <Unlock v-if="canSeeContact" :size="22" />
-              <LockKeyhole v-else :size="22" />
+          <div class="unlock-header">
+            <div class="lock-indicator" :class="{ unlocked: canSeeContact }">
+              <Unlock v-if="canSeeContact" :size="20" />
+              <LockKeyhole v-else :size="20" />
             </div>
-            <div>
-              <h2>{{ canSeeContact ? '联系方式已解锁' : '联系方式已隐藏' }}</h2>
-              <p>{{ canSeeContact ? '你可以复制信息，自行联系车主。' : '支付信息服务费后可查看车主联系方式。' }}</p>
+            <div class="unlock-title-wrap">
+              <h2>{{ canSeeContact ? '联系方式已解锁' : '联系方式已锁定' }}</h2>
+              <p>{{ canSeeContact ? '已成功取得车主联系方式，请私下沟通。' : '解锁后可实时查阅微信、Telegram、邮箱等。' }}</p>
             </div>
           </div>
 
-          <div v-if="canSeeContact" class="contact-box">
-            <label>车主联系方式</label>
-            <div
-              v-for="item in contactItems"
-              :key="`${item.type}-${item.account}`"
-              class="contact-reveal"
-              :class="item.type"
-            >
-              <div class="contact-kind">
-                <component :is="item.icon" :size="18" />
-                <span>{{ item.label }}</span>
+          <!-- Revealed Contacts -->
+          <div v-if="canSeeContact" class="contact-panel">
+            <label class="panel-title-label">车主联系账号</label>
+            <div class="contacts-list">
+              <div
+                v-for="(item, index) in contactItems"
+                :key="`${item.type}-${item.account}`"
+                class="contact-row-new"
+                :class="item.type"
+              >
+                <!-- Brand logo wrapper -->
+                <div class="brand-logo-wrapper" :class="item.type">
+                  <!-- WeChat Official Green Logo -->
+                  <svg v-if="item.type === 'wechat'" viewBox="0 0 576 512" class="brand-logo-svg">
+                    <path fill="currentColor" d="M385.2 167.6c6.4 0 12.6.3 18.8 1.1C387.4 90.3 303.3 32 207.7 32 100.5 32 13 104.8 13 197.4c0 53.4 29.3 97.5 77.9 131.6l-19.3 58.6 68-34.1c24.4 4.8 43.8 9.7 68.2 9.7 6.2 0 12.1-.3 18.3-.8-4-12.9-6.2-26.6-6.2-40.8-.1-84.9 72.9-154 165.3-154zm-104.5-52.9c14.5 0 24.2 9.7 24.2 24.4 0 14.5-9.7 24.2-24.2 24.2-14.8 0-29.3-9.7-29.3-24.2.1-14.7 14.6-24.4 29.3-24.4zm-136.4 48.6c-14.5 0-29.3-9.7-29.3-24.2 0-14.8 14.8-24.4 29.3-24.4 14.8 0 24.4 9.7 24.4 24.4 0 14.6-9.6 24.2-24.4 24.2zM563 319.4c0-77.9-77.9-141.3-165.4-141.3-92.7 0-165.4 63.4-165.4 141.3S305 460.7 397.6 460.7c19.3 0 38.9-5.1 58.6-9.9l53.4 29.3-14.8-48.6C534 402.1 563 363.2 563 319.4zm-219.1-24.5c-9.7 0-19.3-9.7-19.3-19.6 0-9.7 9.7-19.3 19.3-19.3 14.8 0 24.4 9.7 24.4 19.3 0 10-9.7 19.6-24.4 19.6zm107.1 0c-9.7 0-19.3-9.7-19.3-19.6 0-9.7 9.7-19.3 19.3-19.3 14.5 0 24.4 9.7 24.4 19.3.1 10-9.9 19.6-24.4 19.6z"/>
+                  </svg>
+                  <!-- Telegram Official Blue Logo -->
+                  <svg v-else-if="item.type === 'telegram'" viewBox="0 0 496 512" class="brand-logo-svg">
+                    <path fill="currentColor" d="M248,8C111.033,8,0,119.033,0,256S111.033,504,248,504,496,392.967,496,256,384.967,8,248,8ZM362.952,176.66c-3.732,39.215-19.881,134.378-28.1,178.3-3.476,18.584-10.322,24.816-16.948,25.425-14.4,1.326-25.338-9.517-39.287-18.661-21.827-14.308-34.158-23.215-55.346-37.177-24.485-16.135-8.612-25,5.342-39.5,3.652-3.793,67.107-61.51,68.335-66.746.153-.655.3-3.1-1.154-4.384s-3.59-.849-5.135-.5q-3.283.746-104.608,69.142-14.845,10.194-26.894,9.934c-8.855-.191-25.888-5.006-38.551-9.123-15.531-5.048-27.875-7.717-26.8-16.291q.84-6.7,18.45-13.7,108.446-47.248,144.628-62.3c68.872-28.647,83.183-33.623,92.511-33.789,2.052-.034,6.639.474,9.61,2.885a10.452,10.452,0,0,1,3.53,6.716A43.765,43.765,0,0,1,362.952,176.66Z"/>
+                  </svg>
+                  <!-- Mail Envelope Logo -->
+                  <svg v-else-if="item.type === 'email'" viewBox="0 0 512 512" class="brand-logo-svg">
+                    <path fill="currentColor" d="M48 96h416c26.5 0 48 21.5 48 48v224c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V144c0-26.5 21.5-48 48-48z"/>
+                    <path fill="#ffffff" d="M460.6 156.4c5.1 6.2 4.1 15.4-2.2 20.4L280.7 319.1c-14.5 11.6-35 11.6-49.5 0L53.6 176.8c-6.3-5-7.3-14.2-2.2-20.4s14.2-7.3 20.4-2.2L249.5 296.5c3.8 3 9.2 3 13 0L440.2 154.2c6.2-5.1 15.4-4.1 20.4 2.2z"/>
+                  </svg>
+                </div>
+
+                <!-- Account info -->
+                <div class="contact-details-wrap">
+                  <span class="contact-type-label">{{ item.label }}</span>
+                  <div class="account-link-container">
+                    <a v-if="item.href" :href="item.href" target="_blank" rel="noreferrer" class="account-anchor">
+                      <span>{{ item.account }}</span>
+                      <ExternalLink :size="12" class="ext-icon" />
+                    </a>
+                    <span v-else class="account-plain-text">{{ item.account }}</span>
+                  </div>
+                  <p v-if="item.note" class="contact-note-text" :title="item.note">{{ item.note }}</p>
+                </div>
+
+                <!-- Individual Copy Button -->
+                <button type="button" class="btn-copy-item" @click="copyIndividualContact(item.account, index)">
+                  <Copy v-if="!individualCopied[index]" :size="12" />
+                  <span class="copy-text">{{ individualCopied[index] ? '已复制' : '复制' }}</span>
+                </button>
               </div>
-              <a v-if="item.href" class="contact-account" :href="item.href" target="_blank" rel="noreferrer">
-                {{ item.account }}
-                <ExternalLink :size="15" />
-              </a>
-              <strong v-else class="contact-account">{{ item.account }}</strong>
-              <p v-if="item.note">{{ item.note }}</p>
             </div>
-            <button type="button" class="btn btn-primary" @click="copyContact">
+            <button type="button" class="btn btn-secondary action-btn-full" @click="copyContact">
               <Copy :size="16" />
-              {{ copied ? '已复制' : '复制联系方式' }}
+              <span>{{ copied ? '已成功复制全部' : '复制全部联系方式' }}</span>
             </button>
           </div>
 
-          <div v-else class="locked-box">
-            <div class="order-row">
-              <span>信息服务费</span>
-              <strong>¥{{ formatMoney(ride.contact_price) }}</strong>
+          <!-- Locked View (Pay to unlock) -->
+          <div v-else class="locked-panel">
+            <div class="unlock-cost-row">
+              <span class="cost-label">信息解锁服务费</span>
+              <strong class="cost-value">¥{{ formatMoney(ride.contact_price) }}</strong>
             </div>
-            <div class="order-row">
-              <span>解锁内容</span>
-              <strong>邮箱 / 微信 / Telegram</strong>
+
+            <div class="progress-preview">
+              <div class="progress-text">
+                <span>目前拼车进度</span>
+                <span>{{ ride.purchase_count || 0 }} / {{ ride.total_seats }} 人</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" :style="{ width: `${(occupiedSeats / ride.total_seats) * 100}%` }"></div>
+              </div>
             </div>
-            <div class="order-row">
-              <span>当前进度</span>
-              <strong>已拼 {{ ride.purchase_count || 0 }} 人，还差 {{ ride.remaining_seats ?? ride.total_seats }} 人</strong>
-            </div>
-            <label class="terms-row">
+
+            <label class="agreement-checkbox">
               <input v-model="termsAccepted" type="checkbox" />
-              <span>我确认该费用仅用于解锁联系方式，后续交易需自行沟通。</span>
+              <span class="checkbox-text">我已知晓该笔服务费仅用于解锁车主联系账号，后续交易风险由本人承担。</span>
             </label>
+
             <button
               type="button"
-              class="btn btn-primary unlock-btn"
+              class="btn btn-primary action-btn-full"
               :disabled="unlockDisabled"
               @click="handleUnlock"
             >
               <CreditCard :size="16" />
-              {{ purchasing ? '生成订单中...' : unlockButtonText }}
+              <span>{{ purchasing ? '正在生成订单并付款...' : unlockButtonText }}</span>
             </button>
-            <p v-if="purchaseError" class="purchase-error">{{ purchaseError }}</p>
+            <p v-if="purchaseError" class="unlock-error-msg">{{ purchaseError }}</p>
           </div>
         </section>
-      </aside>
+      </div>
     </div>
   </div>
 </template>
@@ -200,8 +238,7 @@ import type { Component } from 'vue'
 import { ridesApi } from '../api/rides'
 import { ordersApi } from '../api/orders'
 import { useUserStore } from '../stores/user'
-import type { ContactType } from '../types'
-import type { Ride } from '../types'
+import type { ContactType, Ride } from '../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -214,8 +251,17 @@ const purchasing = ref(false)
 const purchaseError = ref('')
 const termsAccepted = ref(false)
 const copied = ref(false)
+const individualCopied = ref<Record<number, boolean>>({})
 const rideId = Number(route.params.id)
-const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt'
+const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
+
+const copyIndividualContact = async (account: string, index: number) => {
+  await navigator.clipboard.writeText(account)
+  individualCopied.value[index] = true
+  setTimeout(() => {
+    individualCopied.value[index] = false
+  }, 1800)
+}
 
 const loadRideDetails = async () => {
   loading.value = true
@@ -223,8 +269,9 @@ const loadRideDetails = async () => {
   try {
     const res = await ridesApi.getRide(rideId)
     ride.value = res.data
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '加载详情失败'
+  } catch (err) {
+    const errorVal = err as { response?: { data?: { detail?: string } } }
+    error.value = errorVal.response?.data?.detail || '加载车位详情失败，请检查网络或车位是否已被删除'
   } finally {
     loading.value = false
   }
@@ -240,6 +287,8 @@ const canSeeContact = computed(() => {
   return !!ride.value?.contact_info && (isOwner.value || ride.value.is_purchased)
 })
 
+const occupiedSeats = computed(() => Number(ride.value?.purchase_count || 0))
+
 type ContactItem = {
   type: ContactType
   label: string
@@ -250,8 +299,8 @@ type ContactItem = {
 }
 
 const contactMeta: Record<ContactType, { label: string; icon: Component }> = {
-  email: { label: '邮箱', icon: Mail },
-  wechat: { label: '微信', icon: MessageCircle },
+  email: { label: '电子邮箱', icon: Mail },
+  wechat: { label: '微信账号', icon: MessageCircle },
   telegram: { label: 'Telegram', icon: SendHorizontal },
 }
 
@@ -341,9 +390,9 @@ const productLabel = computed(() => {
 
 const statusLabel = computed(() => {
   if (!ride.value) return ''
-  if (ride.value.status === 'closed') return '已关闭'
-  if (ride.value.status === 'expired') return '已过期'
-  return '可解锁'
+  if (ride.value.status === 'closed') return '人数已满/关闭'
+  if (ride.value.status === 'expired') return '车位已过期'
+  return '接受解锁'
 })
 
 const formattedCreatedAt = computed(() => {
@@ -360,14 +409,21 @@ const formattedExpiryDate = computed(() => {
 
 const unlockButtonText = computed(() => {
   if (!ride.value) return '解锁联系方式'
-  if (isOwner.value) return '车主无需购买'
-  if (ride.value.status !== 'open') return '当前不可解锁'
-  if ((ride.value.remaining_seats ?? 1) <= 0) return '人数已满'
-  return '支付服务费，解锁联系方式'
+  if (isOwner.value) return '车主无需解锁'
+  if (ride.value.status !== 'open') return '当前状态不可解锁'
+  if ((ride.value.remaining_seats ?? 1) <= 0) return '车位已满'
+  if (!userStore.isLoggedIn) return '登录并支付服务费'
+  return '支付服务费解锁联系方式'
 })
 
 const unlockDisabled = computed(() => {
-  return purchasing.value || !termsAccepted.value || isOwner.value || ride.value?.status !== 'open' || ((ride.value?.remaining_seats ?? 1) <= 0)
+  return (
+    purchasing.value ||
+    (userStore.isLoggedIn && !termsAccepted.value) ||
+    isOwner.value ||
+    ride.value?.status !== 'open' ||
+    (ride.value?.remaining_seats ?? 1) <= 0
+  )
 })
 
 const handleUnlock = async () => {
@@ -381,8 +437,9 @@ const handleUnlock = async () => {
   try {
     await ordersApi.purchaseContact(ride.value.id)
     await loadRideDetails()
-  } catch (err: any) {
-    purchaseError.value = err.response?.data?.detail || '解锁失败，请稍后重试'
+  } catch (err) {
+    const errorVal = err as { response?: { data?: { detail?: string } } }
+    purchaseError.value = errorVal.response?.data?.detail || '解锁联系方式失败，请稍后重试'
   } finally {
     purchasing.value = false
   }
@@ -409,28 +466,30 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 
 .detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: var(--spacing-lg);
+  grid-template-columns: 1fr 360px;
+  gap: var(--spacing-xl);
   align-items: start;
 }
 
-.detail-main,
-.detail-side {
+.detail-main {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
 }
 
 .detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
   position: sticky;
-  top: var(--spacing-lg);
+  top: var(--spacing-md);
 }
 
 .listing-header,
 .info-card,
 .owner-card,
 .unlock-card {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
 }
 
 .header-tags {
@@ -439,326 +498,488 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   margin-bottom: var(--spacing-md);
 }
 
-.listing-header h1 {
-  margin-bottom: 10px;
+.ride-title {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
-  font-size: 30px;
-  font-weight: 900;
-  line-height: 1.25;
+  margin-bottom: var(--spacing-sm);
 }
 
-.listing-header p {
+.ride-description {
   color: var(--text-secondary);
   font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.7;
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
 }
 
-.metric-grid div,
-.info-list div {
-  padding: 13px;
+.metric-box {
+  padding: 14px 10px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
+  text-align: center;
 }
 
-.metric-grid span,
-.info-list span {
+.metric-box.highlighted {
+  border-color: var(--border-color-strong);
+}
+
+.metric-label {
   display: block;
-  margin-bottom: 4px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.metric-grid strong,
-.info-list strong {
-  color: var(--text-primary);
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.metric-grid small {
+  font-size: 11px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
 }
 
-.metric-grid .fee {
+.metric-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.metric-val small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.highlight-green {
+  color: var(--color-success);
+}
+
+.highlight-purple {
   color: var(--color-pro);
 }
 
+/* Specs layout */
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: var(--spacing-md);
-}
-
-.section-title h2 {
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.info-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-sm);
-}
-
-.disclaimer-grid {
-  display: grid;
-  gap: var(--spacing-sm);
-}
-
-.disclaimer-grid p {
-  padding: 12px;
-  border-radius: var(--border-radius-md);
-  background: var(--color-warning-soft);
-  color: #7c4a00;
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.owner-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border-color);
 }
 
-.avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--border-radius-full);
-  background: var(--bg-tertiary);
+.section-icon {
+  color: var(--text-muted);
 }
 
-.owner-head strong {
-  display: block;
+.section-icon-safety {
+  color: var(--color-warning);
+}
+
+.section-title h2 {
+  font-size: 16px;
+  font-weight: 800;
   color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 900;
+  margin: 0;
 }
 
-.owner-head span,
-.owner-facts span {
+.spec-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.spec-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+.spec-label {
+  font-size: 13px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-weight: 600;
+}
+
+.spec-val {
+  font-size: 13px;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
-.owner-facts {
+/* Disclaimer text styles */
+.disclaimer-card {
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.disclaimer-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: var(--spacing-md);
 }
 
-.owner-facts span {
+.disclaimer-content p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #854d0e;
+  margin: 0;
+}
+
+/* Owner Side Card */
+.owner-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.owner-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.owner-meta strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.badge {
+  font-size: 11px;
+  color: var(--color-success);
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
+.owner-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+}
+
+.owner-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Unlock Card Styling */
 .unlock-card {
-  border-color: rgba(5, 150, 105, 0.25);
+  border-color: var(--border-color-strong);
 }
 
 .unlock-card.revealed {
-  background: linear-gradient(180deg, #ffffff 0%, #f2fbf6 100%);
+  border-color: var(--border-color);
+  background: var(--bg-secondary);
 }
 
-.unlock-head {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: start;
+.unlock-header {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-start;
   margin-bottom: var(--spacing-lg);
 }
 
-.lock-icon {
+.lock-indicator {
   display: inline-flex;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.unlock-head h2 {
-  margin-bottom: 4px;
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.unlock-head p {
+  background: var(--bg-tertiary);
   color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
 }
 
-.contact-box label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text-secondary);
-  font-size: 12px;
+.lock-indicator.unlocked {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.unlock-title-wrap h2 {
+  font-size: 16px;
   font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 2px;
 }
 
-.contact-reveal {
+.unlock-title-wrap p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Pay and Locked Panel */
+.locked-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: var(--spacing-md);
-  padding: 14px;
-  border: 1px solid var(--contact-border);
+  gap: var(--spacing-md);
+}
+
+.unlock-cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  background: var(--contact-bg);
-  --contact-bg: #f8fff9;
-  --contact-border: rgba(5, 150, 105, 0.2);
-  --contact-color: var(--color-primary);
-  --contact-soft: var(--color-primary-soft);
 }
 
-.contact-reveal.email {
-  --contact-bg: #fffafa;
-  --contact-border: rgba(220, 38, 38, 0.2);
-  --contact-color: #dc2626;
-  --contact-soft: #fef2f2;
-}
-
-.contact-reveal.wechat {
-  --contact-bg: #f8fff9;
-  --contact-border: rgba(7, 193, 96, 0.24);
-  --contact-color: #07c160;
-  --contact-soft: #e9f9ee;
-}
-
-.contact-reveal.telegram {
-  --contact-bg: #f6fbff;
-  --contact-border: rgba(34, 158, 217, 0.25);
-  --contact-color: #229ed9;
-  --contact-soft: #e8f5ff;
-}
-
-.contact-kind {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 9px;
-  border-radius: var(--border-radius-full);
-  background: var(--contact-soft);
-  color: var(--contact-color);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.contact-account {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 900;
-  overflow-wrap: anywhere;
-}
-
-a.contact-account:hover {
-  color: var(--contact-color);
-  background: transparent;
-}
-
-.contact-reveal p {
-  color: var(--text-secondary);
+.cost-label {
   font-size: 13px;
-  line-height: 1.7;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
-.locked-box {
+.cost-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-pro);
+}
+
+.progress-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.progress-bar-bg {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-success);
+  border-radius: var(--border-radius-full);
+}
+
+.agreement-checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.agreement-checkbox input {
+  margin-top: 3px;
+}
+
+.checkbox-text {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.action-btn-full {
+  width: 100%;
+  margin-top: var(--spacing-xs);
+}
+
+.unlock-error-msg {
+  font-size: 11px;
+  color: var(--color-danger);
+  font-weight: 700;
+  margin-top: -6px;
+}
+
+/* Revealed Panel Contacts */
+.contact-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.panel-title-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contacts-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
 }
 
-.order-row {
+.contact-row-new {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 12px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  transition: all var(--transition-fast);
+}
+
+.contact-row-new:hover {
+  border-color: var(--border-color-strong);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+/* Brand icon wrap colors */
+.brand-logo-wrapper {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  flex-shrink: 0;
+}
+
+.brand-logo-wrapper.wechat {
+  background: rgba(7, 193, 96, 0.08);
+  color: #07c160;
+}
+
+.brand-logo-wrapper.telegram {
+  background: rgba(38, 165, 228, 0.08);
+  color: #26a5e4;
+}
+
+.brand-logo-wrapper.email {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.brand-logo-svg {
+  width: 22px;
+  height: 22px;
+}
+
+.contact-details-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contact-type-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.account-link-container {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-inset);
 }
 
-.order-row span {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.order-row strong {
-  color: var(--text-primary);
+.account-anchor {
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  word-break: break-all;
 }
 
-.terms-row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 8px;
-  align-items: start;
-  padding: 12px;
-  border-radius: var(--border-radius-md);
-  background: var(--color-warning-soft);
-  color: #7c4a00;
-  font-size: 12px;
-  line-height: 1.6;
+.account-anchor:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.ext-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.account-plain-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.contact-note-text {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Individual Copy Button */
+.btn-copy-item {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.unlock-btn {
-  width: 100%;
-  margin-top: var(--spacing-sm);
-}
-
-.purchase-error {
-  color: var(--color-danger);
-  font-size: 13px;
-  font-weight: 800;
+.btn-copy-item:hover {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border-color: var(--text-primary);
 }
 
 @media (max-width: 1080px) {
   .detail-grid {
     grid-template-columns: 1fr;
   }
-
   .detail-side {
     position: static;
   }
 }
 
-@media (max-width: 680px) {
-  .listing-header h1 {
-    font-size: 24px;
+@media (max-width: 768px) {
+  .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .spec-list {
+    grid-template-columns: 1fr;
+  }
+}
 
-  .metric-grid,
-  .info-list {
-    grid-template-columns: 1fr 1fr;
+@media (max-width: 480px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

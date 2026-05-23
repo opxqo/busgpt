@@ -4,9 +4,15 @@
       <span class="logo-mark">B</span>
       <span>BusGPT</span>
     </router-link>
-    <button class="icon-btn" type="button" aria-label="打开导航" @click="mobileOpen = true">
-      <Menu :size="22" />
-    </button>
+    <div class="mobile-top-actions">
+      <button class="icon-btn theme-toggle-btn" type="button" :aria-label="theme === 'light' ? '切换至暗色模式' : '切换至亮色模式'" @click="toggleTheme">
+        <Sun v-if="theme === 'dark'" :size="20" />
+        <Moon v-else :size="20" />
+      </button>
+      <button class="icon-btn" type="button" aria-label="打开导航" @click="mobileOpen = true">
+        <Menu :size="22" />
+      </button>
+    </div>
   </div>
 
   <aside class="sidebar" :class="{ open: mobileOpen }">
@@ -17,7 +23,7 @@
           <span class="logo-mark">B</span>
           <span class="brand-text">
             <strong>BusGPT</strong>
-            <small>AI 订阅信息台</small>
+            <small>AI 订阅拼车平台</small>
           </span>
         </router-link>
       </div>
@@ -31,31 +37,44 @@
           active-class="active"
           @click="mobileOpen = false"
         >
-          <component :is="item.icon" :size="18" />
-          <span>{{ item.label }}</span>
+          <div class="nav-item-inner">
+            <component :is="item.icon" :size="18" class="nav-icon" />
+            <span>{{ item.label }}</span>
+          </div>
         </router-link>
       </nav>
 
       <div class="notice-card">
-        <ShieldCheck :size="18" />
+        <ShieldCheck :size="16" class="notice-icon" />
         <div>
-          <strong>信息展示服务</strong>
-          <p>平台仅展示车位信息，支付信息服务费后解锁联系方式。</p>
+          <strong>信息共享服务</strong>
+          <p>平台仅作车位信息聚合。解锁联系方式后自行沟通后续交易。</p>
         </div>
       </div>
 
       <div class="sidebar-footer">
+        <div class="theme-toggle-row">
+          <span class="theme-label">
+            <Sun v-if="theme === 'dark'" :size="15" />
+            <Moon v-else :size="15" />
+            <span>{{ theme === 'dark' ? '暗色模式' : '亮色模式' }}</span>
+          </span>
+          <button type="button" class="theme-toggle-switch" :aria-label="theme === 'light' ? '切换至暗色模式' : '切换至亮色模式'" @click="toggleTheme">
+            <span class="toggle-slider" :class="{ 'is-dark': theme === 'dark' }"></span>
+          </button>
+        </div>
+
         <template v-if="userStore.isLoggedIn">
           <router-link to="/profile" class="user-card" @click="mobileOpen = false">
             <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar" />
-            <span>
+            <div class="user-info">
               <strong>{{ userStore.user?.nickname }}</strong>
-              <small>我的解锁与发布</small>
-            </span>
+              <small>{{ userStore.user?.phone }}</small>
+            </div>
           </router-link>
           <button type="button" class="logout-btn" @click="handleLogout">
-            <LogOut :size="16" />
-            退出登录
+            <LogOut :size="14" />
+            <span>退出登录</span>
           </button>
         </template>
         <router-link v-else to="/login" class="login-btn" @click="mobileOpen = false">
@@ -67,15 +86,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Boxes, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound } from '@lucide/vue'
+import { Boxes, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
 
 const userStore = useUserStore()
 const router = useRouter()
 const mobileOpen = ref(false)
-const defaultAvatar = 'https://api.dicebear.com/7.x/bottts/svg?seed=busgpt'
+const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
+
+const theme = ref<'light' | 'dark'>('light')
+
+const initTheme = () => {
+  const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+  if (savedTheme) {
+    theme.value = savedTheme
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    theme.value = prefersDark ? 'dark' : 'light'
+  }
+  document.documentElement.setAttribute('data-theme', theme.value)
+}
+
+const toggleTheme = () => {
+  theme.value = theme.value === 'light' ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', theme.value)
+  localStorage.setItem('theme', theme.value)
+}
+
+onMounted(() => {
+  initTheme()
+})
 
 const navItems = computed(() => [
   { to: '/', label: '首页市场', icon: Home },
@@ -106,41 +148,60 @@ const handleLogout = () => {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--spacing-md);
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--bg-glass);
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.mobile-logo,
-.brand {
+.mobile-top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.mobile-logo {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   color: var(--text-primary);
   font-weight: 800;
+  text-decoration: none;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  text-decoration: none;
 }
 
 .logo-mark {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
-  background: var(--text-primary);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   color: var(--text-inverse);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
 }
 
 .icon-btn {
   display: inline-flex;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
   color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 .sidebar {
@@ -150,152 +211,215 @@ const handleLogout = () => {
   width: 248px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
+  box-shadow: var(--sidebar-shadow);
 }
 
 .sidebar-scrim {
   display: none;
+  background: transparent;
+  border: none;
 }
 
 .sidebar-panel {
   display: flex;
   height: 100%;
   flex-direction: column;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-md);
 }
 
 .brand-block {
-  padding-bottom: var(--spacing-lg);
+  padding: 0 var(--spacing-sm) var(--spacing-lg) var(--spacing-sm);
   border-bottom: 1px solid var(--border-color);
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+}
+
+.brand-text strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
 .brand-text small {
   color: var(--text-muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .nav-list {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--spacing-xs);
   padding: var(--spacing-lg) 0;
 }
 
 .nav-item {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--border-radius-md);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+}
+
+.nav-item-inner {
   display: flex;
   min-height: 42px;
   align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  border-radius: var(--border-radius-md);
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 800;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  gap: 12px;
+  padding: 0 14px;
 }
 
-.nav-item:hover,
+.nav-icon {
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.nav-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.nav-item:hover .nav-icon {
+  color: var(--text-primary);
+}
+
 .nav-item.active {
   color: var(--text-primary);
-  background: var(--bg-inset);
+  background: var(--bg-tertiary);
+  font-weight: 700;
+  box-shadow: inset 4px 0 0 var(--text-primary);
 }
 
-.nav-item.active {
-  box-shadow: inset 3px 0 0 var(--color-primary);
+.nav-item.active .nav-icon {
+  color: var(--text-primary);
 }
 
 .notice-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(15, 106, 191, 0.18);
-  border-radius: var(--border-radius-lg);
-  background: var(--color-info-soft);
-  color: var(--color-info);
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.notice-icon {
+  color: var(--color-plus);
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .notice-card strong {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .notice-card p {
-  color: #315a78;
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
   line-height: 1.5;
 }
 
 .sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-top: var(--spacing-md);
+  gap: 12px;
+  padding-top: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
 }
 
 .user-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
+  display: flex;
+  gap: 12px;
   align-items: center;
-  color: var(--text-primary);
+  text-decoration: none;
+  padding: 6px;
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
 }
 
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--border-radius-full);
+.user-card:hover {
   background: var(--bg-tertiary);
 }
 
-.user-card span {
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--border-color);
+}
+
+.user-info {
   display: flex;
   min-width: 0;
   flex-direction: column;
 }
 
-.user-card strong {
+.user-info strong {
   overflow: hidden;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
+  color: var(--text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.user-card small {
+.user-info small {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
-.login-btn,
-.logout-btn {
+.login-btn {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 42px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border-radius: var(--border-radius-md);
   font-size: 13px;
-  font-weight: 800;
-}
-
-.login-btn {
+  font-weight: 700;
+  text-decoration: none;
   color: var(--text-inverse);
   background: var(--color-primary);
+  transition: background-color var(--transition-fast);
+}
+
+.login-btn:hover {
+  background: var(--color-primary-hover);
 }
 
 .logout-btn {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--border-radius-md);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.logout-btn:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 @media (max-width: 768px) {
@@ -308,6 +432,8 @@ const handleLogout = () => {
     pointer-events: none;
     background: transparent;
     border-right: 0;
+    box-shadow: none;
+    transform: none;
   }
 
   .sidebar-scrim {
@@ -315,12 +441,14 @@ const handleLogout = () => {
     position: fixed;
     inset: 0;
     opacity: 0;
-    background: rgba(25, 31, 36, 0.28);
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     transition: opacity var(--transition-normal);
   }
 
   .sidebar-panel {
-    width: 286px;
+    width: 280px;
     max-width: calc(100vw - 40px);
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
@@ -339,5 +467,62 @@ const handleLogout = () => {
   .sidebar.open .sidebar-panel {
     transform: translateX(0);
   }
+}
+
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.theme-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.theme-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--border-radius-full);
+  background: var(--border-color-strong);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color var(--transition-fast);
+}
+
+.theme-toggle-switch:focus {
+  outline: none;
+}
+
+[data-theme="dark"] .theme-toggle-switch {
+  background: var(--color-success);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-secondary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform var(--transition-fast);
+}
+
+.toggle-slider.is-dark {
+  transform: translateX(18px);
 }
 </style>

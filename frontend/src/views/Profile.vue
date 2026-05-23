@@ -1,37 +1,43 @@
 <template>
   <div class="profile-page container">
+    <!-- Profile Header Banner -->
     <header class="profile-header surface-card">
       <div class="profile-main">
-        <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar-large" />
-        <div>
-          <span class="eyebrow">账户中心</span>
-          <h1>{{ userStore.user?.nickname }}</h1>
-          <p>{{ userStore.user?.phone }} · 注册于 {{ formattedRegisterDate }}</p>
+        <div class="avatar-wrap">
+          <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar-large" />
+          <span class="online-dot"></span>
+        </div>
+        <div class="user-meta">
+          <span class="eyebrow">账户控制中心</span>
+          <h1 class="user-name">{{ userStore.user?.nickname }}</h1>
+          <p class="user-sub">{{ userStore.user?.phone }} · 加入于 {{ formattedRegisterDate }}</p>
         </div>
       </div>
-      <router-link to="/create" class="btn btn-primary">
+      <router-link to="/create" class="btn btn-primary publish-shortcut-btn">
         <PlusCircle :size="16" />
-        发布车位
+        <span>发布新车位</span>
       </router-link>
     </header>
 
+    <!-- Stats grid -->
     <section class="stat-grid">
       <div class="stat-card surface-card">
-        <span>我的解锁</span>
-        <strong>{{ orders.length }}</strong>
+        <span class="stat-label">我解锁的联系方式</span>
+        <strong class="stat-value">{{ orders.length }} <small>个</small></strong>
       </div>
       <div class="stat-card surface-card">
-        <span>我的发布</span>
-        <strong>{{ ownedRides.length }}</strong>
+        <span class="stat-label">我发布的拼车车位</span>
+        <strong class="stat-value">{{ ownedRides.length }} <small>个</small></strong>
       </div>
       <div class="stat-card surface-card">
-        <span>信息服务收入</span>
-        <strong>¥{{ formatMoney(sales?.total_revenue || 0) }}</strong>
+        <span class="stat-label">信息解锁累计收益</span>
+        <strong class="stat-value text-purple">¥{{ formatMoney(sales?.total_revenue || 0) }}</strong>
       </div>
     </section>
 
+    <!-- Workspace -->
     <section class="workspace surface-card">
-      <div class="tabs">
+      <div class="workspace-tabs">
         <button
           v-for="tab in tabs"
           :key="tab.value"
@@ -40,54 +46,57 @@
           :class="{ active: activeTab === tab.value }"
           @click="activeTab = tab.value"
         >
-          <component :is="tab.icon" :size="16" />
-          {{ tab.label }}
+          <component :is="tab.icon" :size="15" />
+          <span>{{ tab.label }}</span>
         </button>
       </div>
 
       <div v-if="loading" class="loading-container">
         <div class="spinner"></div>
-        <p>加载账户信息中</p>
+        <p>正在获取您的账户数据...</p>
       </div>
 
       <div v-else class="tab-content">
+        <!-- Tab 1: Unlocked Contacts (My Orders) -->
         <div v-if="activeTab === 'orders'" class="table-wrap">
           <div v-if="orders.length === 0" class="empty-state">
-            <ReceiptText :size="34" />
+            <ReceiptText :size="38" class="empty-icon" />
             <h3>暂无解锁记录</h3>
-            <p>在详情页支付信息服务费后，联系方式会记录在这里。</p>
-            <router-link to="/market" class="btn btn-primary">发现车位</router-link>
+            <p>在车位详情页成功支付服务费后，解锁的车主联络方式会记录在这里。</p>
+            <router-link to="/market" class="btn btn-primary">去市场挑选车位</router-link>
           </div>
           <table v-else class="records-table">
             <thead>
               <tr>
-                <th>车位</th>
-                <th>产品</th>
+                <th>共享车位</th>
+                <th>产品类型</th>
                 <th>拼车进度</th>
-                <th>服务费</th>
+                <th>解锁服务费</th>
                 <th>解锁时间</th>
-                <th>联系方式</th>
+                <th class="text-right">车主联系方式</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="order in orders" :key="order.id">
                 <td>
-                  <router-link :to="`/ride/${order.ride_id}`" class="record-title">{{ order.ride_title || '已删除车位' }}</router-link>
-                  <small>订单号 #{{ order.id }}</small>
+                  <router-link :to="`/ride/${order.ride_id}`" class="record-title">{{ order.ride_title || '已失效车位' }}</router-link>
+                  <small class="order-id">订单号 #{{ order.id }}</small>
                 </td>
-                <td>{{ productLabel(order.ride_product) }}</td>
+                <td>
+                  <span class="product-chip" :class="order.ride_product">{{ productLabel(order.ride_product) }}</span>
+                </td>
                 <td>
                   <div class="seat-metric">
-                    <strong>{{ order.ride_purchase_count || 0 }}/{{ order.ride_total_seats || 0 }}</strong>
-                    <span>还差 {{ order.ride_remaining_seats || 0 }} 人</span>
+                    <strong>已拼 {{ order.ride_purchase_count || 0 }}/{{ order.ride_total_seats || 0 }} 人</strong>
+                    <span>空余 {{ order.ride_remaining_seats || 0 }} 个名额</span>
                   </div>
                 </td>
                 <td>¥{{ formatMoney(order.amount) }}</td>
-                <td>{{ formatDate(order.created_at) }}</td>
-                <td>
-                  <button class="copy-btn" type="button" @click="copyText(order.ride_contact_info || '')">
-                    <Copy :size="14" />
-                    复制
+                <td class="date-col">{{ formatDate(order.created_at) }}</td>
+                <td class="text-right">
+                  <button class="btn-copy" type="button" @click="copyText(order.ride_contact_info || '', order.id)">
+                    <Copy :size="13" />
+                    <span>{{ copyStates[order.id] ? '已复制' : '复制资料' }}</span>
                   </button>
                 </td>
               </tr>
@@ -95,63 +104,73 @@
           </table>
         </div>
 
+        <!-- Tab 2: Hosted Rides -->
         <div v-if="activeTab === 'published'" class="published-section">
           <div v-if="ownedRides.length === 0" class="empty-state">
-            <PackageOpen :size="34" />
-            <h3>还没有发布车位</h3>
-            <p>发布后可以在这里查看状态和解锁次数。</p>
-            <router-link to="/create" class="btn btn-primary">发布车位</router-link>
+            <PackageOpen :size="38" class="empty-icon" />
+            <h3>还没有发布过车位</h3>
+            <p>您可以将您多余的 ChatGPT 订阅位发布在此，让他人分摊月费。</p>
+            <router-link to="/create" class="btn btn-primary">发布共享车位</router-link>
           </div>
           <div v-else class="rides-grid">
             <RideCard v-for="ride in ownedRides" :key="ride.id" :ride="ride" />
           </div>
         </div>
 
+        <!-- Tab 3: Sales Stats -->
         <div v-if="activeTab === 'sales'" class="sales-section">
-          <div class="sales-summary">
-            <div>
-              <span>总订单</span>
-              <strong>{{ sales?.total_orders || 0 }}</strong>
+          <div class="sales-summary-cards">
+            <div class="summary-card">
+              <span>车主服务订单总数</span>
+              <strong>{{ sales?.total_orders || 0 }} 笔</strong>
             </div>
-            <div>
-              <span>总收入</span>
-              <strong>¥{{ formatMoney(sales?.total_revenue || 0) }}</strong>
+            <div class="summary-card">
+              <span>解锁总收益</span>
+              <strong class="text-purple">¥{{ formatMoney(sales?.total_revenue || 0) }}</strong>
             </div>
           </div>
-          <table class="records-table">
-            <thead>
-              <tr>
-                <th>发布车位</th>
-                <th>解锁次数</th>
-                <th>拼车人数</th>
-                <th>服务费收入</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in sales?.rides || []" :key="item.ride_id">
-                <td>
-                  <router-link :to="`/ride/${item.ride_id}`" class="record-title">{{ item.ride_title }}</router-link>
-                </td>
-                <td>{{ item.order_count }}</td>
-                <td>{{ item.order_count }}/{{ item.total_seats }} · 还差 {{ item.remaining_seats }} 人</td>
-                <td>¥{{ formatMoney(item.revenue) }}</td>
-              </tr>
-              <tr v-if="!sales?.rides?.length">
-                <td colspan="4" class="empty-cell">暂无销售记录</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>发布的车位标题</th>
+                  <th>车友解锁次数</th>
+                  <th>车位当前载员</th>
+                  <th>信息费累计收益</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in sales?.rides || []" :key="item.ride_id">
+                  <td>
+                    <router-link :to="`/ride/${item.ride_id}`" class="record-title">{{ item.ride_title }}</router-link>
+                  </td>
+                  <td>{{ item.order_count }} 次被解锁</td>
+                  <td>
+                    <div class="seat-metric">
+                      <strong>{{ item.order_count }}/{{ item.total_seats }} 人</strong>
+                      <span>空位 {{ item.remaining_seats }} 个</span>
+                    </div>
+                  </td>
+                  <td>¥{{ formatMoney(item.revenue) }}</td>
+                </tr>
+                <tr v-if="!sales?.rides?.length">
+                  <td colspan="4" class="empty-cell">暂无车友解锁您的车位</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
+        <!-- Tab 4: Settings -->
         <div v-if="activeTab === 'settings'" class="settings-section">
           <form class="settings-form" @submit.prevent="handleSave">
             <div class="form-group">
-              <label class="form-label" for="nickname">昵称</label>
+              <label class="form-label" for="nickname">设置新的昵称</label>
               <input id="nickname" v-model.trim="editForm.nickname" class="form-control" type="text" required />
             </div>
-            <button type="submit" class="btn btn-primary" :disabled="saving">
+            <button type="submit" class="btn btn-primary submit-btn-save" :disabled="saving">
               <Save :size="16" />
-              {{ saving ? '保存中...' : '保存资料' }}
+              <span>{{ saving ? '正在保存修改...' : '更新账户信息' }}</span>
             </button>
             <p v-if="saveMessage" class="save-message">{{ saveMessage }}</p>
           </form>
@@ -187,7 +206,7 @@ interface SalesSummary {
 }
 
 const userStore = useUserStore()
-const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt'
+const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
 const loading = ref(true)
 const saving = ref(false)
 const saveMessage = ref('')
@@ -195,12 +214,13 @@ const activeTab = ref<'orders' | 'published' | 'sales' | 'settings'>('orders')
 const orders = ref<Order[]>([])
 const ownedRides = ref<Ride[]>([])
 const sales = ref<SalesSummary | null>(null)
+const copyStates = ref<Record<string, boolean>>({})
 
 const tabs = [
   { value: 'orders' as const, label: '我的解锁', icon: markRaw(ReceiptText) },
   { value: 'published' as const, label: '我的发布', icon: markRaw(PackageOpen) },
   { value: 'sales' as const, label: '销售统计', icon: markRaw(FileChartColumn) },
-  { value: 'settings' as const, label: '资料设置', icon: markRaw(Settings) },
+  { value: 'settings' as const, label: '账户设置', icon: markRaw(Settings) },
 ]
 
 const editForm = reactive({
@@ -239,23 +259,27 @@ const handleSave = async () => {
   saveMessage.value = ''
   try {
     await userStore.updateProfile(editForm.nickname)
-    saveMessage.value = '资料已保存'
-  } catch (err) {
-    saveMessage.value = '保存失败，请稍后重试'
+    saveMessage.value = '基本信息已成功更新'
+  } catch {
+    saveMessage.value = '更新失败，请稍后重试'
   } finally {
     saving.value = false
   }
 }
 
-const copyText = async (text: string) => {
+const copyText = async (text: string, id: number) => {
   if (!text) return
   await navigator.clipboard.writeText(text)
+  copyStates.value[id] = true
+  setTimeout(() => {
+    copyStates.value[id] = false
+  }, 1800)
 }
 
 const productLabel = (product?: string) => {
-  if (product === 'chatgpt-team') return 'Team'
-  if (product === 'chatgpt-pro') return 'Pro'
-  if (product === 'chatgpt-plus') return 'Plus'
+  if (product === 'chatgpt-team') return 'Team 协作'
+  if (product === 'chatgpt-pro') return 'Pro 极客'
+  if (product === 'chatgpt-plus') return 'Plus 拼车'
   return '-'
 }
 
@@ -278,8 +302,10 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: linear-gradient(135deg, #ffffff 0%, var(--bg-tertiary) 100%);
+  border-color: var(--border-color-strong);
 }
 
 .profile-main {
@@ -288,25 +314,50 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   gap: var(--spacing-md);
 }
 
+.avatar-wrap {
+  position: relative;
+}
+
 .avatar-large {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border-radius: var(--border-radius-full);
   background: var(--bg-tertiary);
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
-.profile-main h1 {
-  margin: 4px 0;
-  color: var(--text-primary);
+.online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--color-success);
+  border: 2px solid #ffffff;
+  border-radius: var(--border-radius-full);
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: var(--spacing-xs) 0;
+  letter-spacing: -0.02em;
 }
 
-.profile-main p {
+.user-sub {
   color: var(--text-secondary);
   font-size: 13px;
+  margin: 0;
 }
 
+/* Stats dashboard */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -314,33 +365,45 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .stat-card {
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.stat-card span,
-.sales-summary span {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text-muted);
+.stat-label {
+  color: var(--text-secondary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
-.stat-card strong,
-.sales-summary strong {
+.stat-value {
   color: var(--text-primary);
-  font-size: 24px;
-  font-weight: 900;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
+.stat-value small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.text-purple {
+  color: var(--color-pro);
+}
+
+/* Workspace tab content */
 .workspace {
+  border-color: var(--border-color-strong);
   overflow: hidden;
 }
 
-.tabs {
+.workspace-tabs {
   display: flex;
   gap: 4px;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-inset);
 }
@@ -349,22 +412,31 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   display: inline-flex;
   min-height: 38px;
   align-items: center;
-  gap: 7px;
-  padding: 0 13px;
+  gap: 8px;
+  padding: 0 16px;
   border-radius: var(--border-radius-md);
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .tab-btn.active {
   color: var(--text-primary);
   background: var(--bg-secondary);
-  box-shadow: 0 1px 2px rgba(25, 31, 36, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .tab-content {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
 }
 
 .table-wrap {
@@ -374,69 +446,144 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .records-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 720px;
-}
-
-.records-table th,
-.records-table td {
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--border-color);
-  text-align: left;
-  vertical-align: middle;
+  min-width: 800px;
 }
 
 .records-table th {
+  padding: 12px;
+  border-bottom: 2px solid var(--border-color);
   color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
 }
 
 .records-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
+  vertical-align: middle;
 }
 
 .record-title {
   display: block;
-  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--text-primary);
-  font-weight: 900;
+  text-decoration: none;
+  margin-bottom: 2px;
 }
 
-.records-table small {
+.record-title:hover {
+  text-decoration: underline;
+}
+
+.order-id {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .seat-metric {
   display: flex;
   flex-direction: column;
-  gap: 3px;
 }
 
 .seat-metric strong {
-  color: var(--text-primary);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .seat-metric span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.date-col {
   color: var(--text-muted);
   font-size: 12px;
 }
 
-.copy-btn {
+.btn-copy {
   display: inline-flex;
-  min-height: 32px;
+  height: 30px;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 0 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-copy:hover {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border-color: var(--text-primary);
+}
+
+/* Sales breakdown */
+.sales-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.summary-card {
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 900;
+  background: var(--bg-inset);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-card span {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.summary-card strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--spacing-lg) 0;
+}
+
+/* Settings Form */
+.settings-form {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.submit-btn-save {
+  align-self: flex-start;
+  min-width: 140px;
+}
+
+.save-message {
+  font-size: 13px;
+  color: var(--color-success);
+  font-weight: 700;
+  margin: 0;
 }
 
 .rides-grid {
@@ -445,56 +592,35 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   gap: var(--spacing-md);
 }
 
-.sales-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.sales-summary div {
-  padding: var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-inset);
-}
-
-.empty-cell {
+.empty-icon {
   color: var(--text-muted);
-  text-align: center;
 }
 
-.settings-form {
-  max-width: 420px;
-}
-
-.save-message {
-  margin-top: var(--spacing-sm);
-  color: var(--color-primary);
-  font-size: 13px;
-  font-weight: 900;
-}
-
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
   .rides-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .profile-header {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
   }
-
+  .publish-shortcut-btn {
+    width: 100%;
+  }
   .stat-grid,
-  .sales-summary,
+  .sales-summary-cards {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+  .workspace-tabs {
+    overflow-x: auto;
+  }
   .rides-grid {
     grid-template-columns: 1fr;
-  }
-
-  .tabs {
-    overflow-x: auto;
   }
 }
 </style>

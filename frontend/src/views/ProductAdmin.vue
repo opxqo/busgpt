@@ -122,7 +122,7 @@ const loadProducts = async () => {
   try {
     const res = await ridesApi.getProducts()
     productForms.value = res.data.map((product: Product) => ({ ...product }))
-  } catch (err) {
+  } catch {
     message.value = '产品信息加载失败，请稍后重试'
   } finally {
     loading.value = false
@@ -137,7 +137,7 @@ const saveProduct = async (product: Product) => {
     const res = await ridesApi.updateProduct(type, payload)
     Object.assign(product, res.data)
     message.value = `${product.label} 已保存`
-  } catch (err) {
+  } catch {
     message.value = '保存失败，请确认当前账号拥有管理员权限'
   } finally {
     savingType.value = ''
