@@ -1,0 +1,124 @@
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import text
+
+from app.config import settings
+
+# Create async engine and sessionmaker
+async_engine = create_async_engine(settings.async_database_url, echo=True)
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+    class_=AsyncSession
+)
+
+# Create sync engine for startup/admin tasks
+sync_engine = create_engine(settings.sync_database_url, echo=False)
+SessionLocal = sessionmaker(bind=sync_engine, autocommit=False, autoflush=False)
+
+Base = declarative_base()
+
+# Async database session dependency
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+def _ensure_column(conn, table_name: str, column_name: str, definition: str):
+    exists = conn.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = :schema
+              AND TABLE_NAME = :table_name
+              AND COLUMN_NAME = :column_name
+            """
+        ),
+        {
+            "schema": settings.DB_NAME,
+            "table_name": table_name,
+            "column_name": column_name,
+        },
+    ).scalar()
+    if not exists:
+        conn.execute(text(f"ALTER TABLE `{table_name}` ADD COLUMN `{column_name}` {definition}"))
+
+
+def _run_lightweight_migrations():
+    with sync_engine.begin() as conn:
+        _ensure_column(conn, "users", "role", "VARCHAR(20) NOT NULL DEFAULT 'user'")
+        _ensure_column(conn, "rides", "contact_info", "TEXT")
+        _ensure_column(conn, "rides", "contact_price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
+        conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+        conn.execute(text("UPDATE rides SET status = 'open' WHERE status = 'full'"))
+
+
+# Synchronously ensure the database exists and create all tables
+def init_db():
+    # Connect without database name first to create it
+    temp_engine = create_engine(settings.root_sync_database_url, echo=False)
+    with temp_engine.connect() as conn:
+        conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {settings.DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"))
+        conn.commit()
+    temp_engine.dispose()
+
+    # Import models here to ensure they are registered on Base
+    from app.models.user import User
+    from app.models.ride import Ride
+    from app.models.product import Product
+    from app.models.order import Order
+
+    # Create tables
+    Base.metadata.create_all(bind=sync_engine)
+    _run_lightweight_migrations()
+
+    # Seed initial product data
+    db = SessionLocal()
+    try:
+        # Check if products already seeded
+        existing = db.query(Product).first()
+        if not existing:
+            products = [
+                Product(
+                    type="chatgpt-plus",
+                    label="Plus",
+                    official_price=20.00,
+                    color="#10b981",
+                    max_seats=4,
+                    description="GPT-4o、DALL·E、高级语音"
+                ),
+                Product(
+                    type="chatgpt-team",
+                    label="Team",
+                    official_price=25.00,
+                    color="#3b82f6",
+                    max_seats=10,
+                    description="团队协作、更高限额、管理后台"
+                ),
+                Product(
+                    type="chatgpt-pro",
+                    label="Pro",
+                    official_price=200.00,
+                    color="#f59e0b",
+                    max_seats=5,
+                    description="无限制 GPT-4o、o1 pro、最高优先级"
+                )
+            ]
+            db.add_all(products)
+            db.commit()
+            print("Successfully seeded product types.")
+    except Exception as e:
+        db.rollback()
+        print(f"Error seeding database: {e}")
+    finally:
+        db.close()
