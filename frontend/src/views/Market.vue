@@ -281,6 +281,7 @@ onMounted(() => {
 
 .product-tabs {
   display: flex;
+  min-width: 0;
   gap: 4px;
   padding: 4px;
   background: var(--bg-inset);
@@ -297,6 +298,7 @@ onMounted(() => {
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -372,6 +374,10 @@ onMounted(() => {
   .product-tabs {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
   }
   .select-wrapper select {
     width: 100%;

@@ -1,7 +1,22 @@
 <template>
   <div class="home-page">
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section ref="heroSection" class="hero-section">
+      <div class="hero-bg-pattern" aria-hidden="true">
+        <div
+          class="hero-bg-track"
+          :style="{
+            gridTemplateColumns: `repeat(${heroPatternCols}, var(--hero-pattern-cell-size))`,
+            width: `${heroPatternCols * HERO_PATTERN_CELL_SIZE}px`,
+            height: `${heroPatternRows * HERO_PATTERN_CELL_SIZE}px`,
+          }"
+        >
+          <span v-for="tile in heroPatternTiles" :key="tile" class="hero-bg-tile">
+            <span class="hero-bg-dot"></span>
+            <span class="hero-bg-plus"></span>
+          </span>
+        </div>
+      </div>
       <div class="hero-container container">
         <div class="hero-content">
           <div class="badge-container">
@@ -66,25 +81,6 @@
         </div>
       </div>
 
-      <div class="filter-toolbar surface-card">
-        <div class="search-input-wrapper">
-          <Search :size="18" class="search-icon" />
-          <input v-model="query" type="search" placeholder="搜索 Plus, Team, Pro 或车主关键词" @input="handleSearch" />
-        </div>
-        <div class="tabs-list" role="tablist">
-          <button
-            v-for="tab in productTabs"
-            :key="tab.value"
-            type="button"
-            class="tab-item"
-            :class="{ active: activeProduct === tab.value }"
-            @click="selectProduct(tab.value)"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-      </div>
-
       <!-- Carousel -->
       <div v-if="loading" class="loading-container">
         <div class="spinner"></div>
@@ -96,18 +92,27 @@
         <p>稍后再来看看，或者自己发布一个订阅车位，吸引车友拼车。</p>
         <router-link to="/create" class="btn btn-primary">发布车位</router-link>
       </div>
-      <div v-else class="carousel-outer">
-        <button type="button" class="carousel-arrow left" @click="scrollLeft" aria-label="向左滑动">
+      <div
+        v-else
+        class="carousel-outer"
+        @touchstart="pauseCarousel"
+        @touchend="resumeCarousel"
+      >
+        <button type="button" class="carousel-arrow left" @click="showPreviousRide" aria-label="向左滑动">
           <ChevronLeft :size="20" />
         </button>
         
-        <div class="carousel-track" ref="carouselTrack">
+        <div
+          class="carousel-track"
+          :style="{ transform: `translateX(calc(-${activeCarouselIndex} * var(--carousel-step)))` }"
+          ref="carouselTrack"
+        >
           <div v-for="ride in rides" :key="ride.id" class="carousel-slide">
             <RideCard :ride="ride" />
           </div>
         </div>
 
-        <button type="button" class="carousel-arrow right" @click="scrollRight" aria-label="向右滑动">
+        <button type="button" class="carousel-arrow right" @click="showNextRide" aria-label="向右滑动">
           <ChevronRight :size="20" />
         </button>
       </div>
@@ -257,7 +262,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   BarChart3,
   ChevronLeft,
@@ -272,26 +277,28 @@ import {
 } from '@lucide/vue'
 import { ridesApi } from '../api/rides'
 import RideCard from '../components/ride/RideCard.vue'
-import type { ProductType, Ride } from '../types'
+import type { Ride } from '../types'
 
 const rides = ref<Ride[]>([])
 const loading = ref(true)
-const query = ref('')
-const activeProduct = ref<ProductType | ''>('')
+const heroSection = ref<HTMLElement | null>(null)
+const heroPatternCols = ref(0)
+const heroPatternRows = ref(0)
 const carouselTrack = ref<HTMLElement | null>(null)
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
+const carouselPaused = ref(false)
+const activeCarouselIndex = ref(0)
+const visibleRideCount = ref(3)
+let carouselTimer: ReturnType<typeof setInterval> | null = null
+let carouselFirstMoveTimer: ReturnType<typeof setTimeout> | null = null
+let resizeTimer: ReturnType<typeof setTimeout> | null = null
+const HERO_PATTERN_CELL_SIZE = 36
+
+const heroPatternTiles = computed(() => heroPatternCols.value * heroPatternRows.value)
 
 const steps = [
   { title: '挑选心仪车位', desc: '对比月费租金、拼车人数、使用期限及车主公开的详细拼车说明。' },
   { title: '解锁联系方式', desc: '模拟完成服务费支付，即可实时揭晓车主的联系账号。' },
   { title: '自行对接拼车', desc: '添加车主微信或 Telegram，私下沟通订阅细节，完成搭车。' },
-]
-
-const productTabs: { label: string; value: ProductType | '' }[] = [
-  { label: '全部推荐', value: '' },
-  { label: 'ChatGPT Plus', value: 'chatgpt-plus' },
-  { label: 'ChatGPT Team', value: 'chatgpt-team' },
-  { label: 'ChatGPT Pro', value: 'chatgpt-pro' },
 ]
 
 // Simulated Data for charts
@@ -303,45 +310,103 @@ const rankingData = [
   { title: 'Team 高性价比 10人车，随时加入', label: 'Team 协作', product: 'chatgpt-team', unlocks: 15, color: 'var(--color-team)' },
 ]
 
-const scrollLeft = () => {
-  if (carouselTrack.value) {
-    carouselTrack.value.scrollBy({ left: -340, behavior: 'smooth' })
+const maxCarouselIndex = computed(() => Math.max(rides.value.length - visibleRideCount.value, 0))
+
+const syncVisibleRideCount = () => {
+  if (window.innerWidth <= 680) visibleRideCount.value = 1
+  else if (window.innerWidth <= 1080) visibleRideCount.value = 2
+  else visibleRideCount.value = 3
+
+  activeCarouselIndex.value = Math.min(activeCarouselIndex.value, maxCarouselIndex.value)
+}
+
+const renderHeroPattern = () => {
+  const rect = heroSection.value?.getBoundingClientRect()
+  const padding = HERO_PATTERN_CELL_SIZE * 8
+  const width = rect?.width || window.innerWidth
+  const height = rect?.height || window.innerHeight
+
+  heroPatternCols.value = Math.ceil((width + padding * 2) / HERO_PATTERN_CELL_SIZE)
+  heroPatternRows.value = Math.ceil((height + padding * 2) / HERO_PATTERN_CELL_SIZE)
+}
+
+const handleResize = () => {
+  syncVisibleRideCount()
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(renderHeroPattern, 120)
+}
+
+const showPreviousRide = () => {
+  activeCarouselIndex.value =
+    activeCarouselIndex.value <= 0 ? maxCarouselIndex.value : activeCarouselIndex.value - 1
+}
+
+const showNextRide = () => {
+  activeCarouselIndex.value =
+    activeCarouselIndex.value >= maxCarouselIndex.value ? 0 : activeCarouselIndex.value + 1
+}
+
+const pauseCarousel = () => {
+  carouselPaused.value = true
+}
+
+const resumeCarousel = () => {
+  carouselPaused.value = false
+}
+
+const stopCarousel = () => {
+  if (carouselFirstMoveTimer) {
+    clearTimeout(carouselFirstMoveTimer)
+    carouselFirstMoveTimer = null
+  }
+
+  if (carouselTimer) {
+    clearInterval(carouselTimer)
+    carouselTimer = null
   }
 }
 
-const scrollRight = () => {
-  if (carouselTrack.value) {
-    carouselTrack.value.scrollBy({ left: 340, behavior: 'smooth' })
-  }
+const startCarousel = () => {
+  if (carouselTimer) clearInterval(carouselTimer)
+
+  carouselTimer = setInterval(() => {
+    if (!carouselPaused.value) {
+      showNextRide()
+    }
+  }, 3200)
 }
 
 const fetchRides = async () => {
   loading.value = true
   try {
-    const res = await ridesApi.getRides({
-      product: activeProduct.value,
-      query: query.value,
-    })
+    const res = await ridesApi.getRides()
     rides.value = res.data
   } catch (err) {
     console.error('Failed to load rides', err)
     rides.value = []
   } finally {
     loading.value = false
+    activeCarouselIndex.value = 0
+    stopCarousel()
+    carouselFirstMoveTimer = setTimeout(() => {
+      carouselFirstMoveTimer = null
+      if (!carouselPaused.value) showNextRide()
+      startCarousel()
+    }, 900)
   }
 }
 
-const handleSearch = () => {
-  if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(fetchRides, 300)
-}
-
-const selectProduct = (product: ProductType | '') => {
-  activeProduct.value = product
+onMounted(() => {
+  syncVisibleRideCount()
+  renderHeroPattern()
+  window.addEventListener('resize', handleResize)
   fetchRides()
-}
-
-onMounted(fetchRides)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  if (resizeTimer) clearTimeout(resizeTimer)
+  stopCarousel()
+})
 </script>
 
 <style scoped>
@@ -355,13 +420,131 @@ onMounted(fetchRides)
 .hero-section {
   position: relative;
   padding: var(--spacing-xxl) 0;
-  background-color: var(--bg-secondary);
-  background-image: radial-gradient(var(--border-color-strong) 0.8px, transparent 0.8px);
-  background-size: 24px 24px;
+  overflow: hidden;
   border-bottom: 1px solid var(--border-color);
+  --hero-pattern-bg: #fbfaf8;
+  --hero-pattern-cell-size: 36px;
+  --hero-pattern-half-move-size: -36px;
+  --hero-pattern-move-size: -72px;
+  --hero-pattern-color: 174, 140, 98;
+  --hero-pattern-dot-opacity: 0.4;
+  --hero-pattern-icon-opacity: 0.46;
+  --hero-pattern-duration: 7.6s;
+  --hero-pattern-ease: cubic-bezier(0.45, 0, 0.12, 1);
+  background-color: var(--hero-pattern-bg);
+}
+
+[data-theme="dark"] .hero-section {
+  --hero-pattern-bg: #181816;
+  --hero-pattern-color: 243, 240, 233;
+  --hero-pattern-dot-opacity: 0.22;
+  --hero-pattern-icon-opacity: 0.3;
+}
+
+.hero-bg-pattern {
+  position: absolute;
+  inset: -90px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-bg-track {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  grid-auto-rows: var(--hero-pattern-cell-size);
+  will-change: transform;
+  animation: hero-bg-drift var(--hero-pattern-duration) var(--hero-pattern-ease) infinite;
+}
+
+.hero-bg-tile {
+  position: relative;
+  width: var(--hero-pattern-cell-size);
+  height: var(--hero-pattern-cell-size);
+}
+
+.hero-bg-dot,
+.hero-bg-plus {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  will-change: opacity, transform;
+  animation-duration: var(--hero-pattern-duration);
+  animation-timing-function: var(--hero-pattern-ease);
+  animation-iteration-count: infinite;
+}
+
+.hero-bg-dot {
+  width: 4.8px;
+  height: 4.8px;
+  border-radius: var(--border-radius-full);
+  background: rgba(var(--hero-pattern-color), var(--hero-pattern-dot-opacity));
+  animation-name: hero-dot-morph;
+}
+
+.hero-bg-plus {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  background: rgba(var(--hero-pattern-color), var(--hero-pattern-icon-opacity));
+  mask: url('/icons/openai.svg') center / contain no-repeat;
+  -webkit-mask: url('/icons/openai.svg') center / contain no-repeat;
+  animation-name: hero-plus-morph;
+}
+
+@keyframes hero-bg-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(var(--hero-pattern-half-move-size), var(--hero-pattern-half-move-size), 0);
+  }
+
+  100% {
+    transform: translate3d(var(--hero-pattern-move-size), var(--hero-pattern-move-size), 0);
+  }
+}
+
+@keyframes hero-dot-morph {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+
+  50% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.58) rotate(-90deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes hero-plus-morph {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.58) rotate(90deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.58) rotate(90deg);
+  }
 }
 
 .hero-container {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: var(--spacing-xxl);
@@ -394,12 +577,12 @@ onMounted(fetchRides)
   font-size: 44px;
   font-weight: 800;
   line-height: 1.15;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   color: var(--text-primary);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--color-plus) 0%, var(--color-team) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -510,7 +693,7 @@ onMounted(fetchRides)
   padding: 10px 12px;
   border-radius: var(--border-radius-sm);
   background: var(--color-warning-soft);
-  color: #854d0e;
+  color: var(--color-warning);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -536,7 +719,7 @@ onMounted(fetchRides)
 .section-title-wrap h2 {
   font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   margin: var(--spacing-xs) 0 0;
   color: var(--text-primary);
 }
@@ -556,100 +739,27 @@ onMounted(fetchRides)
   color: var(--text-primary);
 }
 
-.filter-toolbar {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--spacing-md);
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-}
-
-.search-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  height: 44px;
-  padding: 0 var(--spacing-md);
-  background: var(--bg-inset);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  transition: border-color var(--transition-fast);
-}
-
-.search-input-wrapper:focus-within {
-  border-color: var(--text-primary);
-}
-
-.search-icon {
-  color: var(--text-muted);
-}
-
-.search-input-wrapper input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.tabs-list {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--bg-inset);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-}
-
-.tab-item {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: var(--border-radius-sm);
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.tab-item.active {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
 /* Carousel Styles */
 .carousel-outer {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
+  overflow: hidden;
 }
 
 .carousel-track {
   display: flex;
+  flex: 0 0 100%;
   gap: var(--spacing-md);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
   padding: 8px 0;
   width: 100%;
-}
-
-.carousel-track::-webkit-scrollbar {
-  display: none; /* Hide scrollbars for a clean tech look */
-}
-
-.carousel-track {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  --carousel-step: calc((100% - var(--spacing-md) * 2) / 3 + var(--spacing-md));
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
 .carousel-slide {
-  scroll-snap-align: start;
   flex: 0 0 calc(33.333% - 11px); /* Three cards per view on desktop */
   display: flex;
   flex-direction: column;
@@ -930,11 +1040,11 @@ onMounted(fetchRides)
     grid-template-columns: 1fr;
     gap: var(--spacing-xl);
   }
-  .filter-toolbar {
-    grid-template-columns: 1fr;
-  }
   .carousel-slide {
     flex: 0 0 calc(50% - 8px); /* Two cards per view on tablet */
+  }
+  .carousel-track {
+    --carousel-step: calc((100% - var(--spacing-md)) / 2 + var(--spacing-md));
   }
 }
 
@@ -947,15 +1057,35 @@ onMounted(fetchRides)
     align-items: flex-start;
     gap: var(--spacing-sm);
   }
-  .tabs-list {
-    width: 100%;
-    overflow-x: auto;
-  }
   .carousel-slide {
     flex: 0 0 calc(100% - 20px); /* One card per view on mobile */
   }
+  .carousel-track {
+    --carousel-step: calc(100% - 4px);
+  }
   .carousel-arrow {
     display: none; /* Hide arrows on mobile and rely on swipe snap */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-track {
+    transition: none;
+  }
+
+  .hero-bg-track,
+  .hero-bg-dot,
+  .hero-bg-plus {
+    animation: none;
+  }
+
+  .hero-bg-dot {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+
+  .hero-bg-plus {
+    opacity: 0;
   }
 }
 </style>

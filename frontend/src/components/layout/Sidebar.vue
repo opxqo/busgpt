@@ -506,6 +506,12 @@ const handleLogout = () => {
   outline: none;
 }
 
+.theme-toggle-switch:focus-visible,
+.icon-btn:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 [data-theme="dark"] .theme-toggle-switch {
   background: var(--color-success);
 }

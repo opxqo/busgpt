@@ -36,6 +36,8 @@ onMounted(() => {
 .app-layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: clip;
   background-color: var(--bg-primary);
 }
 
@@ -45,11 +47,13 @@ onMounted(() => {
   flex-direction: column;
   padding-left: 248px;
   min-height: 100vh;
-  width: 100%;
+  min-width: 0;
+  width: auto;
 }
 
 .main-content {
   flex-grow: 1;
+  min-width: 0;
   padding: 0 0 var(--spacing-xxl);
 }
 
@@ -69,6 +73,7 @@ onMounted(() => {
   .main-wrapper {
     padding-left: 0;
     padding-top: 56px;
+    width: 100%;
   }
   .main-content {
     padding: 0 0 var(--spacing-lg);
