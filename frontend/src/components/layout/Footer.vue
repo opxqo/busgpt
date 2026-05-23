@@ -9,10 +9,13 @@
         <router-link to="/market" class="footer-link">发现车位</router-link>
         <router-link to="/create" class="footer-link">发布车位</router-link>
         <router-link to="/profile" class="footer-link">个人中心</router-link>
+        <a href="/privacy-policy.html" class="footer-link">隐私政策</a>
+        <a href="/platform-spec.html" class="footer-link">平台规范</a>
       </div>
     </div>
     <div class="container footer-bottom">
       <p class="copyright">&copy; {{ new Date().getFullYear() }} BusGPT. All rights reserved.</p>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="icp-link">鄂ICP备2023027796号-5</a>
     </div>
   </footer>
 </template>
@@ -83,6 +86,17 @@
 .copyright {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.icp-link {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.icp-link:hover {
+  color: var(--text-secondary);
 }
 
 @media (max-width: 720px) {

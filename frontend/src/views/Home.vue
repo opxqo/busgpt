@@ -139,73 +139,47 @@
             <svg viewBox="0 0 500 220" class="line-chart-svg" aria-label="价格趋势图">
               <!-- Y-Axis Grid Lines & Labels -->
               <g class="grid-lines">
-                <line x1="45" y1="20" x2="480" y2="20" stroke="var(--border-color)" stroke-dasharray="3" />
-                <text x="15" y="24" class="y-label">¥200</text>
-
-                <line x1="45" y1="70" x2="480" y2="70" stroke="var(--border-color)" stroke-dasharray="3" />
-                <text x="15" y="74" class="y-label">¥150</text>
-
-                <line x1="45" y1="120" x2="480" y2="120" stroke="var(--border-color)" stroke-dasharray="3" />
-                <text x="15" y="124" class="y-label">¥100</text>
-
-                <line x1="45" y1="170" x2="480" y2="170" stroke="var(--border-color)" stroke-dasharray="3" />
-                <text x="15" y="174" class="y-label">¥50</text>
-
-                <line x1="45" y1="200" x2="480" y2="200" stroke="var(--border-color-strong)" />
-                <text x="15" y="204" class="y-label">¥0</text>
+                <line v-for="label in yLabels" :key="label.value" x1="45" :y1="label.y" x2="480" :y2="label.y" stroke="var(--border-color)" stroke-dasharray="3" />
+                <text v-for="label in yLabels" :key="'yl'+label.value" x="15" :y="label.y + 4" class="y-label">¥{{ label.value }}</text>
               </g>
 
-              <!-- Lines for Product Prices (Calculated using coordinates based on simulated data) -->
-              <!-- Plus: Green (#10b981) -->
-              <path
-                d="M 60,185 L 140,182 L 220,180 L 300,185 L 380,183 L 460,180"
-                fill="none"
-                stroke="var(--color-plus)"
-                stroke-width="3"
-                stroke-linecap="round"
-              />
-              <!-- Team: Blue (#2563eb) -->
-              <path
-                d="M 60,192 L 140,190 L 220,191 L 300,193 L 380,192 L 460,190"
-                fill="none"
-                stroke="var(--color-team)"
-                stroke-width="3"
-                stroke-linecap="round"
-              />
-              <!-- Pro: Purple (#8b5cf6) -->
-              <path
-                d="M 60,140 L 140,130 L 220,120 L 300,110 L 380,100 L 460,90"
-                fill="none"
-                stroke="var(--color-pro)"
-                stroke-width="3"
-                stroke-linecap="round"
-              />
-
-              <!-- Vertex circles (Pro) -->
-              <g class="chart-points">
-                <circle cx="60" cy="140" r="4" fill="var(--bg-secondary)" stroke="var(--color-pro)" stroke-width="2" />
-                <circle cx="140" cy="130" r="4" fill="var(--bg-secondary)" stroke="var(--color-pro)" stroke-width="2" />
-                <circle cx="220" cy="120" r="4" fill="var(--bg-secondary)" stroke="var(--color-pro)" stroke-width="2" />
-                <circle cx="300" cy="110" r="4" fill="var(--bg-secondary)" stroke="var(--color-pro)" stroke-width="2" />
-                <circle cx="380" cy="100" r="4" fill="var(--bg-secondary)" stroke="var(--color-pro)" stroke-width="2" />
-                <circle cx="460" cy="90" r="4" fill="var(--bg-secondary)" stroke="var(--color-pro)" stroke-width="2" />
+              <!-- Price Trend Lines -->
+              <g v-if="priceTrends.length > 0">
+                <path
+                  v-for="series in priceTrendSeries"
+                  :key="series.product"
+                  :d="trendPath(series.product)"
+                  fill="none"
+                  :stroke="PRODUCT_COLORS[series.product]"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                />
+                <!-- Vertex circles -->
+                <template v-for="series in priceTrendSeries" :key="'pts-'+series.product">
+                  <circle
+                    v-for="(pt, pi) in trendPoints(series.product)"
+                    :key="pi"
+                    :cx="pt.cx"
+                    :cy="pt.cy"
+                    r="4"
+                    fill="var(--bg-secondary)"
+                    :stroke="PRODUCT_COLORS[series.product]"
+                    stroke-width="2"
+                  />
+                </template>
               </g>
+              <text v-else x="250" y="120" text-anchor="middle" fill="var(--text-muted)" font-size="14">暂无数据</text>
 
               <!-- X-Axis Labels -->
               <g class="x-axis-labels" fill="var(--text-secondary)">
-                <text x="60" y="218" text-anchor="middle">12月</text>
-                <text x="140" y="218" text-anchor="middle">1月</text>
-                <text x="220" y="218" text-anchor="middle">2月</text>
-                <text x="300" y="218" text-anchor="middle">3月</text>
-                <text x="380" y="218" text-anchor="middle">4月</text>
-                <text x="460" y="218" text-anchor="middle">5月</text>
+                <text v-for="(label, i) in chartDateLabels" :key="i" :x="chartDateXPositions[i]" y="218" text-anchor="middle">{{ label }}</text>
               </g>
             </svg>
             <!-- Legend -->
             <div class="chart-legend">
-              <span class="legend-item"><span class="legend-color plus"></span>Plus (约¥35/月)</span>
-              <span class="legend-item"><span class="legend-color team"></span>Business (约¥28/月)</span>
-              <span class="legend-item"><span class="legend-color pro"></span>Pro (下降至约¥110/月)</span>
+              <span class="legend-item"><span class="legend-color plus"></span>Plus</span>
+              <span class="legend-item"><span class="legend-color team"></span>Business</span>
+              <span class="legend-item"><span class="legend-color pro"></span>Pro</span>
             </div>
           </div>
         </div>
@@ -224,9 +198,12 @@
                 <span class="product-chip mini" :class="item.product">{{ item.label }}</span>
               </div>
               <div class="rank-progress-bar-wrap">
-                <div class="rank-progress-bar" :style="{ width: `${(item.seats / 50) * 100}%`, background: item.color }"></div>
+                <div class="rank-progress-bar" :style="{ width: `${(item.seats / maxRankOrders) * 100}%`, background: item.color }"></div>
                 <span class="rank-val">{{ item.seats }} 人拼车</span>
               </div>
+            </div>
+            <div v-if="rankingData.length === 0" class="empty-rank">
+              <span>暂无排行数据</span>
             </div>
           </div>
         </div>
@@ -235,24 +212,28 @@
         <div class="dashboard-card surface-card summary-card-dashboard">
           <div class="card-header-wrap">
             <PieChart :size="16" class="chart-icon-pie" />
-            <strong>今日运营快报 (实时数据模拟)</strong>
+            <strong>今日运营快报 (实时数据)</strong>
           </div>
           <div class="mini-stats-flow">
             <div class="mini-stat-box">
-              <span>本月新增拼车</span>
-              <strong>326 <small>单</small></strong>
+              <span>本月成交订单</span>
+              <strong>{{ salesOverview?.paid_orders ?? '—' }} <small>单</small></strong>
             </div>
             <div class="mini-stat-box">
-              <span>累计成功对接</span>
-              <strong>2,842 <small>次</small></strong>
+              <span>累计成交金额</span>
+              <strong>¥{{ salesOverview?.total_revenue ?? '—' }} <small></small></strong>
             </div>
             <div class="mini-stat-box">
               <span>平台已托管活跃车位</span>
-              <strong>149 <small>个车位</small></strong>
+              <strong>{{ salesOverview?.active_rides ?? '—' }} <small>个车位</small></strong>
             </div>
             <div class="mini-stat-box">
-              <span>车友满意度评价</span>
-              <strong>98.6% <small>好评率</small></strong>
+              <span>本月新增车位</span>
+              <strong>{{ salesOverview?.new_rides ?? '—' }} <small>个</small></strong>
+            </div>
+            <div class="mini-stat-box">
+              <span>平均拼车规模</span>
+              <strong>{{ avgSeatsPerRide }} <small>人/车位</small></strong>
             </div>
           </div>
         </div>
@@ -275,6 +256,8 @@ import {
   TrendingUp,
 } from '@lucide/vue'
 import { ridesApi } from '../api/rides'
+import { analyticsApi } from '../api/analytics'
+import type { RideRankingItem, PriceTrendPoint, SalesOverview } from '../api/analytics'
 import RideCard from '../components/ride/RideCard.vue'
 import type { Ride } from '../types'
 
@@ -300,14 +283,131 @@ const steps = [
   { title: '自行对接拼车', desc: '添加车主微信或 Telegram，私下沟通订阅细节，完成搭车。' },
 ]
 
-// Simulated Data for charts
-const rankingData = [
-  { title: '稳定老车 - GPT-4o 4人拼车位', label: 'Plus 拼车', product: 'chatgpt-plus', seats: 45, color: 'var(--color-plus)' },
-  { title: 'Pro 极客无限 o1/o1-pro 终极车位', label: 'Pro 极客', product: 'chatgpt-pro', seats: 38, color: 'var(--color-pro)' },
-  { title: 'Business 大号协作车位，季付稳定招募', label: 'Business 团队', product: 'chatgpt-team', seats: 31, color: 'var(--color-team)' },
-  { title: 'Plus 体验车，支持月付测试', label: 'Plus 拼车', product: 'chatgpt-plus', seats: 22, color: 'var(--color-plus)' },
-  { title: 'Business 高性价比 10人车，随时加入', label: 'Business 团队', product: 'chatgpt-team', seats: 15, color: 'var(--color-team)' },
-]
+// Analytics data
+const salesOverview = ref<SalesOverview | null>(null)
+const priceTrends = ref<PriceTrendPoint[]>([])
+const rideRankings = ref<RideRankingItem[]>([])
+
+const PRODUCT_COLORS: Record<string, string> = {
+  'chatgpt-plus': 'var(--color-plus)',
+  'chatgpt-team': 'var(--color-team)',
+  'chatgpt-pro': 'var(--color-pro)',
+}
+
+const PRODUCT_LABELS: Record<string, string> = {
+  'chatgpt-plus': 'Plus',
+  'chatgpt-team': 'Business',
+  'chatgpt-pro': 'Pro',
+}
+
+const rankingData = computed(() =>
+  rideRankings.value.map((r) => ({
+    title: r.ride_title,
+    label: PRODUCT_LABELS[r.product] || r.product,
+    product: r.product,
+    seats: r.orders,
+    color: PRODUCT_COLORS[r.product] || 'var(--text-secondary)',
+  }))
+)
+
+const maxRankOrders = computed(() =>
+  Math.max(...rideRankings.value.map((r) => r.orders), 1)
+)
+
+const avgSeatsPerRide = computed(() => {
+  if (!rides.value.length) return '—'
+  const total = rides.value.reduce((sum, r) => sum + Number(r.total_seats || 0), 0)
+  return Math.round(total / rides.value.length)
+})
+
+// Price trend chart coordinates
+const CHART_PADDING = { top: 20, right: 20, bottom: 20, left: 45 }
+const CHART_W = 500
+const CHART_H = 220
+
+const priceTrendSeries = computed(() => {
+  const products = ['chatgpt-plus', 'chatgpt-team', 'chatgpt-pro']
+  return products.map((product) => {
+    const points = priceTrends.value.filter((p) => p.product === product)
+    return { product, points }
+  })
+})
+
+const priceTrendMax = computed(() => {
+  const allPrices = priceTrends.value.map((p) => Number(p.average_price_per_month))
+  return Math.max(...allPrices, 100)
+})
+
+const priceTrendDates = computed(() => {
+  const dates = [...new Set(priceTrends.value.map((p) => p.date))]
+  return dates.sort()
+})
+
+const chartX = (idx: number, total: number) => {
+  if (total <= 1) return (CHART_W - CHART_PADDING.left - CHART_PADDING.right) / 2 + CHART_PADDING.left
+  const w = CHART_W - CHART_PADDING.left - CHART_PADDING.right
+  return CHART_PADDING.left + (idx / (total - 1)) * w
+}
+
+const chartY = (value: number) => {
+  const h = CHART_H - CHART_PADDING.top - CHART_PADDING.bottom
+  return CHART_PADDING.top + h - (value / priceTrendMax.value) * h
+}
+
+const trendPath = (product: string) => {
+  const points = priceTrends.value.filter((p) => p.product === product)
+  if (points.length === 0) return ''
+  const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date))
+  return sorted
+    .map((p, i) => {
+      const x = chartX(i, sorted.length)
+      const y = chartY(Number(p.average_price_per_month))
+      return `${i === 0 ? 'M' : 'L'} ${x},${y}`
+    })
+    .join(' ')
+}
+
+const trendPoints = (product: string) => {
+  const points = priceTrends.value.filter((p) => p.product === product)
+  const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date))
+  return sorted.map((p, i) => ({
+    cx: chartX(i, sorted.length),
+    cy: chartY(Number(p.average_price_per_month)),
+    value: Number(p.average_price_per_month),
+  }))
+}
+
+const chartDateLabels = computed(() => {
+  const dates = priceTrendDates.value
+  if (dates.length === 0) return []
+  const step = Math.max(1, Math.floor(dates.length / 6))
+  return dates
+    .filter((_, i) => i % step === 0 || i === dates.length - 1)
+    .map((d) => {
+      const dt = new Date(d + 'T00:00:00')
+      return `${dt.getMonth() + 1}/${dt.getDate()}`
+    })
+})
+
+const chartDateXPositions = computed(() => {
+  const dates = priceTrendDates.value
+  if (dates.length === 0) return []
+  const step = Math.max(1, Math.floor(dates.length / 6))
+  const indices = dates
+    .map((_, i) => i)
+    .filter((i) => i % step === 0 || i === dates.length - 1)
+  return indices.map((i) => chartX(i, dates.length))
+})
+
+// Chart Y-axis labels
+const yLabels = computed(() => {
+  const max = Math.ceil(priceTrendMax.value / 50) * 50
+  const labels = []
+  for (let v = 0; v <= max; v += max / 4) {
+    labels.push({ value: v, y: chartY(v) })
+  }
+  return labels
+})
 
 const maxCarouselIndex = computed(() => Math.max(rides.value.length - visibleRideCount.value, 0))
 
@@ -395,11 +495,27 @@ const fetchRides = async () => {
   }
 }
 
+const fetchAnalytics = async () => {
+  try {
+    const [overviewRes, trendsRes, rankingsRes] = await Promise.all([
+      analyticsApi.getSalesOverview(30),
+      analyticsApi.getPriceTrends(180),
+      analyticsApi.getRideRankings(30, 5),
+    ])
+    salesOverview.value = overviewRes.data
+    priceTrends.value = trendsRes.data
+    rideRankings.value = rankingsRes.data
+  } catch (err) {
+    console.error('Failed to load analytics', err)
+  }
+}
+
 onMounted(() => {
   syncVisibleRideCount()
   renderHeroPattern()
   window.addEventListener('resize', handleResize)
   fetchRides()
+  fetchAnalytics()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
@@ -985,6 +1101,15 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-weight: 700;
   white-space: nowrap;
+}
+
+.empty-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 /* Operational highlights */

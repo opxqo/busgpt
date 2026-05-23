@@ -27,6 +27,10 @@ ORDER_STATUS_REFUNDED = "refunded"
 TERMINAL_REUSABLE_STATUSES = {ORDER_STATUS_EXPIRED, ORDER_STATUS_CANCELLED}
 
 
+def get_recruit_seats(ride: Ride) -> int:
+    return max(int(ride.recruit_seats or max((ride.total_seats or 1) - 1, 1)), 1)
+
+
 async def get_ride_purchase_count(db: AsyncSession, ride_id: int) -> int:
     result = await db.execute(
         select(func.count(Order.id)).filter(
@@ -65,7 +69,7 @@ def build_order_detail(order: Order, ride: Optional[Ride]) -> OrderDetailRespons
     show_contact = order.status == ORDER_STATUS_PAID
     if ride:
         purchase_count = getattr(ride, "_purchase_count", 0)
-        remaining_seats = max((ride.total_seats or 0) - purchase_count, 0)
+        remaining_seats = max(get_recruit_seats(ride) - purchase_count, 0)
 
     return OrderDetailResponse(
         id=order.id,
@@ -87,6 +91,7 @@ def build_order_detail(order: Order, ride: Optional[Ride]) -> OrderDetailRespons
         ride_price_per_month=ride.price_per_month if ride else 0,
         ride_duration=ride.duration if ride else 0,
         ride_total_seats=ride.total_seats if ride else 0,
+        ride_recruit_seats=get_recruit_seats(ride) if ride else 0,
         ride_purchase_count=purchase_count,
         ride_remaining_seats=remaining_seats,
         ride_status=ride.status if ride else "deleted",
@@ -137,16 +142,7 @@ async def create_order(
     if ride.owner_id == current_user.id:
         raise HTTPException(status_code=400, detail="您不能购买自己发布的车位联系方式")
 
-    if ride.status != "open":
-        raise HTTPException(status_code=400, detail="该车位已关闭或过期")
-
     purchase_count = await get_ride_purchase_count(db, ride.id)
-    if purchase_count >= ride.total_seats:
-        ride.status = "closed"
-        db.add(ride)
-        await db.flush()
-        raise HTTPException(status_code=400, detail="该车位人数已满")
-
     existing_result = await db.execute(
         select(Order).filter(
             and_(Order.user_id == current_user.id, Order.ride_id == order_in.ride_id)
@@ -164,6 +160,16 @@ async def create_order(
         if existing.status not in TERMINAL_REUSABLE_STATUSES:
             raise HTTPException(status_code=400, detail="该订单当前状态不可重新支付")
 
+    if ride.status != "open":
+        raise HTTPException(status_code=400, detail="该车位已关闭或过期")
+
+    if purchase_count >= get_recruit_seats(ride):
+        ride.status = "closed"
+        db.add(ride)
+        await db.flush()
+        raise HTTPException(status_code=400, detail="该车位人数已满")
+
+    if existing:
         existing.amount = 0
         existing.status = ORDER_STATUS_PAID
         existing.payment_status = ORDER_STATUS_PAID
@@ -175,8 +181,11 @@ async def create_order(
         existing.idempotency_key = uuid4().hex
         existing.updated_at = datetime.utcnow()
         db.add(existing)
+        if purchase_count + 1 >= get_recruit_seats(ride):
+            ride.status = "closed"
+            db.add(ride)
         await db.flush()
-        ride._purchase_count = purchase_count
+        ride._purchase_count = purchase_count + 1
         return build_order_detail(existing, ride)
 
     order = Order(
@@ -191,8 +200,11 @@ async def create_order(
         idempotency_key=uuid4().hex,
     )
     db.add(order)
+    if purchase_count + 1 >= get_recruit_seats(ride):
+        ride.status = "closed"
+        db.add(ride)
     await db.flush()
-    ride._purchase_count = purchase_count
+    ride._purchase_count = purchase_count + 1
     return build_order_detail(order, ride)
 
 
@@ -220,7 +232,7 @@ async def pay_order_mock(
         raise HTTPException(status_code=400, detail="该车位已关闭或过期")
 
     purchase_count = await get_ride_purchase_count(db, ride.id)
-    if purchase_count >= ride.total_seats:
+    if purchase_count >= get_recruit_seats(ride):
         ride.status = "closed"
         db.add(ride)
         await db.flush()
@@ -241,7 +253,7 @@ async def pay_order_mock(
     order.updated_at = datetime.utcnow()
     db.add(order)
 
-    if purchase_count + 1 >= ride.total_seats:
+    if purchase_count + 1 >= get_recruit_seats(ride):
         ride.status = "closed"
         db.add(ride)
 
@@ -331,7 +343,8 @@ async def get_my_sales(
             "unlock_count": len(ride_orders),
             "revenue": sum(float(o.amount) for o in ride_orders),
             "total_seats": ride.total_seats,
-            "remaining_seats": max((ride.total_seats or 0) - len(ride_orders), 0),
+            "recruit_seats": get_recruit_seats(ride),
+            "remaining_seats": max(get_recruit_seats(ride) - len(ride_orders), 0),
             "status": ride.status,
             "latest_unlock_at": max((o.contact_unlocked_at or o.paid_at or o.created_at for o in ride_orders), default=None),
         })

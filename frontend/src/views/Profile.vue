@@ -91,7 +91,7 @@
                 </td>
                 <td>
                   <div class="seat-metric">
-                    <strong>已拼 {{ order.ride_purchase_count || 0 }}/{{ order.ride_total_seats || 0 }} 人</strong>
+                    <strong>已拼 {{ order.ride_purchase_count || 0 }}/{{ orderRecruitSeats(order) }} 人</strong>
                     <span>空余 {{ order.ride_remaining_seats || 0 }} 个名额</span>
                   </div>
                 </td>
@@ -152,7 +152,7 @@
                     </div>
                     <div>
                       <span>拼车进度</span>
-                      <strong>{{ ride.purchase_count || 0 }}/{{ ride.total_seats }} 人</strong>
+                      <strong>{{ ride.purchase_count || 0 }}/{{ rideRecruitSeats(ride) }} 人</strong>
                     </div>
                     <div>
                       <span>到期日</span>
@@ -213,7 +213,7 @@
                   <td>{{ item.unlock_count || item.order_count }} 人已解锁</td>
                   <td>
                     <div class="seat-metric">
-                      <strong>{{ item.order_count }}/{{ item.total_seats }} 人</strong>
+                      <strong>{{ item.order_count }}/{{ item.recruit_seats }} 人</strong>
                       <span>空位 {{ item.remaining_seats }} 个</span>
                     </div>
                   </td>
@@ -313,6 +313,10 @@
             <input id="edit-total-seats" v-model.number="rideForm.total_seats" class="form-control" type="number" min="2" max="20" required />
           </div>
           <div class="form-group">
+            <label class="form-label" for="edit-recruit-seats">上车人数</label>
+            <input id="edit-recruit-seats" v-model.number="rideForm.recruit_seats" class="form-control" type="number" min="1" :max="Math.max(rideForm.total_seats - 1, 1)" required />
+          </div>
+          <div class="form-group">
             <label class="form-label" for="edit-duration">有效期限(月)</label>
             <input id="edit-duration" v-model.number="rideForm.duration" class="form-control" type="number" min="1" max="24" required />
           </div>
@@ -368,6 +372,7 @@ interface SalesRide {
   unlock_count: number
   revenue: number
   total_seats: number
+  recruit_seats: number
   remaining_seats: number
   status: string
   latest_unlock_at?: string | null
@@ -407,6 +412,8 @@ const tabs = [
 ]
 
 const unlockedOrders = computed(() => orders.value.filter((order) => order.status === 'paid'))
+const rideRecruitSeats = (ride: Ride) => Number(ride.recruit_seats || Math.max((ride.total_seats || 1) - 1, 1))
+const orderRecruitSeats = (order: Order) => Number(order.ride_recruit_seats || Math.max((order.ride_total_seats || 1) - 1, 1))
 
 const editForm = reactive({
   nickname: '',
@@ -422,6 +429,7 @@ const rideForm = reactive({
   title: '',
   product: 'chatgpt-plus' as ProductType,
   total_seats: 2,
+  recruit_seats: 1,
   price_per_month: 1,
   duration: 1,
   warranty_days: 30,
@@ -507,6 +515,7 @@ const openEditRide = (ride: Ride) => {
   rideForm.title = ride.title
   rideForm.product = ride.product
   rideForm.total_seats = ride.total_seats
+  rideForm.recruit_seats = rideRecruitSeats(ride)
   rideForm.price_per_month = Number(ride.price_per_month)
   rideForm.duration = ride.duration
   rideForm.warranty_days = ride.warranty_days
@@ -530,7 +539,8 @@ const validateRideForm = () => {
   if (!rideForm.title.trim()) return '请填写车位标题'
   if (!rideForm.contact_info.trim() && !rideForm.contact_website.trim()) return '请至少保留一种联系方式'
   if (rideForm.contact_website && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(rideForm.contact_website)) return '个人网站需要以 http:// 或 https:// 开头'
-  if (editingRide.value && rideForm.total_seats < Number(editingRide.value.purchase_count || 0)) return '总人数不能小于已拼车人数'
+  if (rideForm.recruit_seats >= rideForm.total_seats) return '上车人数必须小于总人数，车主本人也占 1 位'
+  if (editingRide.value && rideForm.recruit_seats < Number(editingRide.value.purchase_count || 0)) return '上车人数不能小于已拼车人数'
   return ''
 }
 
@@ -550,6 +560,7 @@ const submitRideEdit = async () => {
       title: rideForm.title,
       product: rideForm.product,
       total_seats: rideForm.total_seats,
+      recruit_seats: rideForm.recruit_seats,
       price_per_month: rideForm.price_per_month,
       duration: rideForm.duration,
       warranty_days: rideForm.warranty_days,

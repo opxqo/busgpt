@@ -35,9 +35,9 @@ def validate_seats(total_seats: int, recruit_seats: int, product: Product, purch
             detail=f"Maximum seats allowed for {product.label} is {product.max_seats}"
         )
     if recruit_seats >= total_seats:
-        raise HTTPException(status_code=400, detail="招募人数必须小于车位总人数，车主本人也占 1 位")
+        raise HTTPException(status_code=400, detail="上车人数必须小于车位总人数，车主本人也占 1 位")
     if recruit_seats < purchase_count:
-        raise HTTPException(status_code=400, detail="招募人数不能小于已拼车人数")
+        raise HTTPException(status_code=400, detail="上车人数不能小于已拼车人数")
 
 
 async def get_ride_purchase_count(db: AsyncSession, ride_id: int) -> int:

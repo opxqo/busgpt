@@ -57,6 +57,12 @@
       </div>
 
       <div class="sidebar-footer">
+        <div class="legal-links">
+          <a href="/privacy-policy.html" class="legal-link">隐私政策</a>
+          <span class="legal-sep">·</span>
+          <a href="/platform-spec.html" class="legal-link">平台规范</a>
+        </div>
+
         <div class="theme-toggle-row">
           <span class="theme-label">
             <Sun v-if="theme === 'dark'" :size="15" />
@@ -347,6 +353,29 @@ const handleLogout = () => {
   gap: 12px;
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
+}
+
+.legal-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--spacing-sm);
+}
+
+.legal-link {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.legal-link:hover {
+  color: var(--text-secondary);
+}
+
+.legal-sep {
+  color: var(--border-color);
+  font-size: 11px;
 }
 
 .user-card {

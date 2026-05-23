@@ -68,7 +68,7 @@ Node.js 版本要求：^20.19.0 或 >= 22.12.0。
 - **路由：** `router/index.ts` — 受保护路由通过导航守卫跳转到 `/login`；`meta.requiresAdmin` 路由检查 `user.role === 'admin'`
 - **状态管理：** Pinia stores (`stores/`) — `user.ts` (认证状态)、`rides.ts` (列表和产品)
 - **API 层：** `api/client.ts` — Axios 实例，默认地址 `http://127.0.0.1:8000/api`（可通过 `VITE_API_URL` 覆盖），请求拦截自动附加 Bearer token，401 响应自动清除登录态
-- **样式：** 纯 CSS + CSS 自定义属性（`styles/variables.css`），无 Tailwind。产品配色：绿=Plus，蓝=Team，琥珀=Pro
+- **样式：** 纯 CSS + CSS 自定义属性（`styles/variables.css`），无 Tailwind。产品配色：绿=Plus，蓝=Team，紫=Pro
 
 ## 约定
 

@@ -184,6 +184,7 @@ async def get_ride_rankings(
             Ride.title,
             Ride.product,
             Ride.total_seats,
+            Ride.recruit_seats,
             Ride.status,
             Ride.owner_id,
             User.nickname,
@@ -198,6 +199,7 @@ async def get_ride_rankings(
             Ride.title,
             Ride.product,
             Ride.total_seats,
+            Ride.recruit_seats,
             Ride.status,
             Ride.owner_id,
             User.nickname,
@@ -208,19 +210,21 @@ async def get_ride_rankings(
 
     items = []
     for row in result.all():
-        orders = row[7] or 0
+        orders = row[8] or 0
+        recruit_seats = max(int(row[4] or max((row[3] or 1) - 1, 1)), 1)
         items.append(
             RideRankingItem(
                 ride_id=row[0],
                 ride_title=row[1],
                 product=row[2],
                 total_seats=row[3],
-                status=row[4],
-                owner_id=row[5],
-                owner_nickname=row[6],
+                recruit_seats=recruit_seats,
+                status=row[5],
+                owner_id=row[6],
+                owner_nickname=row[7],
                 orders=orders,
-                revenue=_decimal(row[8]),
-                remaining_seats=max((row[3] or 0) - orders, 0),
+                revenue=_decimal(row[9]),
+                remaining_seats=max(recruit_seats - orders, 0),
             )
         )
     return items

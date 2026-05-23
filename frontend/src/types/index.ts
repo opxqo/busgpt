@@ -26,6 +26,7 @@ export interface Ride {
   product: ProductType
   owner_id: number
   total_seats: number
+  recruit_seats: number
   price_per_month: number
   duration: number
   warranty_days: number
@@ -59,6 +60,7 @@ export interface Order {
   ride_price_per_month?: number
   ride_duration?: number
   ride_total_seats?: number
+  ride_recruit_seats?: number
   ride_purchase_count?: number
   ride_remaining_seats?: number
   ride_status?: 'open' | 'closed' | 'expired' | 'deleted'

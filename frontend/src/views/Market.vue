@@ -42,6 +42,15 @@
           </strong>
         </div>
       </div>
+      <div class="metric-card surface-card">
+        <div class="metric-info">
+          <span class="metric-label">总拼车座位</span>
+          <strong class="metric-value">
+            <span class="indicator-dot info"></span>
+            {{ totalSeats }} 人
+          </strong>
+        </div>
+      </div>
     </section>
 
     <!-- Filter Control Toolbar -->
@@ -127,6 +136,10 @@ const avgDuration = computed(() => {
   return Math.round(total / ridesStore.rides.length)
 })
 
+const totalSeats = computed(() =>
+  ridesStore.rides.reduce((sum, ride) => sum + Number(ride.total_seats || 0), 0)
+)
+
 const fetchData = () => {
   ridesStore.fetchRides({
     product: activeProduct.value,
@@ -180,7 +193,7 @@ onMounted(() => {
 /* Metrics Section */
 .market-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-md);
 }
 
@@ -232,6 +245,11 @@ onMounted(() => {
 .indicator-dot.warning {
   background: var(--color-pro);
   box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+.indicator-dot.info {
+  background: var(--color-info);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
 }
 
 /* Toolbar Panel */
@@ -335,7 +353,7 @@ onMounted(() => {
 
 .rides-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-md);
 }
 
@@ -369,7 +387,7 @@ onMounted(() => {
     width: 100%;
   }
   .market-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--spacing-sm);
   }
   .metric-card {

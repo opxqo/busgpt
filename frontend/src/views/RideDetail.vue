@@ -115,7 +115,7 @@
               </div>
               <div class="metric-box">
                 <span class="metric-label">剩余空位</span>
-                <strong class="metric-val highlight-green">{{ ride.remaining_seats ?? ride.total_seats }}<small> 人</small></strong>
+                <strong class="metric-val highlight-green">{{ remainingSeats }}<small> 人</small></strong>
               </div>
               <div class="metric-box">
                 <span class="metric-label">拼车期限</span>
@@ -154,6 +154,14 @@
               <div class="spec-item">
                 <span class="spec-label">车位总容量</span>
                 <strong class="spec-val">{{ ride.total_seats }} 人位</strong>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">上车人数</span>
+                <strong class="spec-val">{{ recruitSeats }} 人</strong>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">已拼人数</span>
+                <strong class="spec-val">{{ ride.purchase_count || 0 }} 人</strong>
               </div>
             </div>
           </section>
@@ -502,6 +510,16 @@ const statusLabel = computed(() => {
 const warrantyDays = computed(() => {
   if (!ride.value) return 0
   return Number(ride.value.warranty_days || (ride.value.duration >= 12 ? 365 : ride.value.duration * 30))
+})
+
+const recruitSeats = computed(() => {
+  if (!ride.value) return 0
+  return Number(ride.value.recruit_seats || Math.max((ride.value.total_seats || 1) - 1, 1))
+})
+
+const remainingSeats = computed(() => {
+  if (!ride.value) return 0
+  return Math.max(Number(ride.value.remaining_seats ?? recruitSeats.value), 0)
 })
 
 const formattedCreatedAt = computed(() => {

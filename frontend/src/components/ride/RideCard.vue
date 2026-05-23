@@ -32,7 +32,7 @@
     <div class="facts">
       <div class="fact-item">
         <Users :size="14" class="fact-icon" />
-        <span>已拼 {{ occupiedSeats }}/{{ ride.total_seats }} 人</span>
+        <span>已拼 {{ occupiedSeats }}/{{ recruitSeats }} 人</span>
       </div>
       <div class="fact-item">
         <Armchair :size="14" class="fact-icon" />
@@ -84,7 +84,8 @@ const statusLabel = computed(() => {
 })
 
 const occupiedSeats = computed(() => Number(props.ride.purchase_count || 0))
-const remainingSeats = computed(() => Math.max(Number(props.ride.remaining_seats ?? props.ride.total_seats), 0))
+const recruitSeats = computed(() => Number(props.ride.recruit_seats || Math.max((props.ride.total_seats || 1) - 1, 1)))
+const remainingSeats = computed(() => Math.max(Number(props.ride.remaining_seats ?? recruitSeats.value), 0))
 const warrantyDays = computed(() => Number(props.ride.warranty_days || (props.ride.duration >= 12 ? 365 : props.ride.duration * 30)))
 
 const formatMoney = (value: number | string) => Math.round(Number(value || 0))

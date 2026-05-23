@@ -3,194 +3,698 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BusGPT 隐私政策</title>
+  <title>隐私政策 - BusGPT</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --c-bg: #ffffff;
+      --c-bg-subtle: #f7f4ee;
+      --c-bg-muted: #f0ede6;
+      --c-border: #ded8cd;
+      --c-border-subtle: #f0ede6;
+      --c-text: #191f24;
+      --c-text-secondary: #52606b;
+      --c-text-muted: #87919b;
+      --c-primary: #191f24;
+      --c-primary-hover: #2d363d;
+      --c-accent: #2563eb;
+      --c-accent-soft: #eaf1ff;
+      --c-success: #059669;
+      --c-success-soft: #e8f7ef;
+      --c-warning: #d97706;
+      --c-warning-soft: #fff7e6;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --shadow-sm: 0 1px 3px 0 rgba(0,0,0,.03), 0 1px 2px 0 rgba(0,0,0,.02);
+      --shadow: 0 1px 3px 0 rgba(0,0,0,.05), 0 8px 24px -4px rgba(0,0,0,.04);
+      --shadow-lg: 0 4px 6px -1px rgba(0,0,0,.05), 0 20px 40px -4px rgba(0,0,0,.08);
+      --font: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --font-mono: "SF Mono", "Fira Code", "Fira Mono", monospace;
+      --border-radius-full: 9999px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 80px;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      line-height: 1.8;
-      color: #1a1a1a;
-      background: #fafafa;
+      font-family: var(--font);
+      line-height: 1.75;
+      color: var(--c-text);
+      background: var(--c-bg-subtle);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
-      background: #fff;
+
+    /* ── Top Nav ─────────────────────────────────── */
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 32px;
+      background: rgba(247,244,238,.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--c-border);
     }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 8px;
+
+    .topnav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--c-text);
+      font-weight: 800;
+      font-size: 16px;
     }
-    .meta {
-      text-align: center;
-      color: #666;
+
+    .topnav-logo {
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--border-radius-md);
+      background: var(--c-primary);
+      color: #fff;
       font-size: 14px;
-      margin-bottom: 40px;
+      font-weight: 900;
     }
-    h2 {
-      font-size: 18px;
+
+    .topnav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .topnav-links a {
+      color: var(--c-text-secondary);
+      text-decoration: none;
+      font-size: 14px;
       font-weight: 600;
-      margin: 32px 0 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid #eee;
+      transition: color .15s;
     }
+
+    .topnav-links a:hover { color: var(--c-text); }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .hero {
+      padding: 56px 32px 48px;
+      text-align: center;
+      background: var(--c-bg);
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: var(--border-radius-full);
+      background: var(--c-accent-soft);
+      color: var(--c-accent);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      letter-spacing: .02em;
+    }
+
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .hero-meta {
+      color: var(--c-text-muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .hero-meta span { margin: 0 8px; }
+
+    /* ── Layout ───────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 720px);
+      gap: 0;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+      align-items: start;
+    }
+
+    /* ── Sidebar TOC ──────────────────────────────── */
+    .toc {
+      position: sticky;
+      top: 88px;
+      padding-right: 32px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--c-text-muted);
+      margin-bottom: 12px;
+    }
+
+    .toc-list {
+      list-style: none;
+      border-left: 2px solid var(--c-border);
+    }
+
+    .toc-list li { margin: 0; }
+
+    .toc-list a {
+      display: block;
+      padding: 6px 0 6px 16px;
+      margin-left: -2px;
+      color: var(--c-text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+      border-left: 2px solid transparent;
+      transition: all .15s;
+    }
+
+    .toc-list a:hover {
+      color: var(--c-text-secondary);
+    }
+
+    .toc-list a.active {
+      color: var(--c-accent);
+      border-left-color: var(--c-accent);
+    }
+
+    /* ── Main Content ─────────────────────────────── */
+    .content {
+      min-width: 0;
+    }
+
+    .section {
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 36px 40px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--c-border-subtle);
+    }
+
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--c-bg-muted);
+      color: var(--c-text-secondary);
+      font-size: 14px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .section-head h2 {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--c-text);
+    }
+
     h3 {
       font-size: 15px;
-      font-weight: 600;
-      margin: 20px 0 8px;
+      font-weight: 700;
+      margin: 28px 0 10px;
+      color: var(--c-text);
     }
-    p, li {
+
+    h3:first-child { margin-top: 0; }
+
+    p {
       font-size: 15px;
-      margin-bottom: 10px;
-      color: #333;
+      color: var(--c-text-secondary);
+      margin-bottom: 12px;
+      line-height: 1.8;
     }
-    ul { padding-left: 24px; }
-    li { margin-bottom: 6px; }
-    .highlight {
-      background: #f7f7f7;
-      border-left: 3px solid #3b82f6;
-      padding: 12px 16px;
+
+    ul, ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      font-size: 15px;
+      color: var(--c-text-secondary);
+      margin-bottom: 8px;
+      line-height: 1.75;
+      padding-left: 4px;
+    }
+
+    li strong {
+      color: var(--c-text);
+    }
+
+    /* ── Callout boxes ────────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 12px;
+      padding: 16px 20px;
+      border-radius: var(--radius-sm);
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .callout-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+    }
+
+    .callout-info {
+      background: var(--c-accent-soft);
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+
+    .callout-warning {
+      background: var(--c-warning-soft);
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .callout-success {
+      background: var(--c-success-soft);
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+
+    /* ── Tables ───────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
       margin: 16px 0;
       font-size: 14px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--c-border);
     }
-    .placeholder {
-      color: #e74c3c;
+
+    th {
+      background: var(--c-bg-muted);
+      font-weight: 700;
+      color: var(--c-text);
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    td {
+      padding: 12px 16px;
+      color: var(--c-text-secondary);
+      border-bottom: 1px solid var(--c-border-subtle);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Footer ───────────────────────────────────── */
+    .page-footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--c-text-muted);
+      font-size: 13px;
+      border-top: 1px solid var(--c-border);
+      background: var(--c-bg);
+      margin-top: 20px;
+    }
+
+    .page-footer a {
+      color: var(--c-text-muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+
+    .page-footer a:hover { color: var(--c-text-secondary); }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
       font-weight: 600;
     }
-    footer {
-      text-align: center;
-      color: #999;
-      font-size: 13px;
-      margin-top: 48px;
-      padding-top: 24px;
-      border-top: 1px solid #eee;
+
+    .footer-sep {
+      margin: 0 4px;
+      color: var(--c-border);
+    }
+
+    /* ── Back to top ──────────────────────────────── */
+    .back-top {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--c-primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all .25s;
+      box-shadow: var(--shadow-lg);
+      z-index: 90;
+    }
+
+    .back-top.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .back-top:hover {
+      background: var(--c-primary-hover);
+    }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 860px) {
+      .toc { display: none; }
+
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 24px 16px 60px;
+      }
+
+      .section {
+        padding: 24px 20px;
+      }
+
+      .hero {
+        padding: 40px 20px 32px;
+      }
+
+      .hero h1 {
+        font-size: 28px;
+      }
+
+      .topnav {
+        padding: 0 16px;
+      }
+
+      .topnav-links { gap: 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 24px; }
+      .section { padding: 20px 16px; }
+      .section-head { gap: 10px; }
+      .section-num { width: 30px; height: 30px; font-size: 12px; }
+      .section-head h2 { font-size: 17px; }
     }
   </style>
 </head>
 <body>
-<div class="container">
 
-<h1>BusGPT 隐私政策</h1>
-<p class="meta">更新日期：2025 年 5 月 24 日 ｜ 生效日期：2025 年 5 月 24 日</p>
+<!-- Top Navigation -->
+<nav class="topnav">
+  <a href="/" class="topnav-brand">
+    <span class="topnav-logo">B</span>
+    <span>BusGPT</span>
+  </a>
+  <div class="topnav-links">
+    <a href="/">首页</a>
+    <a href="/market">市场</a>
+    <a href="/platform-spec.html">平台规范</a>
+  </div>
+</nav>
 
-<div class="highlight">
-  本隐私政策适用于 BusGPT 平台（以下简称"本平台"）提供的服务。请您在使用本平台服务前，仔细阅读并充分理解本政策的全部内容。
+<!-- Hero Header -->
+<header class="hero">
+  <div class="hero-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    法律文件
+  </div>
+  <h1>隐私政策</h1>
+  <p class="hero-meta">
+    更新于 2025 年 5 月 24 日 <span>|</span> 即日生效
+  </p>
+</header>
+
+<!-- Main Layout -->
+<div class="layout">
+
+  <!-- Sidebar Table of Contents -->
+  <aside class="toc">
+    <div class="toc-title">目录</div>
+    <ul class="toc-list">
+      <li><a href="#s1">一、引言</a></li>
+      <li><a href="#s2">二、我们收集的信息</a></li>
+      <li><a href="#s3">三、我们如何使用您的信息</a></li>
+      <li><a href="#s4">四、信息的存储与保护</a></li>
+      <li><a href="#s5">五、信息的共享与披露</a></li>
+      <li><a href="#s6">六、您的权利</a></li>
+      <li><a href="#s7">七、未成年人保护</a></li>
+      <li><a href="#s8">八、隐私政策的更新</a></li>
+      <li><a href="#s9">九、联系我们</a></li>
+    </ul>
+  </aside>
+
+  <!-- Content -->
+  <main class="content">
+
+    <div class="section" id="s1">
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <h2>引言</h2>
+      </div>
+      <div class="callout callout-info">
+        <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div>本隐私政策适用于 BusGPT 平台（以下简称"本平台"）提供的服务。请您在使用本平台服务前，仔细阅读并充分理解本政策的全部内容。</div>
+      </div>
+      <p>
+        本平台由个人开发者独立运营（以下简称"我们"）。我们深知个人信息对您的重要性，并会尽全力保护您的个人信息安全。我们致力于维持您对我们的信任，恪守以下原则保护您的个人信息：合法正当、最小必要、目的明确、安全保障、公开透明、权责一致。
+      </p>
+      <p>本隐私政策适用于您通过 BusGPT 平台（包括网站及相关服务）访问和使用我们所提供的服务。</p>
+    </div>
+
+    <div class="section" id="s2">
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <h2>我们收集的信息</h2>
+      </div>
+
+      <h3>2.1 您主动提供的信息</h3>
+      <ul>
+        <li><strong>注册信息：</strong>手机号码、昵称。手机号码作为您的唯一登录标识。</li>
+        <li><strong>个人资料：</strong>头像图片（可选）。</li>
+        <li><strong>认证凭据：</strong>登录密码（经加密存储，我们无法获取明文）。</li>
+        <li><strong>发布内容：</strong>您在发布拼车信息时填写的标题、描述、价格、座位数、联系方式（如微信号、Telegram 等）及联系网站链接。</li>
+      </ul>
+
+      <h3>2.2 服务过程中产生的信息</h3>
+      <ul>
+        <li><strong>交易信息：</strong>订单编号、交易金额、支付状态、支付时间、交易对方（车主/乘客）标识。</li>
+        <li><strong>联系方式解锁记录：</strong>您解锁车主联系方式的时间和对应车位信息。</li>
+        <li><strong>访问日志：</strong>IP 地址、访问时间、操作类型（用于安全防护和故障排查）。</li>
+      </ul>
+
+      <h3>2.3 我们不收集的信息</h3>
+      <div class="callout callout-success">
+        <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div>
+          我们不主动收集您的真实姓名、身份证号、银行卡号等敏感个人信息。<br>
+          我们不通过 Cookies 或追踪技术收集您的浏览行为用于广告投放。
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="s3">
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <h2>我们如何使用您的信息</h2>
+      </div>
+      <p>我们收集的信息将用于以下目的：</p>
+      <ul>
+        <li><strong>账号管理：</strong>创建和维护您的账户，实现登录认证和身份识别。</li>
+        <li><strong>服务提供：</strong>展示拼车信息、处理订单交易、在付费后为您解锁车主联系方式。</li>
+        <li><strong>安全防护：</strong>实施登录频率限制，防止暴力破解和恶意注册。</li>
+        <li><strong>运营优化：</strong>统计平台交易数据（聚合层面），优化产品功能和用户体验。</li>
+        <li><strong>合规义务：</strong>遵守法律法规要求，配合监管部门的合法请求。</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s4">
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <h2>信息的存储与保护</h2>
+      </div>
+
+      <h3>4.1 存储地点与期限</h3>
+      <p>您的个人信息存储在<strong>中国境内</strong>的腾讯云服务器上，不跨境传输。您的个人信息在您使用服务期间持续保存，在您注销账户后，我们将在合理期限内删除或匿名化处理。</p>
+
+      <h3>4.2 安全措施</h3>
+      <ul>
+        <li>密码采用 bcrypt 单向哈希加密存储，任何人（包括平台管理员）均无法获取明文密码。</li>
+        <li>接口通信支持 HTTPS 加密传输（生产环境部署时启用）。</li>
+        <li>车主联系方式默认隐藏，仅在买家完成付款后方可查看，且访问受身份认证保护。</li>
+        <li>敏感操作（如登录）实施频率限制，防止暴力破解攻击。</li>
+        <li>管理员角色通过后台配置控制，不暴露在前端。</li>
+      </ul>
+
+      <h3>4.3 安全事件处置</h3>
+      <div class="callout callout-warning">
+        <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>若发生或可能发生个人信息泄露、篡改、丢失等安全事件，我们将立即启动应急预案，采取补救措施，并按照法律法规要求向您和相关监管部门通知。</div>
+      </div>
+    </div>
+
+    <div class="section" id="s5">
+      <div class="section-head">
+        <span class="section-num">05</span>
+        <h2>信息的共享与披露</h2>
+      </div>
+
+      <h3>5.1 平台内的信息共享</h3>
+      <p>本平台的核心功能涉及以下信息共享场景：</p>
+      <ul>
+        <li><strong>联系方式解锁：</strong>当买家为某个车位成功付款后，可查看车主预设的联系方式。车主在发布时已知悉并同意该联系方式将在买家付费后被展示。</li>
+        <li><strong>公开信息：</strong>车位的标题、描述、价格、座位数、产品类型等信息对所有平台访问者可见。</li>
+        <li><strong>车主信息：</strong>车主的昵称和头像会在其发布的车位信息中展示。</li>
+      </ul>
+
+      <h3>5.2 第三方共享</h3>
+      <p>我们不会将您的个人信息出售给第三方。仅在以下情形中可能与第三方共享：</p>
+      <ul>
+        <li><strong>支付服务提供商：</strong>为完成交易，必要的订单信息会传递给支付渠道方。当前平台使用模拟支付，正式上线后将接入合规的第三方支付服务。</li>
+        <li><strong>法律法规要求：</strong>根据法律法规、法律程序、政府主管部门的强制性要求。</li>
+        <li><strong>经您授权：</strong>在获得您明确同意的其他情形。</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s6">
+      <div class="section-head">
+        <span class="section-num">06</span>
+        <h2>您的权利</h2>
+      </div>
+      <p>根据相关法律法规，您对您的个人信息享有以下权利：</p>
+
+      <table>
+        <thead>
+          <tr><th>权利</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>查阅与更正</strong></td><td>您可以在"个人中心"查阅并修改您的昵称和头像</td></tr>
+          <tr><td><strong>删除</strong></td><td>您可以联系我们删除您的个人信息，但法律法规规定需要保留的除外</td></tr>
+          <tr><td><strong>撤回同意</strong></td><td>您可以通过注销账户撤回对个人信息处理的同意</td></tr>
+          <tr><td><strong>注销账户</strong></td><td>联系平台客服申请注销，注销后我们将删除或匿名化您的个人信息</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="s7">
+      <div class="section-head">
+        <span class="section-num">07</span>
+        <h2>未成年人保护</h2>
+      </div>
+      <p>本平台不面向未满 18 周岁的未成年人提供服务。如果我们发现已收集了未成年人的个人信息，将及时删除相关数据。</p>
+    </div>
+
+    <div class="section" id="s8">
+      <div class="section-head">
+        <span class="section-num">08</span>
+        <h2>隐私政策的更新</h2>
+      </div>
+      <p>我们可能适时修订本隐私政策。更新后的政策将在平台上公布，并标注更新日期。重大变更时，我们将通过平台公告或其他适当方式通知您。</p>
+    </div>
+
+    <div class="section" id="s9">
+      <div class="section-head">
+        <span class="section-num">09</span>
+        <h2>联系我们</h2>
+      </div>
+      <p>如您对本隐私政策有任何疑问、意见或建议，可通过以下方式联系我们：</p>
+      <table>
+        <thead>
+          <tr><th>渠道</th><th>信息</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>电子邮件</strong></td><td>luotao@opxqo.com</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
 </div>
 
-<h2>一、引言</h2>
-<p>
-  本平台由个人开发者独立运营（以下简称"我们"）。我们深知个人信息对您的重要性，并会尽全力保护您的个人信息安全。我们致力于维持您对我们的信任，恪守以下原则保护您的个人信息：合法正当、最小必要、目的明确、安全保障、公开透明、权责一致。
-</p>
-<p>
-  本隐私政策适用于您通过 BusGPT 平台（包括网站及相关服务）访问和使用我们所提供的服务。
-</p>
-
-<h2>二、我们收集的信息</h2>
-
-<h3>2.1 您主动提供的信息</h3>
-<ul>
-  <li><strong>注册信息：</strong>手机号码、昵称。手机号码作为您的唯一登录标识。</li>
-  <li><strong>个人资料：</strong>头像图片（可选）。</li>
-  <li><strong>认证凭据：</strong>登录密码（经加密存储，我们无法获取明文）。</li>
-  <li><strong>发布内容：</strong>您在发布拼车信息时填写的标题、描述、价格、座位数、联系方式（如微信号、Telegram 等）及联系网站链接。</li>
-</ul>
-
-<h3>2.2 服务过程中产生的信息</h3>
-<ul>
-  <li><strong>交易信息：</strong>订单编号、交易金额、支付状态、支付时间、交易对方（车主/乘客）标识。</li>
-  <li><strong>联系方式解锁记录：</strong>您解锁车主联系方式的时间和对应车位信息。</li>
-  <li><strong>访问日志：</strong>IP 地址、访问时间、操作类型（用于安全防护和故障排查）。</li>
-</ul>
-
-<h3>2.3 我们不收集的信息</h3>
-<ul>
-  <li>我们不主动收集您的真实姓名、身份证号、银行卡号等敏感个人信息。</li>
-  <li>我们不通过 Cookies 或追踪技术收集您的浏览行为用于广告投放。</li>
-</ul>
-
-<h2>三、我们如何使用您的信息</h2>
-<p>我们收集的信息将用于以下目的：</p>
-<ul>
-  <li><strong>账号管理：</strong>创建和维护您的账户，实现登录认证和身份识别。</li>
-  <li><strong>服务提供：</strong>展示拼车信息、处理订单交易、在付费后为您解锁车主联系方式。</li>
-  <li><strong>安全防护：</strong>实施登录频率限制，防止暴力破解和恶意注册。</li>
-  <li><strong>运营优化：</strong>统计平台交易数据（聚合层面），优化产品功能和用户体验。</li>
-  <li><strong>合规义务：</strong>遵守法律法规要求，配合监管部门的合法请求。</li>
-</ul>
-
-<h2>四、信息的存储与保护</h2>
-
-<h3>4.1 存储地点与期限</h3>
-<p>
-  您的个人信息存储在中国境内的腾讯云服务器上，不跨境传输。您的个人信息在您使用服务期间持续保存，在您注销账户后，我们将在合理期限内删除或匿名化处理。
-</p>
-
-<h3>4.2 安全措施</h3>
-<ul>
-  <li>密码采用 bcrypt 单向哈希加密存储，任何人（包括平台管理员）均无法获取明文密码。</li>
-  <li>接口通信支持 HTTPS 加密传输（生产环境部署时启用）。</li>
-  <li>车主联系方式默认隐藏，仅在买家完成付款后方可查看，且访问受身份认证保护。</li>
-  <li>敏感操作（如登录）实施频率限制，防止暴力破解攻击。</li>
-  <li>管理员角色通过后台配置控制，不暴露在前端。</li>
-</ul>
-
-<h3>4.3 安全事件处置</h3>
-<p>
-  若发生或可能发生个人信息泄露、篡改、丢失等安全事件，我们将立即启动应急预案，采取补救措施，并按照法律法规要求向您和相关监管部门通知。
-</p>
-
-<h2>五、信息的共享与披露</h2>
-
-<h3>5.1 平台内的信息共享</h3>
-<p>本平台的核心功能涉及以下信息共享场景：</p>
-<ul>
-  <li><strong>联系方式解锁：</strong>当买家为某个车位成功付款后，可查看车主预设的联系方式（如微信号、Telegram 账号等）。车主在发布时已知悉并同意该联系方式将在买家付费后被展示。</li>
-  <li><strong>公开信息：</strong>车位的标题、描述、价格、座位数、产品类型等信息对所有平台访问者可见。</li>
-  <li><strong>车主信息：</strong>车主的昵称和头像会在其发布的车位信息中展示。</li>
-</ul>
-
-<h3>5.2 第三方共享</h3>
-<p>我们不会将您的个人信息出售给第三方。仅在以下情形中可能与第三方共享：</p>
-<ul>
-  <li><strong>支付服务提供商：</strong>为完成交易，必要的订单信息会传递给支付渠道方。当前平台使用模拟支付，正式上线后将接入合规的第三方支付服务。</li>
-  <li><strong>法律法规要求：</strong>根据法律法规、法律程序、政府主管部门的强制性要求。</li>
-  <li><strong>经您授权：</strong>在获得您明确同意的其他情形。</li>
-</ul>
-
-<h2>六、您的权利</h2>
-<p>根据相关法律法规，您对您的个人信息享有以下权利：</p>
-<ul>
-  <li><strong>查阅与更正：</strong>您可以在"个人中心"查阅并修改您的昵称和头像。</li>
-  <li><strong>删除：</strong>您可以联系我们删除您的个人信息，但法律法规规定需要保留的除外。</li>
-  <li><strong>撤回同意：</strong>您可以通过注销账户撤回对个人信息处理的同意。</li>
-  <li><strong>注销账户：</strong>您可以通过联系平台客服申请注销账户。注销后，我们将删除或匿名化您的个人信息，已发布的车位信息将被下架。</li>
-</ul>
-
-<h2>七、未成年人保护</h2>
-<p>
-  本平台不面向未满 18 周岁的未成年人提供服务。如果我们发现已收集了未成年人的个人信息，将及时删除相关数据。
-</p>
-
-<h2>八、隐私政策的更新</h2>
-<p>
-  我们可能适时修订本隐私政策。更新后的政策将在平台上公布，并标注更新日期。重大变更时，我们将通过平台公告或其他适当方式通知您。
-</p>
-
-<h2>九、联系我们</h2>
-<p>
-  如您对本隐私政策有任何疑问、意见或建议，可通过以下方式联系我们：
-</p>
-<ul>
-  <li>电子邮件：luotao@opxqo.com</li>
-</ul>
-
-<footer>
-  &copy; 2025 BusGPT ｜ <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="color:#999;text-decoration:none;">鄂ICP备2023027796号-5</a>
+<!-- Footer -->
+<footer class="page-footer">
+  <div class="footer-links">
+    <a href="/">首页</a>
+    <a href="/market">市场</a>
+    <a href="/platform-spec.html">平台规范</a>
+    <span class="footer-sep">|</span>
+    <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">鄂ICP备2023027796号-5</a>
+  </div>
+  <p>&copy; 2025 BusGPT. All rights reserved.</p>
 </footer>
 
-</div>
+<!-- Back to Top -->
+<button class="back-top" id="backTop" aria-label="回到顶部" onclick="window.scrollTo({top:0})">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+  // Back to top visibility
+  const btn = document.getElementById('backTop');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+
+  // Active TOC tracking
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`.toc-list a[href="#${entry.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+
 </body>
 </html>

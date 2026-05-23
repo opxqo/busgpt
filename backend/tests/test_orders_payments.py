@@ -68,6 +68,7 @@ async def db_session():
                     product="chatgpt-plus",
                     owner_id=1,
                     total_seats=2,
+                    recruit_seats=1,
                     price_per_month=Decimal("10.00"),
                     duration=1,
                     description="public",
@@ -153,11 +154,9 @@ async def test_owner_cannot_buy_and_full_ride_cannot_be_paid(db_session):
 
     buyer = await _user(db_session, 2)
     other = await _user(db_session, 3)
-    first = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
-    second = await orders.create_order(OrderCreate(ride_id=1), other, db_session)
+    await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
 
     ride = await db_session.get(Ride, 1)
-    ride.total_seats = 1
     ride.status = "open"
     await db_session.commit()
 
@@ -236,7 +235,7 @@ async def test_analytics_sales_and_rankings(db_session):
 
     assert overview.paid_orders == 1
     assert overview.total_revenue == Decimal("0.00")
-    assert overview.active_rides == 1
+    assert overview.active_rides == 0
     assert sales_trends[0].orders == 1
     assert sales_trends[0].revenue == Decimal("0.00")
     assert price_trends[0].product == "chatgpt-plus"

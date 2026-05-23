@@ -61,6 +61,8 @@ def _ensure_column(conn, table_name: str, column_name: str, definition: str):
     ).scalar()
     if not exists:
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD COLUMN {_quote_identifier(column_name)} {definition}"))
+        return True
+    return False
 
 
 def _ensure_index(conn, table_name: str, index_name: str, definition: str):
@@ -94,7 +96,7 @@ def _run_lightweight_migrations():
         _ensure_column(conn, "rides", "contact_website", "VARCHAR(255) NOT NULL DEFAULT ''")
         _ensure_column(conn, "rides", "contact_price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
         _ensure_column(conn, "rides", "warranty_days", "INT NOT NULL DEFAULT 30")
-        _ensure_column(conn, "rides", "recruit_seats", "INT NOT NULL DEFAULT 1")
+        recruit_seats_added = _ensure_column(conn, "rides", "recruit_seats", "INT NOT NULL DEFAULT 1")
         _ensure_column(conn, "orders", "payment_provider", "VARCHAR(30) NOT NULL DEFAULT 'mock'")
         _ensure_column(conn, "orders", "payment_no", "VARCHAR(64)")
         _ensure_column(conn, "orders", "payment_status", "VARCHAR(20) NOT NULL DEFAULT 'paid'")
@@ -115,7 +117,10 @@ def _run_lightweight_migrations():
         conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
         conn.execute(text("UPDATE rides SET status = 'open' WHERE status = 'full'"))
         conn.execute(text("UPDATE rides SET warranty_days = IF(duration >= 12, 365, duration * 30) WHERE warranty_days IS NULL OR warranty_days <= 0 OR (warranty_days = 30 AND duration <> 1)"))
-        conn.execute(text("UPDATE rides SET recruit_seats = GREATEST(total_seats - 1, 1) WHERE recruit_seats IS NULL OR recruit_seats <= 1"))
+        if recruit_seats_added:
+            conn.execute(text("UPDATE rides SET recruit_seats = GREATEST(total_seats - 1, 1)"))
+        else:
+            conn.execute(text("UPDATE rides SET recruit_seats = GREATEST(total_seats - 1, 1) WHERE recruit_seats IS NULL OR recruit_seats <= 0"))
         conn.execute(text("UPDATE orders SET status = 'paid' WHERE status IS NULL OR status = ''"))
         conn.execute(text("UPDATE orders SET payment_status = status WHERE payment_status IS NULL OR payment_status = ''"))
         conn.execute(text("UPDATE orders SET payment_provider = 'mock' WHERE payment_provider IS NULL OR payment_provider = ''"))
@@ -177,7 +182,7 @@ def init_db():
                 "type": "chatgpt-pro",
                 "label": "Pro",
                 "official_price": 200.00,
-                "color": "#f59e0b",
+                "color": "#8b5cf6",
                 "max_seats": 5,
                 "description": "最高用量、GPT-5.5 Pro、扩展深度研究",
             },

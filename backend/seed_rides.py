@@ -254,6 +254,7 @@ def seed_rides():
                 product=data["product"],
                 owner_id=owner.id,
                 total_seats=data["total_seats"],
+                recruit_seats=max(data["total_seats"] - 1, 1),
                 price_per_month=data["price_per_month"],
                 duration=data["duration"],
                 warranty_days=warranty_days,

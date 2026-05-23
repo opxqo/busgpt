@@ -45,6 +45,7 @@ class RideRankingItem(BaseModel):
     orders: int
     revenue: Decimal
     total_seats: int
+    recruit_seats: int
     remaining_seats: int
     status: str
     owner_id: int

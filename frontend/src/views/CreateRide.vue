@@ -77,6 +77,19 @@
               <span class="form-help">该车位包含车主本人的总拼车位数。</span>
             </div>
             <div class="form-group">
+              <label class="form-label" for="recruit-seats">上车人数</label>
+              <input
+                id="recruit-seats"
+                v-model.number="form.recruit_seats"
+                class="form-control"
+                type="number"
+                :min="1"
+                :max="maxRecruitSeats"
+                required
+              />
+              <span class="form-help">不含车主本人，表示还可以上车的车友人数。</span>
+            </div>
+            <div class="form-group">
               <label class="form-label" for="duration">车位有效期限</label>
               <div class="select-wrapper">
                 <select id="duration" v-model.number="form.duration" class="form-control" required>
@@ -215,7 +228,7 @@
 
               <div class="sim-footer">
                 <div class="sim-facts">
-                  <span>已拼 0/{{ form.total_seats }} 人</span>
+                  <span>已拼 0/{{ form.recruit_seats }} 人</span>
                   <span>{{ form.duration }}个月有效期</span>
                 </div>
               </div>
@@ -283,6 +296,7 @@ const form = reactive({
   title: '',
   product: 'chatgpt-plus' as ProductType,
   total_seats: 4,
+  recruit_seats: 3,
   price_per_month: 35,
   duration: 3,
   warranty_days: 90,
@@ -345,6 +359,7 @@ const activeProductObj = computed(() => {
 const durationToWarrantyDays = (duration: number) => (duration >= 12 ? 365 : duration * 30)
 const activeProductLabel = computed(() => activeProductObj.value?.label || 'Plus')
 const maxSeatsAllowed = computed(() => activeProductObj.value?.max_seats || 4)
+const maxRecruitSeats = computed(() => Math.max(form.total_seats - 1, 1))
 const contactInfoPayload = computed(() => {
   const lines = contactMethods
     .map((method) => {
@@ -363,9 +378,18 @@ watch(
   }
 )
 
+watch(
+  () => form.total_seats,
+  () => {
+    if (form.recruit_seats > maxRecruitSeats.value) form.recruit_seats = maxRecruitSeats.value
+    if (form.recruit_seats < 1) form.recruit_seats = 1
+  }
+)
+
 const selectProduct = (product: Product) => {
   form.product = product.type
   form.total_seats = product.max_seats
+  form.recruit_seats = Math.max(product.max_seats - 1, 1)
   if (product.type === 'chatgpt-plus') form.price_per_month = 35
   if (product.type === 'chatgpt-team') form.price_per_month = 28
   if (product.type === 'chatgpt-pro') form.price_per_month = 90
@@ -378,6 +402,7 @@ const validateContact = () => {
   const website = form.contacts.website.trim()
 
   if (!email && !wechat && !telegram && !website) return '请至少填写一种隐藏的联系方式'
+  if (form.recruit_seats >= form.total_seats) return '上车人数必须小于车位总人数'
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '请填写有效的邮箱地址'
   if (wechat && !/^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(wechat)) return '请填写正确的微信号格式'
   if (telegram && !/^(@?[-_a-zA-Z0-9]{5,32}|https:\/\/t\.me\/[-_a-zA-Z0-9]{5,32})$/.test(telegram)) return '请填写有效的 Telegram 用户名'
@@ -398,6 +423,7 @@ const handleSubmit = async () => {
       title: form.title,
       product: form.product,
       total_seats: form.total_seats,
+      recruit_seats: form.recruit_seats,
       price_per_month: form.price_per_month,
       duration: form.duration,
       warranty_days: form.warranty_days,

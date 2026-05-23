@@ -27,6 +27,7 @@ export const ridesApi = {
     title: string
     product: ProductType
     total_seats: number
+    recruit_seats: number
     price_per_month: number
     duration: number
     warranty_days: number
@@ -42,6 +43,7 @@ export const ridesApi = {
     title?: string
     product?: ProductType
     total_seats?: number
+    recruit_seats?: number
     price_per_month?: number
     duration?: number
     warranty_days?: number
