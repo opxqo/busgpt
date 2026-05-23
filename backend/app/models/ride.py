@@ -15,6 +15,7 @@ class Ride(Base):
     warranty_days = Column(Integer, nullable=False, default=30)
     description = Column(Text, default="")  # Public description
     contact_info = Column(Text, default="")  # Owner's contact info (WeChat, etc.) - only visible after purchase
+    contact_website = Column(String(255), default="")
     contact_price = Column(Numeric(10, 2), nullable=False, default=0)  # Price to view contact info (CNY)
     status = Column(String(20), nullable=False, default="open", index=True)  # open, closed, expired
     created_at = Column(DateTime, nullable=False, server_default=func.now())

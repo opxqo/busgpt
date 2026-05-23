@@ -37,6 +37,7 @@ def build_ride_response(
     ride: Ride,
     purchase_count: int,
     contact_info: Optional[str] = None,
+    contact_website: Optional[str] = None,
     is_purchased: bool = False,
 ) -> RideDetailResponse:
     remaining_seats = max((ride.total_seats or 0) - purchase_count, 0)
@@ -60,6 +61,7 @@ def build_ride_response(
         owner=ride.owner,
         product_details=ride.product_details,
         contact_info=contact_info,
+        contact_website=contact_website,
         is_purchased=is_purchased,
     )
 
@@ -135,7 +137,7 @@ async def get_my_owned_rides(
     responses = []
     for ride in rides:
         purchase_count = await get_ride_purchase_count(db, ride.id)
-        responses.append(build_ride_response(ride, purchase_count, ride.contact_info, True))
+        responses.append(build_ride_response(ride, purchase_count, ride.contact_info, ride.contact_website, True))
     return responses
 
 # 3. Ride List (Market) with filtering
@@ -216,6 +218,7 @@ async def create_ride(
         warranty_days=warranty_days,
         description=ride_in.description,
         contact_info=ride_in.contact_info,
+        contact_website=ride_in.contact_website or "",
         contact_price=ride_in.contact_price,
         status="open",
         expires_at=expires_at
@@ -236,7 +239,7 @@ async def create_ride(
     )
     ride = result.scalars().first()
     
-    return build_ride_response(ride, 0, ride.contact_info, True)
+    return build_ride_response(ride, 0, ride.contact_info, ride.contact_website, True)
 
 # 5. Get Ride Details (conditionally returns contact_info)
 @router.get("/rides/{ride_id}", response_model=RideDetailResponse)
@@ -277,6 +280,7 @@ async def get_ride(
         ride,
         purchase_count,
         ride.contact_info if (is_owner or is_purchased) else None,
+        ride.contact_website if (is_owner or is_purchased) else None,
         bool(is_purchased or is_owner),
     )
 
@@ -314,6 +318,8 @@ async def update_ride(
         ride.description = ride_in.description
     if ride_in.contact_info is not None:
         ride.contact_info = ride_in.contact_info
+    if ride_in.contact_website is not None:
+        ride.contact_website = ride_in.contact_website
     if ride_in.contact_price is not None:
         ride.contact_price = ride_in.contact_price
     if ride_in.status is not None:
@@ -326,7 +332,7 @@ async def update_ride(
     await db.commit()
     
     purchase_count = await get_ride_purchase_count(db, ride_id)
-    return build_ride_response(ride, purchase_count, ride.contact_info, True)
+    return build_ride_response(ride, purchase_count, ride.contact_info, ride.contact_website, True)
 
 # 7. Delete Ride
 @router.delete("/rides/{ride_id}")

@@ -14,6 +14,7 @@ class RideBase(BaseModel):
     warranty_days: Optional[int] = Field(None, gt=0, le=730, description="Guaranteed service days")
     description: Optional[str] = ""
     contact_info: str = Field(..., min_length=1, description="Owner contact info (WeChat, phone, etc.)")
+    contact_website: Optional[str] = Field("", max_length=255, description="Owner personal website")
     contact_price: Decimal = Field(..., ge=0, description="Price to view contact info in CNY")
 
 class RideCreate(RideBase):
@@ -25,6 +26,7 @@ class RideUpdate(BaseModel):
     warranty_days: Optional[int] = Field(None, gt=0, le=730)
     description: Optional[str] = None
     contact_info: Optional[str] = None
+    contact_website: Optional[str] = Field(None, max_length=255)
     contact_price: Optional[Decimal] = Field(None, ge=0)
     status: Optional[str] = Field(None, description="open, closed, expired")
 
@@ -52,6 +54,7 @@ class RideResponse(BaseModel):
 
 class RideDetailResponse(RideResponse):
     contact_info: Optional[str] = None  # Only populated for owner or paid users
+    contact_website: Optional[str] = None  # Only populated for owner or paid users
     is_purchased: bool = False  # Whether current user has purchased
 
     class Config:

@@ -7,7 +7,7 @@ export interface User {
   created_at: string
 }
 
-export type ContactType = 'email' | 'wechat' | 'telegram'
+export type ContactType = 'email' | 'wechat' | 'telegram' | 'website'
 
 export type ProductType = 'chatgpt-plus' | 'chatgpt-team' | 'chatgpt-pro'
 
@@ -32,6 +32,7 @@ export interface Ride {
   description: string
   contact_price: number
   contact_info?: string  // Only available after purchase or for owner
+  contact_website?: string
   is_purchased?: boolean
   purchase_count?: number
   remaining_seats?: number
@@ -58,5 +59,6 @@ export interface Order {
   ride_remaining_seats?: number
   ride_status?: 'open' | 'closed' | 'expired' | 'deleted'
   ride_contact_info?: string
+  ride_contact_website?: string
   ride_owner?: User
 }

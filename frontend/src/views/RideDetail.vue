@@ -227,6 +227,7 @@
                       <path fill="currentColor" d="M48 96h416c26.5 0 48 21.5 48 48v224c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V144c0-26.5 21.5-48 48-48z"/>
                       <path fill="#ffffff" d="M460.6 156.4c5.1 6.2 4.1 15.4-2.2 20.4L280.7 319.1c-14.5 11.6-35 11.6-49.5 0L53.6 176.8c-6.3-5-7.3-14.2-2.2-20.4s14.2-7.3 20.4-2.2L249.5 296.5c3.8 3 9.2 3 13 0L440.2 154.2c6.2-5.1 15.4-4.1 20.4 2.2z"/>
                     </svg>
+                    <Globe v-else-if="item.type === 'website'" :size="22" />
                   </div>
                   <div class="contact-details-wrap">
                     <span class="contact-type-label">{{ item.label }}</span>
@@ -276,6 +277,7 @@ import {
   Copy,
   ExternalLink,
   FileText,
+  Globe,
   Mail,
   MessageCircle,
   ReceiptText,
@@ -360,6 +362,7 @@ const contactMeta: Record<ContactType, { label: string; icon: Component }> = {
   email: { label: '电子邮箱', icon: Mail },
   wechat: { label: '微信账号', icon: MessageCircle },
   telegram: { label: 'Telegram', icon: SendHorizontal },
+  website: { label: '个人网站', icon: Globe },
 }
 
 const normalizeTelegramHref = (account: string) => {
@@ -370,6 +373,7 @@ const normalizeTelegramHref = (account: string) => {
 const contactHref = (type: ContactType, account: string) => {
   if (type === 'email') return `mailto:${account}`
   if (type === 'telegram') return normalizeTelegramHref(account)
+  if (type === 'website') return account
   return ''
 }
 
@@ -399,9 +403,11 @@ const contactItems = computed<ContactItem[]>(() => {
     items.push(buildContactItem(type, value, note))
   }
 
+  addItem('website', ride.value?.contact_website)
+
   const extractByLabels = (labels: string[]) => {
     const labelPattern = labels.join('|')
-    const nextLabelPattern = '邮箱|email|微信|wechat|telegram|电报|tg|备注|note'
+    const nextLabelPattern = '邮箱|email|微信|wechat|telegram|电报|tg|个人网站|网站|website|site|url|备注|note'
     const pattern = new RegExp(`(?:^|\\n|\\s)(?:${labelPattern})\\s*[:：]\\s*([^\\n]+?)(?=\\s+(?:${nextLabelPattern})\\s*[:：]|$)`, 'i')
     return raw.match(pattern)?.[1]?.trim()
   }
@@ -409,15 +415,17 @@ const contactItems = computed<ContactItem[]>(() => {
   addItem('email', extractByLabels(['邮箱', 'email']))
   addItem('wechat', extractByLabels(['微信', 'wechat']))
   addItem('telegram', extractByLabels(['telegram', '电报', 'tg']))
+  addItem('website', extractByLabels(['个人网站', '网站', 'website', 'site', 'url']))
 
   lines.forEach((line) => {
-    const match = line.match(/^(邮箱|email|微信|wechat|telegram|电报|tg)\s*[:：]\s*(.+)$/i)
+    const match = line.match(/^(邮箱|email|微信|wechat|telegram|电报|tg|个人网站|网站|website|site|url)\s*[:：]\s*(.+)$/i)
     if (!match) return
     const key = (match[1] || '').toLowerCase()
     const value = match[2] || ''
     if (key === '邮箱' || key === 'email') addItem('email', value)
     if (key === '微信' || key === 'wechat') addItem('wechat', value)
     if (key === 'telegram' || key === '电报' || key === 'tg') addItem('telegram', value)
+    if (key === '个人网站' || key === '网站' || key === 'website' || key === 'site' || key === 'url') addItem('website', value)
   })
 
   const oldChannel = lines.find((line) => line.startsWith('联系渠道：'))?.replace('联系渠道：', '').trim()
@@ -425,6 +433,7 @@ const contactItems = computed<ContactItem[]>(() => {
   if (oldChannel && oldAccount) {
     const lower = `${oldChannel} ${oldAccount}`.toLowerCase()
     if (lower.includes('telegram') || oldAccount.startsWith('@') || oldAccount.includes('t.me/')) addItem('telegram', oldAccount)
+    else if (/^https?:\/\//i.test(oldAccount)) addItem('website', oldAccount)
     else if (lower.includes('邮箱') || lower.includes('email') || oldAccount.includes('@')) addItem('email', oldAccount)
     else addItem('wechat', oldAccount)
   }
@@ -434,6 +443,9 @@ const contactItems = computed<ContactItem[]>(() => {
 
   const telegramMatch = raw.match(/(?:https?:\/\/t\.me\/[-_a-zA-Z0-9]{5,32}|@[-_a-zA-Z0-9]{5,32})/)
   addItem('telegram', telegramMatch?.[0])
+
+  const websiteMatch = raw.match(/https?:\/\/(?!t\.me\/)[^\s]+/i)
+  addItem('website', websiteMatch?.[0])
 
   if (!items.length && raw.trim()) addItem('wechat', raw.trim())
   return items
@@ -471,9 +483,10 @@ const formattedExpiryDate = computed(() => {
 })
 
 const copyContact = async () => {
-  if (!ride.value?.contact_info) return
+  const contactText = [ride.value?.contact_info, ride.value?.contact_website ? `个人网站：${ride.value.contact_website}` : ''].filter(Boolean).join('\n')
+  if (!contactText) return
   try {
-    await navigator.clipboard.writeText(ride.value.contact_info)
+    await navigator.clipboard.writeText(contactText)
     copied.value = true
     showToast('全部联系方式已复制', 'success')
     setTimeout(() => {
@@ -1144,6 +1157,11 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .brand-logo-wrapper.email {
   background: rgba(37, 99, 235, 0.08);
   color: #2563eb;
+}
+
+.brand-logo-wrapper.website {
+  background: var(--color-pro-soft);
+  color: var(--color-pro);
 }
 
 .brand-logo-svg {

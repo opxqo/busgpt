@@ -32,6 +32,7 @@ export const ridesApi = {
     warranty_days: number
     description?: string
     contact_info: string
+    contact_website?: string
     contact_price: number
   }) {
     return apiClient.post('/rides', ride)
@@ -43,6 +44,7 @@ export const ridesApi = {
     warranty_days?: number
     description?: string
     contact_info?: string
+    contact_website?: string
     contact_price?: number
     status?: string
   }) {

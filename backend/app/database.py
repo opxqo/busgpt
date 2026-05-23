@@ -79,6 +79,7 @@ def _run_lightweight_migrations():
     with sync_engine.begin() as conn:
         _ensure_column(conn, "users", "role", "VARCHAR(20) NOT NULL DEFAULT 'user'")
         _ensure_column(conn, "rides", "contact_info", "TEXT")
+        _ensure_column(conn, "rides", "contact_website", "VARCHAR(255) NOT NULL DEFAULT ''")
         _ensure_column(conn, "rides", "contact_price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
         _ensure_column(conn, "rides", "warranty_days", "INT NOT NULL DEFAULT 30")
         _ensure_column(conn, "orders", "payment_provider", "VARCHAR(30) NOT NULL DEFAULT 'mock'")

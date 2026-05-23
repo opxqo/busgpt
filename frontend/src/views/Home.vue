@@ -989,7 +989,10 @@ onBeforeUnmount(() => {
 
 /* Operational highlights */
 .summary-card-dashboard {
-  background: linear-gradient(135deg, #ffffff 0%, var(--bg-inset) 100%);
+  border-color: color-mix(in srgb, var(--color-info) 24%, var(--border-color));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-info-soft) 72%, transparent) 0%, transparent 62%),
+    var(--bg-card);
 }
 
 .mini-stats-flow {
@@ -1002,9 +1005,9 @@ onBeforeUnmount(() => {
 
 .mini-stat-box {
   padding: 10px 12px;
-  border: 1px dashed var(--border-color);
+  border: 1px solid color-mix(in srgb, var(--color-info) 18%, var(--border-color));
   border-radius: var(--border-radius-md);
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, var(--color-info-soft));
   display: flex;
   flex-direction: column;
   gap: 2px;

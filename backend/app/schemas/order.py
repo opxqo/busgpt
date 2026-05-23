@@ -36,6 +36,7 @@ class OrderDetailResponse(OrderResponse):
     ride_remaining_seats: int = 0
     ride_status: str = ""
     ride_contact_info: str = ""
+    ride_contact_website: str = ""
     ride_owner: Optional[UserResponse] = None
 
     class Config:

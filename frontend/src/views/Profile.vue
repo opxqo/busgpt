@@ -97,7 +97,7 @@
                 </td>
                 <td class="date-col">{{ formatDate(order.created_at) }}</td>
                 <td class="text-right">
-                  <button class="btn-copy" type="button" @click="copyText(order.ride_contact_info || '', order.id)">
+                  <button class="btn-copy" type="button" @click="copyText(orderContactText(order), order.id)">
                     <Copy :size="13" />
                     <span>{{ copyStates[order.id] ? '已复制' : '复制资料' }}</span>
                   </button>
@@ -277,6 +277,13 @@ const copyText = async (text: string, id: number) => {
   }, 1800)
 }
 
+const orderContactText = (order: Order) => {
+  return [
+    order.ride_contact_info || '',
+    order.ride_contact_website ? `个人网站：${order.ride_contact_website}` : '',
+  ].filter(Boolean).join('\n')
+}
+
 const productLabel = (product?: string) => {
   if (product === 'chatgpt-team') return 'Team 协作'
   if (product === 'chatgpt-pro') return 'Pro 极客'
@@ -303,8 +310,10 @@ const formatDate = (dateText: string) => {
   justify-content: space-between;
   gap: var(--spacing-md);
   padding: var(--spacing-lg) var(--spacing-xl);
-  background: linear-gradient(135deg, #ffffff 0%, var(--bg-tertiary) 100%);
-  border-color: var(--border-color-strong);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-info-soft) 74%, transparent) 0%, transparent 62%),
+    var(--bg-card);
+  border-color: color-mix(in srgb, var(--color-info) 24%, var(--border-color));
 }
 
 .profile-main {
@@ -322,7 +331,7 @@ const formatDate = (dateText: string) => {
   height: 60px;
   border-radius: var(--border-radius-full);
   background: var(--bg-tertiary);
-  border: 2px solid #ffffff;
+  border: 2px solid var(--bg-card);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
@@ -333,7 +342,7 @@ const formatDate = (dateText: string) => {
   width: 12px;
   height: 12px;
   background: var(--color-success);
-  border: 2px solid #ffffff;
+  border: 2px solid var(--bg-card);
   border-radius: var(--border-radius-full);
 }
 

@@ -149,7 +149,7 @@
               <input
                 v-model.trim="form.contacts[method.value]"
                 class="form-control"
-                :type="method.value === 'email' ? 'email' : 'text'"
+                :type="method.value === 'email' ? 'email' : method.value === 'website' ? 'url' : 'text'"
                 :placeholder="method.placeholder"
               />
             </div>
@@ -235,7 +235,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
-import { Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck } from '@lucide/vue'
+import { Globe, Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck } from '@lucide/vue'
 import { ridesApi } from '../api/rides'
 import type { ContactType, Product, ProductType } from '../types'
 
@@ -291,6 +291,7 @@ const form = reactive({
     email: '',
     wechat: '',
     telegram: '',
+    website: '',
   } as Record<ContactType, string>,
   contact_note: '',
 })
@@ -316,6 +317,13 @@ const contactMethods: ContactMethod[] = [
     icon: SendHorizontal,
     placeholder: '例如：@username 或 https://t.me/username',
     help: '适合跨境车友沟通。可填用户名或直达链接。',
+  },
+  {
+    value: 'website' as ContactType,
+    label: '个人网站',
+    icon: Globe,
+    placeholder: '例如：https://example.com',
+    help: '可填写个人主页、作品集或可信资料页。',
   },
 ]
 
@@ -367,11 +375,13 @@ const validateContact = () => {
   const email = form.contacts.email.trim()
   const wechat = form.contacts.wechat.trim()
   const telegram = form.contacts.telegram.trim()
+  const website = form.contacts.website.trim()
 
-  if (!email && !wechat && !telegram) return '请至少填写一种隐藏的联系方式'
+  if (!email && !wechat && !telegram && !website) return '请至少填写一种隐藏的联系方式'
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '请填写有效的邮箱地址'
   if (wechat && !/^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(wechat)) return '请填写正确的微信号格式'
   if (telegram && !/^(@?[-_a-zA-Z0-9]{5,32}|https:\/\/t\.me\/[-_a-zA-Z0-9]{5,32})$/.test(telegram)) return '请填写有效的 Telegram 用户名'
+  if (website && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(website)) return '请填写以 http:// 或 https:// 开头的个人网站地址'
   return ''
 }
 
@@ -393,6 +403,7 @@ const handleSubmit = async () => {
       warranty_days: form.warranty_days,
       description: form.description,
       contact_info: contactInfoPayload.value,
+      contact_website: form.contacts.website.trim(),
       contact_price: 0,
     })
     router.push(`/ride/${res.data.id}`)
@@ -730,6 +741,11 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .contact-input-box.telegram .method-icon-wrap {
   background: #e0f2fe;
   color: #0369a1;
+}
+
+.contact-input-box.website .method-icon-wrap {
+  background: var(--color-pro-soft);
+  color: var(--color-pro);
 }
 
 .method-meta {

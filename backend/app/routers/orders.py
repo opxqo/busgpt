@@ -90,6 +90,7 @@ def build_order_detail(order: Order, ride: Optional[Ride]) -> OrderDetailRespons
         ride_remaining_seats=remaining_seats,
         ride_status=ride.status if ride else "deleted",
         ride_contact_info=ride.contact_info if (ride and show_contact) else "",
+        ride_contact_website=ride.contact_website if (ride and show_contact) else "",
         ride_owner=ride.owner if ride else None,
     )
 
