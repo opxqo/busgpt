@@ -33,6 +33,7 @@ class OrderDetailResponse(OrderResponse):
     ride_price_per_month: Decimal = 0
     ride_duration: int = 0
     ride_total_seats: int = 0
+    ride_recruit_seats: int = 0
     ride_purchase_count: int = 0
     ride_remaining_seats: int = 0
     ride_status: str = ""

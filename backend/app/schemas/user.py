@@ -14,6 +14,10 @@ class UserUpdate(BaseModel):
     nickname: Optional[str] = Field(None, min_length=2, max_length=50)
     avatar: Optional[str] = ""
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(..., min_length=6, max_length=30)
+    new_password: str = Field(..., min_length=6, max_length=30)
+
 class UserResponse(BaseModel):
     id: int
     phone: str

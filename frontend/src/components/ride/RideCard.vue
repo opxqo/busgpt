@@ -72,7 +72,7 @@ const props = defineProps<{
 const defaultAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${props.ride.owner_id}&backgroundColor=0f172a`
 
 const productLabel = computed(() => {
-  if (props.ride.product === 'chatgpt-team') return 'Team 协作'
+  if (props.ride.product === 'chatgpt-team') return 'Business 团队'
   if (props.ride.product === 'chatgpt-pro') return 'Pro 极客'
   return 'Plus 拼车'
 })

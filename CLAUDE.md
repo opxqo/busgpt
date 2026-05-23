@@ -23,6 +23,8 @@ source .venv/bin/activate          # Python 3.9 虚拟环境
 pip install -r requirements.txt    # 安装依赖
 uvicorn app.main:app --reload      # 启动开发服务器 (http://127.0.0.1:8000)
 python init_db.py                  # 手动初始化数据库（启动时也会自动执行）
+pytest                             # 运行全部测试（使用内存 SQLite，无需 MySQL）
+pytest tests/test_orders_payments.py::test_name  # 运行单个测试
 ```
 
 后端启动时通过 `database.py` 的 `init_db()` 自动建表并写入初始产品数据。
@@ -45,20 +47,25 @@ Node.js 版本要求：^20.19.0 或 >= 22.12.0。
 
 ### 后端 (FastAPI)
 
-分层结构：`routers/` → `schemas/` → `models/` → `database.py`
+分层结构：`routers/` → `schemas/` → `models/` → `database.py`，辅以 `services/`（支付）和 `utils/`（安全、限流）
 
-- **入口：** `app/main.py` — FastAPI 应用，CORS 允许所有来源，路由注册在 `/api` 前缀下
-- **配置：** `app/config.py` — Pydantic Settings，从 `.env` 读取（MySQL 连接、JWT 密钥/过期时间）
+- **入口：** `app/main.py` — FastAPI 应用，CORS 由 `BACKEND_CORS_ORIGINS` 环境变量控制（默认允许本地开发端口），路由注册在 `/api` 前缀下
+- **配置：** `app/config.py` — Pydantic Settings，从 `.env` 读取（MySQL 连接、JWT 密钥/过期时间、支付配置等）
 - **数据库：** `app/database.py` — 双引擎：async (aiomysql) 处理 API 请求，sync (pymysql) 用于启动/管理任务；`get_db()` 异步依赖注入；`init_db()` 建库建表并执行轻量级列迁移
 - **认证：** 手机号 + 密码 → bcrypt 哈希 → JWT (HS256, 7天有效期)，通过 `Authorization: Bearer` 头传递。`routers/auth.py` 中的 `get_current_user` 依赖被其他路由复用
+- **管理员：** 注册时若手机号在 `ADMIN_PHONES` 环境变量列表中则自动设为 admin 角色；`get_current_admin_user` 依赖校验 `role == "admin"`
+- **支付：** `services/payments.py` — 抽象 `PaymentProvider` + `MockPaymentProvider`（当前唯一实现），通过 `PAYMENT_PROVIDER` 配置选择
+- **限流：** `utils/rate_limit.py` — 登录注册 IP+手机号维度限流（5次/15分钟），内存存储
 - **核心业务逻辑：** 车位的 `contact_info` 默认隐藏，仅车主本人或已付款用户可查看
+
+路由：`auth`（认证）、`users`（个人资料）、`rides`（车位 CRUD + 产品管理）、`orders`（下单支付）、`analytics`（销售统计）
 
 数据表：`users`、`products`、`rides`、`orders`、`ride_members`（已定义但未使用，预留功能）
 
 ### 前端 (Vue 3)
 
 - **布局：** `App.vue` — 固定左侧边栏 (`components/layout/Sidebar.vue`) + `<router-view>` + 页脚
-- **路由：** `router/index.ts` — 受保护路由通过导航守卫跳转到 `/login`
+- **路由：** `router/index.ts` — 受保护路由通过导航守卫跳转到 `/login`；`meta.requiresAdmin` 路由检查 `user.role === 'admin'`
 - **状态管理：** Pinia stores (`stores/`) — `user.ts` (认证状态)、`rides.ts` (列表和产品)
 - **API 层：** `api/client.ts` — Axios 实例，默认地址 `http://127.0.0.1:8000/api`（可通过 `VITE_API_URL` 覆盖），请求拦截自动附加 Bearer token，401 响应自动清除登录态
 - **样式：** 纯 CSS + CSS 自定义属性（`styles/variables.css`），无 Tailwind。产品配色：绿=Plus，蓝=Team，琥珀=Pro
@@ -70,9 +77,12 @@ Node.js 版本要求：^20.19.0 或 >= 22.12.0。
 - **后端配置：** 所有密钥/连接串通过 `.env` 文件（参考 `backend/.env.example`）
 - **API 前缀：** 所有后端路由统一在 `/api` 下
 
+## 测试
+
+后端测试使用 pytest + pytest-asyncio（`asyncio_mode = auto`），测试 fixture 基于内存 SQLite，无需运行中的 MySQL 实例。测试文件位于 `backend/tests/`。
+
 ## 注意事项
 
-- 项目无测试基础设施
 - Alembic 列为依赖但未实际使用，迁移由 `database.py` 的 `_run_lightweight_migrations()` 在启动时自动添加缺失列
 - 前端 `src/` 中残留多处模板脚手架文件（`HomeView.vue`、`AboutView.vue`、`HelloWorld.vue`、`counter.ts`、icon 组件等），未被使用
 - `ride_members` 模型已定义但无路由引用

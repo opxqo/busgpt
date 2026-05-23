@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BusGPT 信息共享平台规范</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.8;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      background: #fff;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .meta {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 32px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #eee;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 20px 0 8px;
+    }
+    p, li {
+      font-size: 15px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    ul, ol { padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    .highlight {
+      background: #f7f7f7;
+      border-left: 3px solid #10b981;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .warning {
+      background: #fef9e7;
+      border-left: 3px solid #f59e0b;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .placeholder {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #e5e5e5;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    th {
+      background: #f7f7f7;
+      font-weight: 600;
+    }
+    footer {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+<h1>BusGPT 信息共享平台规范</h1>
+<p class="meta">更新日期：2025 年 5 月 24 日 ｜ 生效日期：2025 年 5 月 24 日</p>
+
+<div class="highlight">
+  本规范旨在明确 BusGPT 平台的服务范围、用户行为准则和平台治理规则，保障平台健康有序运营。使用本平台即视为您已阅读并同意遵守本规范。
+</div>
+
+<h2>一、总则</h2>
+
+<h3>1.1 平台定义</h3>
+<p>
+  BusGPT 是一个人工智能订阅拼车信息共享平台（以下简称"本平台"），为用户提供 AI 订阅服务（包括但不限于 ChatGPT Plus、Team、Pro 等）的合租拼车信息发布与浏览服务。"Bus"取"拼车"之意。
+</p>
+
+<h3>1.2 平台定位</h3>
+<p>本平台的定位为<strong>信息中介服务</strong>，具体包括：</p>
+<ul>
+  <li>为车主（订阅持有人）提供车位信息展示服务。</li>
+  <li>为乘客（合租需求方）提供车位浏览和联系方式获取服务。</li>
+  <li>为双方提供交易撮合和订单管理功能。</li>
+</ul>
+
+<div class="warning">
+  <strong>重要声明：</strong>本平台不是订阅服务的直接提供方，不代理任何 AI 订阅的购买、付款或续费。平台不参与用户之间的订阅账号共享操作，不承担因合租行为产生的服务质量或账号安全责任。
+</div>
+
+<h3>1.3 适用范围</h3>
+<p>本规范适用于所有使用本平台服务的用户，包括但不限于浏览者、注册用户（车主和乘客）、平台管理员。</p>
+
+<h2>二、用户注册与账号管理</h2>
+
+<h3>2.1 注册条件</h3>
+<ul>
+  <li>用户须年满 18 周岁，具有完全民事行为能力。</li>
+  <li>使用中国大陆手机号码注册，一个手机号码对应一个账户。</li>
+  <li>注册时需提供真实有效的手机号码和昵称。</li>
+</ul>
+
+<h3>2.2 账号安全</h3>
+<ul>
+  <li>用户应妥善保管账户密码，因密码泄露导致的损失由用户自行承担。</li>
+  <li>禁止将账户转让、出借或以任何方式提供给他人使用。</li>
+  <li>发现账号异常（如被盗用），应立即联系平台处理。</li>
+</ul>
+
+<h3>2.3 角色说明</h3>
+<table>
+  <tr>
+    <th>角色</th>
+    <th>权限</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td>普通用户</td>
+    <td>浏览车位、购买联系方式、发布车位</td>
+    <td>注册后即可使用</td>
+  </tr>
+  <tr>
+    <td>管理员</td>
+    <td>管理产品类型、编辑产品信息</td>
+    <td>由平台运营方指定</td>
+  </tr>
+</table>
+
+<h2>三、信息发布规范</h2>
+
+<h3>3.1 车位发布规则</h3>
+<p>车主在发布车位信息时，应遵守以下规则：</p>
+<ol>
+  <li><strong>信息真实：</strong>发布的标题、描述、价格等信息应真实准确，不得虚构或夸大。</li>
+  <li><strong>价格合理：</strong>价格应合理反映合租成本，禁止恶意抬价或低价引流。</li>
+  <li><strong>座位限制：</strong>发布座位数不得超过对应产品类型的最大限制（Plus 最多 4 座、Business 最多 10 座、Pro 最多 5 座）。</li>
+  <li><strong>联系方式：</strong>填写的联系方式应为有效的沟通渠道（如微信号、Telegram 等），确保买家付费后能够联系到您。</li>
+  <li><strong>履约义务：</strong>车位发布后，车主有义务在保修期内提供稳定的合租服务。</li>
+</ol>
+
+<h3>3.2 禁止发布的内容</h3>
+<p>以下内容严格禁止在平台上发布：</p>
+<ul>
+  <li><strong>违法违规内容：</strong>涉及违法犯罪、政治敏感、暴力恐怖、色情低俗的信息。</li>
+  <li><strong>虚假信息：</strong>伪造或虚构的车位信息、虚假的订阅状态。</li>
+  <li><strong>侵权内容：</strong>侵犯他人知识产权、隐私权或其他合法权益的内容。</li>
+  <li><strong>广告引流：</strong>与 AI 订阅合租无关的商业广告、推广链接或引流信息。</li>
+  <li><strong>恶意内容：</strong>侮辱诽谤、人身攻击、恶意差评等干扰平台秩序的内容。</li>
+  <li><strong>违规联系方式：</strong>使用联系方式字段传递与合租无关的信息（如暗网链接、赌博网站等）。</li>
+</ul>
+
+<h3>3.3 内容审核</h3>
+<p>
+  平台有权对用户发布的内容进行审核，对违反本规范的内容采取删除、屏蔽、限制展示等措施，并视情节对发布者进行警告、限制功能或封禁账户等处理。
+</p>
+
+<h2>四、交易规则</h2>
+
+<h3>4.1 交易流程</h3>
+<ol>
+  <li>乘客浏览车位信息，选择合适的车位。</li>
+  <li>乘客支付联系方式查看费用（即"contact_price"），完成付款。</li>
+  <li>付款成功后，乘客可查看车主的联系方式和联系网站。</li>
+  <li>乘客通过车主提供的联系方式与车主沟通后续合租事宜。</li>
+</ol>
+
+<h3>4.2 费用说明</h3>
+<ul>
+  <li><strong>联系方式查看费：</strong>由车主定价，乘客支付后获得车主联系方式。该费用为信息获取费用，不包含订阅合租费。</li>
+  <li><strong>订阅合租费：</strong>由车主和乘客自行协商，不在本平台进行，本平台不收取任何分成或佣金。</li>
+  <li><strong>退费政策：</strong>联系方式一经解锁，原则上不予退费。如存在特殊情况（如车主联系方式无效），可联系平台客服处理。</li>
+</ul>
+
+<h3>4.3 订单状态</h3>
+<table>
+  <tr>
+    <th>状态</th>
+    <th>含义</th>
+  </tr>
+  <tr>
+    <td>待支付 (pending)</td>
+    <td>订单已创建，等待买家完成付款</td>
+  </tr>
+  <tr>
+    <td>已支付 (paid)</td>
+    <td>付款成功，联系方式已解锁</td>
+  </tr>
+  <tr>
+    <td>已过期 (expired)</td>
+    <td>超时未付款，订单自动关闭</td>
+  </tr>
+  <tr>
+    <td>已退款 (refunded)</td>
+    <td>款项已退还（特殊情况下适用）</td>
+  </tr>
+</table>
+
+<h3>4.4 车位管理</h3>
+<ul>
+  <li>车位状态包括"开放"（open）、"已关闭"（closed）、"已过期"（expired）。</li>
+  <li>已有人付款的车位不可删除，车主可选择关闭。</li>
+  <li>车位到期后自动转为过期状态。</li>
+  <li>车主可在保修期内编辑车位信息（调整价格、描述等）。</li>
+</ul>
+
+<h2>五、用户行为规范</h2>
+
+<h3>5.1 基本准则</h3>
+<p>所有用户在使用本平台时应遵守以下准则：</p>
+<ul>
+  <li>遵守中华人民共和国法律法规。</li>
+  <li>遵守诚实信用原则，不得欺诈或误导其他用户。</li>
+  <li>尊重其他用户的合法权益。</li>
+  <li>不得利用平台漏洞或技术手段获取不正当利益。</li>
+</ul>
+
+<h3>5.2 禁止行为</h3>
+<ul>
+  <li><strong>恶意注册：</strong>批量注册、使用虚假信息注册、使用自动化工具注册。</li>
+  <li><strong>恶意交易：</strong>虚假下单、恶意占座、购买后不沟通不履约。</li>
+  <li><strong>滥用功能：</strong>频繁发布相同信息、短时间内大量操作影响平台性能。</li>
+  <li><strong>攻击行为：</strong>对平台进行网络攻击、SQL 注入、暴力破解等技术攻击。</li>
+  <li><strong>规避措施：</strong>通过创建新账号等方式规避平台的处罚措施。</li>
+  <li><strong>数据爬取：</strong>使用爬虫或其他自动化手段批量获取平台数据。</li>
+</ul>
+
+<h2>六、知识产权</h2>
+<ul>
+  <li>BusGPT 平台的名称、标识、界面设计、源代码等知识产权归平台运营方所有。</li>
+  <li>用户在平台发布的内容，其知识产权归用户所有，但用户授予平台在服务范围内展示、存储该内容的权利。</li>
+  <li>禁止未经授权复制、修改、分发平台的任何内容或代码。</li>
+</ul>
+
+<h2>七、免责声明</h2>
+<ul>
+  <li><strong>交易风险：</strong>本平台仅提供信息展示服务，用户之间的合租交易由双方自行协商和履行。因合租行为产生的纠纷（如订阅中断、账号安全等），平台不承担直接责任，但可提供必要的协调帮助。</li>
+  <li><strong>信息准确性：</strong>车主发布的车位信息由车主自行负责，平台不对其真实性、准确性做出保证。</li>
+  <li><strong>第三方服务：</strong>车主提供的联系方式指向第三方服务（如微信、Telegram），这些服务的内容和安全性不受本平台控制。</li>
+  <li><strong>服务中断：</strong>因系统维护、不可抗力等原因导致的服务中断，平台不承担赔偿责任。</li>
+</ul>
+
+<h2>八、违规处理</h2>
+
+<h3>8.1 处理措施</h3>
+<p>对于违反本规范的用户，平台有权根据违规程度采取以下一项或多项措施：</p>
+<table>
+  <tr>
+    <th>措施</th>
+    <th>适用情形</th>
+  </tr>
+  <tr>
+    <td>内容删除</td>
+    <td>发布违规信息</td>
+  </tr>
+  <tr>
+    <td>警告通知</td>
+    <td>初次轻微违规</td>
+  </tr>
+  <tr>
+    <td>功能限制</td>
+    <td>多次违规或情节较重</td>
+  </tr>
+  <tr>
+    <td>临时封禁</td>
+    <td>严重违规或拒不整改</td>
+  </tr>
+  <tr>
+    <td>永久封禁</td>
+    <td>严重违法违规行为</td>
+  </tr>
+</table>
+
+<h3>8.2 申诉机制</h3>
+<p>
+  用户如对平台的处理决定有异议，可在收到通知后 7 个工作日内通过平台客服渠道提出申诉。平台将在收到申诉后 15 个工作日内进行复核并回复。
+</p>
+
+<h2>九、争议解决</h2>
+<ul>
+  <li>用户之间因合租行为产生的争议，双方应优先协商解决。平台可提供必要的信息支持和协调，但不承担裁判责任。</li>
+  <li>用户与平台之间的争议，双方应友好协商解决。协商不成的，任一方可向武汉市有管辖权的人民法院提起诉讼。</li>
+</ul>
+
+<h2>十、法律适用与合规声明</h2>
+<p>本规范的制定和执行遵循以下法律法规：</p>
+<ul>
+  <li>《中华人民共和国网络安全法》</li>
+  <li>《中华人民共和国个人信息保护法》</li>
+  <li>《中华人民共和国数据安全法》</li>
+  <li>《中华人民共和国电子商务法》</li>
+  <li>《互联网信息服务管理办法》</li>
+  <li>《网络信息内容生态治理规定》</li>
+</ul>
+
+<h2>十一、规范的修订</h2>
+<p>
+  我们有权根据法律法规变化、业务调整等原因修订本规范。修订后的规范将在平台上公布并标注更新日期。重大修订将通过平台公告方式通知用户。修订后继续使用本平台服务，即视为您接受修订后的规范。
+</p>
+
+<h2>十二、联系方式</h2>
+<p>如您对本规范有任何疑问或建议，可通过以下方式联系我们：</p>
+<ul>
+  <li>电子邮件：luotao@opxqo.com</li>
+</ul>
+
+<footer>
+  &copy; 2025 BusGPT ｜ <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="color:#999;text-decoration:none;">鄂ICP备2023027796号-5</a>
+</footer>
+
+</div>
+</body>
+</html>

@@ -111,7 +111,7 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const productTabs: { label: string; value: ProductType | '' }[] = [
   { label: '全部', value: '' },
   { label: 'Plus', value: 'chatgpt-plus' },
-  { label: 'Team', value: 'chatgpt-team' },
+  { label: 'Business', value: 'chatgpt-team' },
   { label: 'Pro', value: 'chatgpt-pro' },
 ]
 

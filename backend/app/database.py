@@ -94,6 +94,7 @@ def _run_lightweight_migrations():
         _ensure_column(conn, "rides", "contact_website", "VARCHAR(255) NOT NULL DEFAULT ''")
         _ensure_column(conn, "rides", "contact_price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
         _ensure_column(conn, "rides", "warranty_days", "INT NOT NULL DEFAULT 30")
+        _ensure_column(conn, "rides", "recruit_seats", "INT NOT NULL DEFAULT 1")
         _ensure_column(conn, "orders", "payment_provider", "VARCHAR(30) NOT NULL DEFAULT 'mock'")
         _ensure_column(conn, "orders", "payment_no", "VARCHAR(64)")
         _ensure_column(conn, "orders", "payment_status", "VARCHAR(20) NOT NULL DEFAULT 'paid'")
@@ -114,6 +115,7 @@ def _run_lightweight_migrations():
         conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
         conn.execute(text("UPDATE rides SET status = 'open' WHERE status = 'full'"))
         conn.execute(text("UPDATE rides SET warranty_days = IF(duration >= 12, 365, duration * 30) WHERE warranty_days IS NULL OR warranty_days <= 0 OR (warranty_days = 30 AND duration <> 1)"))
+        conn.execute(text("UPDATE rides SET recruit_seats = GREATEST(total_seats - 1, 1) WHERE recruit_seats IS NULL OR recruit_seats <= 1"))
         conn.execute(text("UPDATE orders SET status = 'paid' WHERE status IS NULL OR status = ''"))
         conn.execute(text("UPDATE orders SET payment_status = status WHERE payment_status IS NULL OR payment_status = ''"))
         conn.execute(text("UPDATE orders SET payment_provider = 'mock' WHERE payment_provider IS NULL OR payment_provider = ''"))
@@ -151,41 +153,48 @@ def init_db():
     Base.metadata.create_all(bind=sync_engine)
     _run_lightweight_migrations()
 
-    # Seed initial product data
+    # Seed/update initial product data
     db = SessionLocal()
     try:
-        # Check if products already seeded
-        existing = db.query(Product).first()
-        if not existing:
-            products = [
-                Product(
-                    type="chatgpt-plus",
-                    label="Plus",
-                    official_price=20.00,
-                    color="#10b981",
-                    max_seats=4,
-                    description="GPT-4o、DALL·E、高级语音"
-                ),
-                Product(
-                    type="chatgpt-team",
-                    label="Team",
-                    official_price=25.00,
-                    color="#3b82f6",
-                    max_seats=10,
-                    description="团队协作、更高限额、管理后台"
-                ),
-                Product(
-                    type="chatgpt-pro",
-                    label="Pro",
-                    official_price=200.00,
-                    color="#f59e0b",
-                    max_seats=5,
-                    description="无限制 GPT-4o、o1 pro、最高优先级"
-                )
-            ]
-            db.add_all(products)
-            db.commit()
-            print("Successfully seeded product types.")
+        product_defaults = [
+            {
+                "type": "chatgpt-plus",
+                "label": "Plus",
+                "official_price": 20.00,
+                "color": "#10b981",
+                "max_seats": 4,
+                "description": "GPT-5.5、深度研究、Agent 与 Codex",
+            },
+            {
+                "type": "chatgpt-team",
+                "label": "Business",
+                "official_price": 25.00,
+                "color": "#3b82f6",
+                "max_seats": 10,
+                "description": "Plus 能力、团队工作区、连接器与管理",
+            },
+            {
+                "type": "chatgpt-pro",
+                "label": "Pro",
+                "official_price": 200.00,
+                "color": "#f59e0b",
+                "max_seats": 5,
+                "description": "最高用量、GPT-5.5 Pro、扩展深度研究",
+            },
+        ]
+
+        for data in product_defaults:
+            product = db.query(Product).filter(Product.type == data["type"]).first()
+            if product:
+                product.label = data["label"]
+                product.official_price = data["official_price"]
+                product.color = data["color"]
+                product.max_seats = data["max_seats"]
+                product.description = data["description"]
+            else:
+                db.add(Product(**data))
+        db.commit()
+        print("Successfully synced product types.")
     except Exception as e:
         db.rollback()
         raise RuntimeError(f"Error seeding database: {e}") from e

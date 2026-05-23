@@ -6,6 +6,10 @@ export const ordersApi = {
     return apiClient.post('/orders', { ride_id: rideId })
   },
 
+  payMock(orderId: number) {
+    return apiClient.post(`/orders/${orderId}/pay/mock`)
+  },
+
   /** Get my purchase history */
   getMyOrders() {
     return apiClient.get('/orders/mine')

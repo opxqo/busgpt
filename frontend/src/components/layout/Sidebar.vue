@@ -1,7 +1,9 @@
 <template>
   <div class="mobile-top-bar">
     <router-link to="/" class="mobile-logo">
-      <span class="logo-mark">B</span>
+      <span class="logo-mark" aria-hidden="true">
+        <Car :size="20" stroke-width="2.4" />
+      </span>
       <span>BusGPT</span>
     </router-link>
     <div class="mobile-top-actions">
@@ -20,7 +22,9 @@
     <div class="sidebar-panel">
       <div class="brand-block">
         <router-link to="/" class="brand" @click="mobileOpen = false">
-          <span class="logo-mark">B</span>
+          <span class="logo-mark" aria-hidden="true">
+            <Car :size="20" stroke-width="2.4" />
+          </span>
           <span class="brand-text">
             <strong>BusGPT</strong>
             <small>AI 订阅拼车平台</small>
@@ -88,7 +92,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Boxes, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon } from '@lucide/vue'
+import { Boxes, Car, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
 
 const userStore = useUserStore()
@@ -184,11 +188,16 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  color: var(--text-inverse);
+  background: var(--text-primary);
+  color: var(--bg-primary);
   font-size: 18px;
   font-weight: 900;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+}
+
+.logo-mark svg {
+  flex-shrink: 0;
 }
 
 .icon-btn {

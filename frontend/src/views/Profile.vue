@@ -228,17 +228,47 @@
 
         <!-- Tab 4: Settings -->
         <div v-if="activeTab === 'settings'" class="settings-section">
-          <form class="settings-form" @submit.prevent="handleSave">
-            <div class="form-group">
-              <label class="form-label" for="nickname">设置新的昵称</label>
-              <input id="nickname" v-model.trim="editForm.nickname" class="form-control" type="text" required />
-            </div>
-            <button type="submit" class="btn btn-primary submit-btn-save" :disabled="saving">
-              <Save :size="16" />
-              <span>{{ saving ? '正在保存修改...' : '更新账户信息' }}</span>
-            </button>
-            <p v-if="saveMessage" class="save-message">{{ saveMessage }}</p>
-          </form>
+          <div class="settings-grid">
+            <form class="settings-form settings-panel" @submit.prevent="handleSave">
+              <div class="settings-panel-heading">
+                <h3>基本信息</h3>
+                <p>更新账户公开展示昵称。</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="nickname">设置新的昵称</label>
+                <input id="nickname" v-model.trim="editForm.nickname" class="form-control" type="text" required />
+              </div>
+              <button type="submit" class="btn btn-primary submit-btn-save" :disabled="saving">
+                <Save :size="16" />
+                <span>{{ saving ? '正在保存修改...' : '更新账户信息' }}</span>
+              </button>
+              <p v-if="saveMessage" class="save-message">{{ saveMessage }}</p>
+            </form>
+
+            <form class="settings-form settings-panel" @submit.prevent="handlePasswordChange">
+              <div class="settings-panel-heading">
+                <h3>登录密码</h3>
+                <p>修改后请使用新密码重新登录。</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="current-password">当前密码</label>
+                <input id="current-password" v-model="passwordForm.current_password" class="form-control" type="password" autocomplete="current-password" required minlength="6" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="new-password">新密码</label>
+                <input id="new-password" v-model="passwordForm.new_password" class="form-control" type="password" autocomplete="new-password" required minlength="6" maxlength="30" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="confirm-password">确认新密码</label>
+                <input id="confirm-password" v-model="passwordForm.confirm_password" class="form-control" type="password" autocomplete="new-password" required minlength="6" maxlength="30" />
+              </div>
+              <button type="submit" class="btn btn-primary submit-btn-save" :disabled="savingPassword">
+                <KeyRound :size="16" />
+                <span>{{ savingPassword ? '正在更新密码...' : '更新登录密码' }}</span>
+              </button>
+              <p v-if="passwordMessage" class="save-message" :class="{ error: passwordError }">{{ passwordMessage }}</p>
+            </form>
+          </div>
         </div>
       </div>
     </section>
@@ -265,7 +295,7 @@
             <label class="form-label" for="edit-product">产品类型</label>
             <select id="edit-product" v-model="rideForm.product" class="form-control" required>
               <option value="chatgpt-plus">ChatGPT Plus</option>
-              <option value="chatgpt-team">ChatGPT Team</option>
+              <option value="chatgpt-team">ChatGPT Business</option>
               <option value="chatgpt-pro">ChatGPT Pro</option>
             </select>
           </div>
@@ -324,8 +354,9 @@
 
 <script setup lang="ts">
 import { computed, markRaw, onMounted, reactive, ref } from 'vue'
-import { Copy, Eye, FileChartColumn, PackageOpen, Pencil, PlusCircle, Power, ReceiptText, Save, Settings, Trash2, X } from '@lucide/vue'
+import { Copy, Eye, FileChartColumn, KeyRound, PackageOpen, Pencil, PlusCircle, Power, ReceiptText, Save, Settings, Trash2, X } from '@lucide/vue'
 import { useUserStore } from '../stores/user'
+import { authApi } from '../api/auth'
 import { ridesApi } from '../api/rides'
 import { ordersApi } from '../api/orders'
 import type { Order, ProductType, Ride } from '../types'
@@ -353,7 +384,10 @@ const userStore = useUserStore()
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
 const loading = ref(true)
 const saving = ref(false)
+const savingPassword = ref(false)
 const saveMessage = ref('')
+const passwordMessage = ref('')
+const passwordError = ref(false)
 const activeTab = ref<'orders' | 'published' | 'sales' | 'settings'>('orders')
 const orders = ref<Order[]>([])
 const ownedRides = ref<Ride[]>([])
@@ -376,6 +410,12 @@ const unlockedOrders = computed(() => orders.value.filter((order) => order.statu
 
 const editForm = reactive({
   nickname: '',
+})
+
+const passwordForm = reactive({
+  current_password: '',
+  new_password: '',
+  confirm_password: '',
 })
 
 const rideForm = reactive({
@@ -429,6 +469,36 @@ const handleSave = async () => {
     saveMessage.value = '更新失败，请稍后重试'
   } finally {
     saving.value = false
+  }
+}
+
+const handlePasswordChange = async () => {
+  passwordMessage.value = ''
+  passwordError.value = false
+  if (passwordForm.new_password !== passwordForm.confirm_password) {
+    passwordError.value = true
+    passwordMessage.value = '两次输入的新密码不一致'
+    return
+  }
+  if (passwordForm.current_password === passwordForm.new_password) {
+    passwordError.value = true
+    passwordMessage.value = '新密码不能与当前密码相同'
+    return
+  }
+
+  savingPassword.value = true
+  try {
+    await authApi.changePassword(passwordForm.current_password, passwordForm.new_password)
+    passwordForm.current_password = ''
+    passwordForm.new_password = ''
+    passwordForm.confirm_password = ''
+    passwordMessage.value = '登录密码已更新'
+  } catch (err) {
+    const error = err as { response?: { data?: { detail?: string } } }
+    passwordError.value = true
+    passwordMessage.value = error.response?.data?.detail || '密码更新失败，请稍后重试'
+  } finally {
+    savingPassword.value = false
   }
 }
 
@@ -553,7 +623,7 @@ const orderContactText = (order: Order) => {
 }
 
 const productLabel = (product?: string) => {
-  if (product === 'chatgpt-team') return 'Team 协作'
+  if (product === 'chatgpt-team') return 'Business 团队'
   if (product === 'chatgpt-pro') return 'Pro 极客'
   if (product === 'chatgpt-plus') return 'Plus 拼车'
   return '-'
@@ -645,27 +715,29 @@ const formatDate = (dateText: string) => {
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-md);
+  gap: 10px;
 }
 
 .stat-card {
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  background: var(--bg-card);
 }
 
 .stat-label {
   color: var(--text-secondary);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .stat-value {
   color: var(--text-primary);
   font-size: 26px;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 .stat-value small {
@@ -1126,8 +1198,35 @@ const formatDate = (dateText: string) => {
 }
 
 /* Settings Form */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.settings-panel {
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+}
+
+.settings-panel-heading h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.settings-panel-heading p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .settings-form {
-  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
@@ -1143,6 +1242,10 @@ const formatDate = (dateText: string) => {
   color: var(--color-success);
   font-weight: 700;
   margin: 0;
+}
+
+.save-message.error {
+  color: var(--color-danger);
 }
 
 .rides-grid {
@@ -1170,7 +1273,27 @@ const formatDate = (dateText: string) => {
   .publish-shortcut-btn {
     width: 100%;
   }
-  .stat-grid,
+  .stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .stat-card {
+    min-height: 64px;
+    justify-content: space-between;
+    padding: 10px 9px;
+    border-radius: var(--border-radius-md);
+  }
+  .stat-label {
+    min-height: 28px;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .stat-value {
+    font-size: 22px;
+  }
+  .stat-value small {
+    font-size: 10px;
+  }
   .sales-summary-cards {
     grid-template-columns: 1fr;
     gap: var(--spacing-xs);
@@ -1186,7 +1309,8 @@ const formatDate = (dateText: string) => {
     grid-template-columns: 1fr;
   }
   .published-toolbar,
-  .manage-card {
+  .manage-card,
+  .settings-grid {
     grid-template-columns: 1fr;
   }
   .published-toolbar {

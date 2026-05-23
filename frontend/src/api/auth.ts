@@ -16,4 +16,11 @@ export const authApi = {
   updateProfile(nickname?: string, avatar?: string) {
     return apiClient.put('/users/me', { nickname, avatar })
   },
+
+  changePassword(currentPassword: string, newPassword: string) {
+    return apiClient.put('/users/me/password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    })
+  },
 }

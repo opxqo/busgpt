@@ -251,15 +251,15 @@ const products = ref<Product[]>([
     official_price: 20,
     color: '#10b981',
     max_seats: 4,
-    description: 'GPT-4o、高级语音、个人首选',
+    description: 'GPT-5.5、深度研究、Agent 与 Codex',
   },
   {
     type: 'chatgpt-team',
-    label: 'Team',
+    label: 'Business',
     official_price: 25,
     color: '#3b82f6',
     max_seats: 10,
-    description: '高限额、团队专用协作拼车',
+    description: 'Plus 能力、团队工作区、连接器与管理',
   },
   {
     type: 'chatgpt-pro',
@@ -267,7 +267,7 @@ const products = ref<Product[]>([
     official_price: 200,
     color: '#8b5cf6',
     max_seats: 5,
-    description: '无限制 o1-pro 模型极客最爱',
+    description: '最高用量、GPT-5.5 Pro、扩展深度研究',
   },
 ])
 
@@ -603,17 +603,21 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   align-items: center;
   gap: 4px;
   min-width: 0;
-  color: var(--color-plus);
+  color: var(--text-secondary);
   font-size: 10px;
   font-weight: 800;
   line-height: 1.2;
 }
 
-.product-badge.chatgpt-team {
+.product-option-card.active .product-badge.chatgpt-plus {
+  color: var(--color-plus);
+}
+
+.product-option-card.active .product-badge.chatgpt-team {
   color: var(--color-team);
 }
 
-.product-badge.chatgpt-pro {
+.product-option-card.active .product-badge.chatgpt-pro {
   color: var(--color-pro);
 }
 

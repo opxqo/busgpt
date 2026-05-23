@@ -14,8 +14,10 @@ from app.models.product import Product
 from app.models.ride import Ride
 from app.models.user import User
 from app.routers import analytics, auth, orders, rides
+from app.routers import users
 from app.schemas.order import OrderCreate
-from app.utils.security import create_access_token, get_password_hash
+from app.schemas.user import PasswordChange
+from app.utils.security import create_access_token, get_password_hash, verify_password
 from app.utils.rate_limit import reset_auth_rate_limits
 
 
@@ -94,35 +96,33 @@ async def _user(db_session, user_id: int) -> User:
 
 
 @pytest.mark.asyncio
-async def test_create_order_is_pending_and_does_not_unlock_contact(db_session):
+async def test_create_order_unlocks_contact_for_free(db_session):
     buyer = await _user(db_session, 2)
 
     order = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
     await db_session.commit()
 
-    assert order.status == "pending"
-    assert order.payment_status == "pending"
-    assert order.ride_contact_info == ""
+    assert order.status == "paid"
+    assert order.payment_status == "paid"
+    assert order.amount == Decimal("0")
+    assert order.contact_unlocked_at is not None
+    assert order.ride_contact_info == "wechat: hidden_contact"
 
     token = create_access_token(subject=buyer.id)
     ride_detail = await rides.get_ride(1, _request(token), db_session)
-    assert ride_detail.contact_info is None
-    assert ride_detail.is_purchased is False
+    assert ride_detail.contact_info == "wechat: hidden_contact"
+    assert ride_detail.is_purchased is True
 
 
 @pytest.mark.asyncio
 async def test_mock_payment_unlocks_contact_and_is_idempotent(db_session):
     buyer = await _user(db_session, 2)
-    pending = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
+    paid = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
     await db_session.commit()
-
-    paid = await orders.pay_order_mock(pending.id, buyer, db_session)
-    await db_session.commit()
-    paid_again = await orders.pay_order_mock(pending.id, buyer, db_session)
+    paid_again = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
 
     assert paid.status == "paid"
     assert paid.payment_provider == "mock"
-    assert paid.payment_no
     assert paid.contact_unlocked_at is not None
     assert paid.ride_contact_info == "wechat: hidden_contact"
     assert paid_again.status == "paid"
@@ -134,14 +134,14 @@ async def test_mock_payment_unlocks_contact_and_is_idempotent(db_session):
 
 
 @pytest.mark.asyncio
-async def test_duplicate_order_returns_existing_pending_order(db_session):
+async def test_duplicate_order_returns_existing_paid_unlock(db_session):
     buyer = await _user(db_session, 2)
 
     first = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
     second = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
 
     assert first.id == second.id
-    assert second.status == "pending"
+    assert second.status == "paid"
 
 
 @pytest.mark.asyncio
@@ -155,7 +155,6 @@ async def test_owner_cannot_buy_and_full_ride_cannot_be_paid(db_session):
     other = await _user(db_session, 3)
     first = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
     second = await orders.create_order(OrderCreate(ride_id=1), other, db_session)
-    await orders.pay_order_mock(first.id, buyer, db_session)
 
     ride = await db_session.get(Ride, 1)
     ride.total_seats = 1
@@ -163,7 +162,7 @@ async def test_owner_cannot_buy_and_full_ride_cannot_be_paid(db_session):
     await db_session.commit()
 
     with pytest.raises(HTTPException) as full_error:
-        await orders.pay_order_mock(second.id, other, db_session)
+        await orders.create_order(OrderCreate(ride_id=1), other, db_session)
     assert full_error.value.status_code == 400
 
 
@@ -183,6 +182,29 @@ async def test_login_rate_limit_returns_429(db_session):
     assert limited_error.value.status_code == 429
 
 
+@pytest.mark.asyncio
+async def test_user_can_change_password_with_current_password(db_session):
+    buyer = await _user(db_session, 2)
+
+    with pytest.raises(HTTPException) as password_error:
+        await users.change_password(
+            PasswordChange(current_password="wrong123", new_password="newsecret123"),
+            buyer,
+            db_session,
+        )
+    assert password_error.value.status_code == 400
+
+    result = await users.change_password(
+        PasswordChange(current_password="secret123", new_password="newsecret123"),
+        buyer,
+        db_session,
+    )
+    await db_session.refresh(buyer)
+
+    assert result["message"] == "Password updated successfully"
+    assert verify_password("newsecret123", buyer.password_hash)
+
+
 def test_default_secret_is_rejected_outside_test():
     original_env = settings.ENVIRONMENT
     original_secret = settings.SECRET_KEY
@@ -200,7 +222,6 @@ def test_default_secret_is_rejected_outside_test():
 async def test_analytics_sales_and_rankings(db_session):
     buyer = await _user(db_session, 2)
     pending = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
-    await orders.pay_order_mock(pending.id, buyer, db_session)
 
     order = await db_session.get(Order, pending.id)
     order.paid_at = datetime.utcnow() - timedelta(days=1)
@@ -214,10 +235,10 @@ async def test_analytics_sales_and_rankings(db_session):
     ride_rankings = await analytics.get_ride_rankings(30, 10, db_session)
 
     assert overview.paid_orders == 1
-    assert overview.total_revenue == Decimal("5.00")
+    assert overview.total_revenue == Decimal("0.00")
     assert overview.active_rides == 1
     assert sales_trends[0].orders == 1
-    assert sales_trends[0].revenue == Decimal("5.00")
+    assert sales_trends[0].revenue == Decimal("0.00")
     assert price_trends[0].product == "chatgpt-plus"
     assert price_trends[0].average_price_per_month == Decimal("10.00")
     assert product_rankings[0].product == "chatgpt-plus"
@@ -230,8 +251,7 @@ async def test_analytics_sales_and_rankings(db_session):
 async def test_owner_sales_records_unlock_counts(db_session):
     buyer = await _user(db_session, 2)
     owner = await _user(db_session, 1)
-    pending = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
-    paid = await orders.pay_order_mock(pending.id, buyer, db_session)
+    paid = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
 
     sales = await orders.get_my_sales(owner, db_session)
 

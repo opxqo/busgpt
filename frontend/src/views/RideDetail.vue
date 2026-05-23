@@ -168,7 +168,7 @@
             <Transition name="collapse">
               <div v-show="disclaimerOpen" class="disclaimer-content">
                 <p>1. 平台仅提供共享信息的发布与展示服务，我们不组织拼车，亦无站内交谈渠道。</p>
-                <p>2. 信息解锁服务费由平台收取引导对接，非拼车月租金，解锁后平台不介入后续交易。</p>
+                <p>2. 联系方式可免费解锁查看，平台仅做信息展示与记录，解锁后不介入后续交易。</p>
                 <p>3. 拼车具有一定的线下风险，请添加车主后自行核实订阅账号的性质、周期及支付方式。</p>
               </div>
             </Transition>
@@ -254,7 +254,17 @@
             </div>
 
             <div v-else class="no-contact-hint">
-              <p>车主暂未填写联系方式，请通过市场页面留言联系。</p>
+              <template v-if="ride.is_purchased">
+                <p>车主暂未填写联系方式，请通过市场页面留言联系。</p>
+              </template>
+              <template v-else>
+                <strong>联系方式已隐藏</strong>
+                <p>解锁后可查看车主填写的微信、Telegram、邮箱或个人网站。</p>
+                <button type="button" class="btn btn-primary action-btn-full" :disabled="unlocking" @click="unlockContact">
+                  <ReceiptText :size="16" />
+                  <span>{{ unlocking ? '正在解锁...' : '免费解锁联系方式' }}</span>
+                </button>
+              </template>
             </div>
           </section>
         </div>
@@ -286,6 +296,7 @@ import {
   ShieldCheck,
 } from '@lucide/vue'
 import type { Component } from 'vue'
+import { ordersApi } from '../api/orders'
 import { ridesApi } from '../api/rides'
 import type { ContactType, Ride } from '../types'
 
@@ -295,6 +306,7 @@ const ride = ref<Ride | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const copied = ref(false)
+const unlocking = ref(false)
 const individualCopied = ref<Record<number, boolean>>({})
 const disclaimerOpen = ref(true)
 const rideId = Number(route.params.id)
@@ -346,6 +358,28 @@ async function loadRideDetails() {
     error.value = errorVal.response?.data?.detail || '加载车位详情失败，请检查网络或车位是否已被删除'
   } finally {
     loading.value = false
+  }
+}
+
+const unlockContact = async () => {
+  if (!ride.value || unlocking.value) return
+  unlocking.value = true
+  try {
+    const orderRes = await ordersApi.purchaseContact(ride.value.id)
+    const order = orderRes.data
+    if (order.status === 'paid') {
+      await loadRideDetails()
+      showToast('联系方式已解锁', 'success')
+      return
+    }
+    await ordersApi.payMock(order.id)
+    await loadRideDetails()
+    showToast('联系方式已解锁', 'success')
+  } catch (err) {
+    const errorVal = err as { response?: { data?: { detail?: string } } }
+    showToast(errorVal.response?.data?.detail || '解锁失败，请稍后重试', 'error', CircleAlert)
+  } finally {
+    unlocking.value = false
   }
 }
 
@@ -453,7 +487,7 @@ const contactItems = computed<ContactItem[]>(() => {
 
 const productLabel = computed(() => {
   if (!ride.value) return ''
-  if (ride.value.product === 'chatgpt-team') return 'ChatGPT Team'
+  if (ride.value.product === 'chatgpt-team') return 'ChatGPT Business'
   if (ride.value.product === 'chatgpt-pro') return 'ChatGPT Pro'
   return 'ChatGPT Plus'
 })
@@ -1079,16 +1113,27 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .no-contact-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  align-items: stretch;
   padding: var(--spacing-md);
   background: var(--bg-inset);
   border-radius: var(--border-radius-md);
   text-align: center;
 }
 
+.no-contact-hint strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .no-contact-hint p {
   font-size: 13px;
   color: var(--text-muted);
   margin: 0;
+  line-height: 1.6;
 }
 
 .action-btn-full {

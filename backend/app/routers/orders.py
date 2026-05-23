@@ -164,14 +164,14 @@ async def create_order(
         if existing.status not in TERMINAL_REUSABLE_STATUSES:
             raise HTTPException(status_code=400, detail="该订单当前状态不可重新支付")
 
-        existing.amount = ride.contact_price
-        existing.status = ORDER_STATUS_PENDING
-        existing.payment_status = ORDER_STATUS_PENDING
+        existing.amount = 0
+        existing.status = ORDER_STATUS_PAID
+        existing.payment_status = ORDER_STATUS_PAID
         existing.payment_provider = settings.PAYMENT_PROVIDER
         existing.payment_no = None
-        existing.paid_at = None
-        existing.contact_unlocked_at = None
-        existing.expired_at = datetime.utcnow() + timedelta(minutes=settings.ORDER_EXPIRE_MINUTES)
+        existing.paid_at = datetime.utcnow()
+        existing.contact_unlocked_at = existing.paid_at
+        existing.expired_at = None
         existing.idempotency_key = uuid4().hex
         existing.updated_at = datetime.utcnow()
         db.add(existing)
@@ -182,11 +182,12 @@ async def create_order(
     order = Order(
         user_id=current_user.id,
         ride_id=ride.id,
-        amount=ride.contact_price,
-        status=ORDER_STATUS_PENDING,
+        amount=0,
+        status=ORDER_STATUS_PAID,
         payment_provider=settings.PAYMENT_PROVIDER,
-        payment_status=ORDER_STATUS_PENDING,
-        expired_at=datetime.utcnow() + timedelta(minutes=settings.ORDER_EXPIRE_MINUTES),
+        payment_status=ORDER_STATUS_PAID,
+        paid_at=datetime.utcnow(),
+        contact_unlocked_at=datetime.utcnow(),
         idempotency_key=uuid4().hex,
     )
     db.add(order)

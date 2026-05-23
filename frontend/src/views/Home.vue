@@ -204,7 +204,7 @@
             <!-- Legend -->
             <div class="chart-legend">
               <span class="legend-item"><span class="legend-color plus"></span>Plus (约¥35/月)</span>
-              <span class="legend-item"><span class="legend-color team"></span>Team (约¥28/月)</span>
+              <span class="legend-item"><span class="legend-color team"></span>Business (约¥28/月)</span>
               <span class="legend-item"><span class="legend-color pro"></span>Pro (下降至约¥110/月)</span>
             </div>
           </div>
@@ -304,9 +304,9 @@ const steps = [
 const rankingData = [
   { title: '稳定老车 - GPT-4o 4人拼车位', label: 'Plus 拼车', product: 'chatgpt-plus', seats: 45, color: 'var(--color-plus)' },
   { title: 'Pro 极客无限 o1/o1-pro 终极车位', label: 'Pro 极客', product: 'chatgpt-pro', seats: 38, color: 'var(--color-pro)' },
-  { title: 'Team 大号协作车位，季付稳定招募', label: 'Team 协作', product: 'chatgpt-team', seats: 31, color: 'var(--color-team)' },
+  { title: 'Business 大号协作车位，季付稳定招募', label: 'Business 团队', product: 'chatgpt-team', seats: 31, color: 'var(--color-team)' },
   { title: 'Plus 体验车，支持月付测试', label: 'Plus 拼车', product: 'chatgpt-plus', seats: 22, color: 'var(--color-plus)' },
-  { title: 'Team 高性价比 10人车，随时加入', label: 'Team 协作', product: 'chatgpt-team', seats: 15, color: 'var(--color-team)' },
+  { title: 'Business 高性价比 10人车，随时加入', label: 'Business 团队', product: 'chatgpt-team', seats: 15, color: 'var(--color-team)' },
 ]
 
 const maxCarouselIndex = computed(() => Math.max(rides.value.length - visibleRideCount.value, 0))

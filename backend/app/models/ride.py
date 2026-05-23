@@ -10,6 +10,7 @@ class Ride(Base):
     product = Column(String(30), ForeignKey("products.type"), nullable=False, index=True)
     owner_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     total_seats = Column(Integer, nullable=False)
+    recruit_seats = Column(Integer, nullable=False, default=1)
     price_per_month = Column(Numeric(10, 2), nullable=False)
     duration = Column(Integer, nullable=False)  # in months
     warranty_days = Column(Integer, nullable=False, default=30)
