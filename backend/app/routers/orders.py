@@ -77,6 +77,7 @@ def build_order_detail(order: Order, ride: Optional[Ride]) -> OrderDetailRespons
         payment_no=order.payment_no,
         payment_status=order.payment_status,
         paid_at=order.paid_at,
+        contact_unlocked_at=order.contact_unlocked_at,
         expired_at=order.expired_at,
         idempotency_key=order.idempotency_key,
         created_at=order.created_at,
@@ -169,6 +170,7 @@ async def create_order(
         existing.payment_provider = settings.PAYMENT_PROVIDER
         existing.payment_no = None
         existing.paid_at = None
+        existing.contact_unlocked_at = None
         existing.expired_at = datetime.utcnow() + timedelta(minutes=settings.ORDER_EXPIRE_MINUTES)
         existing.idempotency_key = uuid4().hex
         existing.updated_at = datetime.utcnow()
@@ -234,6 +236,7 @@ async def pay_order_mock(
     order.payment_provider = payment.provider
     order.payment_no = payment.payment_no
     order.paid_at = payment.paid_at
+    order.contact_unlocked_at = payment.paid_at or datetime.utcnow()
     order.updated_at = datetime.utcnow()
     db.add(order)
 
@@ -305,7 +308,7 @@ async def get_my_sales(
     my_rides = rides_result.scalars().all()
 
     if not my_rides:
-        return {"total_revenue": 0, "total_orders": 0, "rides": []}
+        return {"total_revenue": 0, "total_orders": 0, "total_unlocks": 0, "rides": []}
 
     ride_ids = [r.id for r in my_rides]
     orders_result = await db.execute(
@@ -324,14 +327,17 @@ async def get_my_sales(
             "ride_id": ride.id,
             "ride_title": ride.title,
             "order_count": len(ride_orders),
+            "unlock_count": len(ride_orders),
             "revenue": sum(float(o.amount) for o in ride_orders),
             "total_seats": ride.total_seats,
             "remaining_seats": max((ride.total_seats or 0) - len(ride_orders), 0),
             "status": ride.status,
+            "latest_unlock_at": max((o.contact_unlocked_at or o.paid_at or o.created_at for o in ride_orders), default=None),
         })
 
     return {
         "total_revenue": total_revenue,
         "total_orders": len(orders),
+        "total_unlocks": len(orders),
         "rides": ride_stats,
     }

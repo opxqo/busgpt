@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import text
+from sqlalchemy.engine import make_url
 
 from app.config import settings
 
@@ -33,6 +34,14 @@ async def get_db():
         finally:
             await session.close()
 
+def _quote_identifier(identifier: str) -> str:
+    return f"`{identifier.replace('`', '``')}`"
+
+
+def _is_mysql_database() -> bool:
+    return make_url(settings.sync_database_url).drivername.startswith("mysql")
+
+
 def _ensure_column(conn, table_name: str, column_name: str, definition: str):
     exists = conn.execute(
         text(
@@ -45,13 +54,13 @@ def _ensure_column(conn, table_name: str, column_name: str, definition: str):
             """
         ),
         {
-            "schema": settings.DB_NAME,
+            "schema": settings.database_name,
             "table_name": table_name,
             "column_name": column_name,
         },
     ).scalar()
     if not exists:
-        conn.execute(text(f"ALTER TABLE `{table_name}` ADD COLUMN `{column_name}` {definition}"))
+        conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD COLUMN {_quote_identifier(column_name)} {definition}"))
 
 
 def _ensure_index(conn, table_name: str, index_name: str, definition: str):
@@ -66,16 +75,19 @@ def _ensure_index(conn, table_name: str, index_name: str, definition: str):
             """
         ),
         {
-            "schema": settings.DB_NAME,
+            "schema": settings.database_name,
             "table_name": table_name,
             "index_name": index_name,
         },
     ).scalar()
     if not exists:
-        conn.execute(text(f"ALTER TABLE `{table_name}` ADD INDEX `{index_name}` ({definition})"))
+        conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD INDEX {_quote_identifier(index_name)} ({definition})"))
 
 
 def _run_lightweight_migrations():
+    if not _is_mysql_database():
+        return
+
     with sync_engine.begin() as conn:
         _ensure_column(conn, "users", "role", "VARCHAR(20) NOT NULL DEFAULT 'user'")
         _ensure_column(conn, "rides", "contact_info", "TEXT")
@@ -86,6 +98,7 @@ def _run_lightweight_migrations():
         _ensure_column(conn, "orders", "payment_no", "VARCHAR(64)")
         _ensure_column(conn, "orders", "payment_status", "VARCHAR(20) NOT NULL DEFAULT 'paid'")
         _ensure_column(conn, "orders", "paid_at", "DATETIME NULL")
+        _ensure_column(conn, "orders", "contact_unlocked_at", "DATETIME NULL")
         _ensure_column(conn, "orders", "expired_at", "DATETIME NULL")
         _ensure_column(conn, "orders", "idempotency_key", "VARCHAR(64)")
         _ensure_column(conn, "orders", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
@@ -93,6 +106,7 @@ def _run_lightweight_migrations():
         _ensure_index(conn, "orders", "ix_orders_payment_status", "`payment_status`")
         _ensure_index(conn, "orders", "ix_orders_expired_at", "`expired_at`")
         _ensure_index(conn, "orders", "ix_orders_paid_at", "`paid_at`")
+        _ensure_index(conn, "orders", "ix_orders_contact_unlocked_at", "`contact_unlocked_at`")
         _ensure_index(conn, "orders", "ix_orders_idempotency_key", "`idempotency_key`")
         _ensure_index(conn, "rides", "ix_rides_created_at", "`created_at`")
         _ensure_index(conn, "rides", "ix_rides_product_created_at", "`product`, `created_at`")
@@ -104,22 +118,34 @@ def _run_lightweight_migrations():
         conn.execute(text("UPDATE orders SET payment_status = status WHERE payment_status IS NULL OR payment_status = ''"))
         conn.execute(text("UPDATE orders SET payment_provider = 'mock' WHERE payment_provider IS NULL OR payment_provider = ''"))
         conn.execute(text("UPDATE orders SET paid_at = created_at WHERE status = 'paid' AND paid_at IS NULL"))
+        conn.execute(text("UPDATE orders SET contact_unlocked_at = COALESCE(paid_at, created_at) WHERE status = 'paid' AND contact_unlocked_at IS NULL"))
 
 
 # Synchronously ensure the database exists and create all tables
 def init_db():
-    # Connect without database name first to create it
-    temp_engine = create_engine(settings.root_sync_database_url, echo=False)
-    with temp_engine.connect() as conn:
-        conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {settings.DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"))
-        conn.commit()
-    temp_engine.dispose()
+    if _is_mysql_database():
+        database_name = settings.database_name
+        if not database_name:
+            raise RuntimeError("MySQL DATABASE_URL must include a database name")
+
+        # Connect without database name first to create it.
+        temp_engine = create_engine(settings.root_sync_database_url, echo=False)
+        with temp_engine.connect() as conn:
+            conn.execute(
+                text(
+                    f"CREATE DATABASE IF NOT EXISTS {_quote_identifier(database_name)} "
+                    "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                )
+            )
+            conn.commit()
+        temp_engine.dispose()
 
     # Import models here to ensure they are registered on Base
     from app.models.user import User
     from app.models.ride import Ride
     from app.models.product import Product
     from app.models.order import Order
+    from app.models.ride_member import RideMember
 
     # Create tables
     Base.metadata.create_all(bind=sync_engine)
@@ -162,6 +188,6 @@ def init_db():
             print("Successfully seeded product types.")
     except Exception as e:
         db.rollback()
-        print(f"Error seeding database: {e}")
+        raise RuntimeError(f"Error seeding database: {e}") from e
     finally:
         db.close()

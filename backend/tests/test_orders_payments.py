@@ -123,6 +123,7 @@ async def test_mock_payment_unlocks_contact_and_is_idempotent(db_session):
     assert paid.status == "paid"
     assert paid.payment_provider == "mock"
     assert paid.payment_no
+    assert paid.contact_unlocked_at is not None
     assert paid.ride_contact_info == "wechat: hidden_contact"
     assert paid_again.status == "paid"
     assert paid_again.ride_purchase_count == 1
@@ -203,6 +204,7 @@ async def test_analytics_sales_and_rankings(db_session):
 
     order = await db_session.get(Order, pending.id)
     order.paid_at = datetime.utcnow() - timedelta(days=1)
+    order.contact_unlocked_at = order.paid_at
     await db_session.commit()
 
     overview = await analytics.get_sales_overview(30, db_session)
@@ -222,3 +224,18 @@ async def test_analytics_sales_and_rankings(db_session):
     assert product_rankings[0].orders == 1
     assert ride_rankings[0].ride_id == 1
     assert ride_rankings[0].orders == 1
+
+
+@pytest.mark.asyncio
+async def test_owner_sales_records_unlock_counts(db_session):
+    buyer = await _user(db_session, 2)
+    owner = await _user(db_session, 1)
+    pending = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
+    paid = await orders.pay_order_mock(pending.id, buyer, db_session)
+
+    sales = await orders.get_my_sales(owner, db_session)
+
+    assert paid.contact_unlocked_at is not None
+    assert sales["total_unlocks"] == 1
+    assert sales["rides"][0]["unlock_count"] == 1
+    assert sales["rides"][0]["latest_unlock_at"] is not None

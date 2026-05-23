@@ -40,7 +40,10 @@ export const ridesApi = {
 
   updateRide(id: number, ride: {
     title?: string
+    product?: ProductType
+    total_seats?: number
     price_per_month?: number
+    duration?: number
     warranty_days?: number
     description?: string
     contact_info?: string

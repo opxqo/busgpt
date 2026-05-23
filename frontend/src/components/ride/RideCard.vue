@@ -346,84 +346,88 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 
 @media (max-width: 680px) {
   .ride-card {
-    padding: 12px;
+    padding: 10px;
     border-radius: var(--border-radius-md);
   }
 
   .card-top {
-    align-items: flex-start;
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 5px;
+    margin-bottom: 8px;
   }
 
   .product-chip,
   .status-chip {
-    height: 24px;
-    padding: 0 7px;
-    font-size: 10px;
+    height: 22px;
+    padding: 0 6px;
+    font-size: 9px;
   }
 
   .card-body {
-    gap: 6px;
-    margin-bottom: 10px;
+    flex-grow: 0;
+    gap: 4px;
+    margin-bottom: 8px;
   }
 
   .title-link {
-    min-height: 36px;
-    font-size: 13px;
-    line-height: 1.35;
+    min-height: 32px;
+    font-size: 12px;
+    line-height: 1.3;
     -webkit-line-clamp: 2;
   }
 
   .description {
-    min-height: 34px;
-    font-size: 11px;
-    line-height: 1.5;
+    min-height: 15px;
+    font-size: 10px;
+    line-height: 1.45;
+    -webkit-line-clamp: 1;
   }
 
   .price-row {
-    grid-template-columns: 1fr;
-    gap: 7px;
-    padding: 10px;
-    margin-bottom: 10px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px 7px;
+    margin-bottom: 8px;
   }
 
   .warranty-item {
-    align-items: flex-start;
+    align-items: flex-end;
   }
 
   .price-divider {
-    width: 24px;
-    height: 3px;
-    justify-self: start;
+    width: 2px;
+    height: 20px;
+    justify-self: center;
   }
 
   .meta-label {
-    font-size: 9px;
-    letter-spacing: 0.03em;
+    font-size: 8px;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
   }
 
   .seat-price,
   .warranty-days {
-    font-size: 16px;
+    font-size: 14px;
+    white-space: nowrap;
   }
 
   .seat-price small,
   .warranty-days small {
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .facts {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 5px;
-    margin-bottom: 10px;
+    justify-content: flex-start;
+    gap: 4px 8px;
+    margin-bottom: 8px;
     padding: 0;
   }
 
   .fact-item {
     gap: 4px;
-    font-size: 10px;
+    font-size: 9px;
+    line-height: 1.2;
   }
 
   .fact-icon {
@@ -432,31 +436,31 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   }
 
   .seller-row {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 10px;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    padding-top: 8px;
   }
 
   .avatar {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
   }
 
   .seller-info strong {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .verified-tag {
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .detail-btn {
-    width: 100%;
-    height: 32px;
+    width: auto;
+    height: 30px;
     justify-content: center;
-    padding: 0 8px;
-    font-size: 11px;
+    padding: 0 9px;
+    font-size: 10px;
   }
 }
 </style>

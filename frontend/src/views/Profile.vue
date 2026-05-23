@@ -22,16 +22,16 @@
     <!-- Stats grid -->
     <section class="stat-grid">
       <div class="stat-card surface-card">
-        <span class="stat-label">我加入的拼车</span>
-        <strong class="stat-value">{{ orders.length }} <small>个</small></strong>
+        <span class="stat-label">我解锁查看的联系方式</span>
+        <strong class="stat-value">{{ unlockedOrders.length }} <small>次</small></strong>
       </div>
       <div class="stat-card surface-card">
         <span class="stat-label">我发布的拼车车位</span>
         <strong class="stat-value">{{ ownedRides.length }} <small>个</small></strong>
       </div>
       <div class="stat-card surface-card">
-        <span class="stat-label">累计拼车次数</span>
-        <strong class="stat-value">{{ sales?.total_orders || 0 }} <small>次</small></strong>
+        <span class="stat-label">招募被解锁查看</span>
+        <strong class="stat-value">{{ sales?.total_unlocks || 0 }} <small>次</small></strong>
       </div>
     </section>
 
@@ -115,8 +115,72 @@
             <p>您可以将您多余的 ChatGPT 订阅位发布在此，让他人分摊月费。</p>
             <router-link to="/create" class="btn btn-primary">发布共享车位</router-link>
           </div>
-          <div v-else class="rides-grid">
-            <RideCard v-for="ride in ownedRides" :key="ride.id" :ride="ride" />
+          <div v-else class="published-manager">
+            <div class="published-toolbar">
+              <div>
+                <h2>已发布招募</h2>
+                <p>管理展示信息、车位状态和隐藏联系方式。</p>
+              </div>
+              <router-link to="/create" class="btn btn-primary publish-toolbar-btn">
+                <PlusCircle :size="15" />
+                <span>新增招募</span>
+              </router-link>
+            </div>
+
+            <div class="published-list">
+              <article v-for="ride in ownedRides" :key="ride.id" class="manage-card">
+                <div class="manage-card-main">
+                  <div class="manage-title-row">
+                    <span class="product-chip" :class="ride.product">
+                      <svg viewBox="0 0 24 24" class="chip-logo" fill="currentColor">
+                        <path d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z" />
+                      </svg>
+                      <span>{{ productLabel(ride.product) }}</span>
+                    </span>
+                    <span class="status-chip" :class="ride.status">{{ statusLabel(ride.status) }}</span>
+                  </div>
+                  <router-link :to="`/ride/${ride.id}`" class="manage-title">{{ ride.title }}</router-link>
+                  <p class="manage-desc">{{ ride.description || '暂未填写公开说明。' }}</p>
+                  <div class="manage-metrics">
+                    <div>
+                      <span>车位租金</span>
+                      <strong>¥{{ formatMoney(ride.price_per_month) }}/月</strong>
+                    </div>
+                    <div>
+                      <span>质保</span>
+                      <strong>{{ ride.warranty_days }}天</strong>
+                    </div>
+                    <div>
+                      <span>拼车进度</span>
+                      <strong>{{ ride.purchase_count || 0 }}/{{ ride.total_seats }} 人</strong>
+                    </div>
+                    <div>
+                      <span>到期日</span>
+                      <strong>{{ formatDate(ride.expires_at) }}</strong>
+                    </div>
+                  </div>
+                </div>
+                <div class="manage-actions">
+                  <router-link :to="`/ride/${ride.id}`" class="icon-action" aria-label="查看招募">
+                    <Eye :size="15" />
+                    <span>查看</span>
+                  </router-link>
+                  <button class="icon-action" type="button" @click="openEditRide(ride)">
+                    <Pencil :size="15" />
+                    <span>编辑</span>
+                  </button>
+                  <button class="icon-action" type="button" :disabled="actionLoadingId === ride.id" @click="toggleRideStatus(ride)">
+                    <Power :size="15" />
+                    <span>{{ ride.status === 'open' ? '暂停' : '恢复' }}</span>
+                  </button>
+                  <button class="icon-action danger" type="button" :disabled="actionLoadingId === ride.id || (ride.purchase_count || 0) > 0" @click="deleteRide(ride)">
+                    <Trash2 :size="15" />
+                    <span>删除</span>
+                  </button>
+                </div>
+              </article>
+            </div>
+            <p class="manager-note">已有付费车友的招募不可直接删除，可以先暂停招募，保留订单与联系方式记录。</p>
           </div>
         </div>
 
@@ -124,8 +188,8 @@
         <div v-if="activeTab === 'sales'" class="sales-section">
           <div class="sales-summary-cards">
             <div class="summary-card">
-              <span>拼车订单总数</span>
-              <strong>{{ sales?.total_orders || 0 }} 笔</strong>
+              <span>联系方式解锁总数</span>
+              <strong>{{ sales?.total_unlocks || 0 }} 次</strong>
             </div>
             <div class="summary-card">
               <span>车位总载员</span>
@@ -137,7 +201,7 @@
               <thead>
                 <tr>
                   <th>发布的车位标题</th>
-                  <th>拼车人数</th>
+                  <th>解锁查看人数</th>
                   <th>车位当前载员</th>
                 </tr>
               </thead>
@@ -146,7 +210,7 @@
                   <td>
                     <router-link :to="`/ride/${item.ride_id}`" class="record-title">{{ item.ride_title }}</router-link>
                   </td>
-                  <td>{{ item.order_count }} 人已拼</td>
+                  <td>{{ item.unlock_count || item.order_count }} 人已解锁</td>
                   <td>
                     <div class="seat-metric">
                       <strong>{{ item.order_count }}/{{ item.total_seats }} 人</strong>
@@ -178,31 +242,110 @@
         </div>
       </div>
     </section>
+
+    <div v-if="editingRide" class="modal-backdrop" @click.self="closeEditRide">
+      <form class="edit-ride-modal surface-card" @submit.prevent="submitRideEdit">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">编辑招募信息</span>
+            <h2>{{ editingRide.title }}</h2>
+          </div>
+          <button class="modal-close" type="button" aria-label="关闭编辑窗口" @click="closeEditRide">
+            <X :size="18" />
+          </button>
+        </div>
+
+        <div class="edit-form-grid">
+          <div class="form-group full">
+            <label class="form-label" for="edit-title">车位标题</label>
+            <input id="edit-title" v-model.trim="rideForm.title" class="form-control" type="text" required maxlength="100" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-product">产品类型</label>
+            <select id="edit-product" v-model="rideForm.product" class="form-control" required>
+              <option value="chatgpt-plus">ChatGPT Plus</option>
+              <option value="chatgpt-team">ChatGPT Team</option>
+              <option value="chatgpt-pro">ChatGPT Pro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-status">招募状态</label>
+            <select id="edit-status" v-model="rideForm.status" class="form-control" required>
+              <option value="open">招募中</option>
+              <option value="closed">已暂停</option>
+              <option value="expired">已过期</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-total-seats">总人数</label>
+            <input id="edit-total-seats" v-model.number="rideForm.total_seats" class="form-control" type="number" min="2" max="20" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-duration">有效期限(月)</label>
+            <input id="edit-duration" v-model.number="rideForm.duration" class="form-control" type="number" min="1" max="24" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-price">分摊月费(¥)</label>
+            <input id="edit-price" v-model.number="rideForm.price_per_month" class="form-control" type="number" min="1" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-warranty">质保天数</label>
+            <input id="edit-warranty" v-model.number="rideForm.warranty_days" class="form-control" type="number" min="1" max="730" required />
+          </div>
+
+          <div class="form-group full">
+            <label class="form-label" for="edit-desc">公开说明</label>
+            <textarea id="edit-desc" v-model.trim="rideForm.description" class="form-control textarea-control" rows="3"></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="form-label" for="edit-contact">隐藏联系方式</label>
+            <textarea id="edit-contact" v-model.trim="rideForm.contact_info" class="form-control textarea-control" rows="4" required></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="form-label" for="edit-website">个人网站</label>
+            <input id="edit-website" v-model.trim="rideForm.contact_website" class="form-control" type="url" placeholder="https://example.com" />
+          </div>
+        </div>
+
+        <p v-if="rideEditMessage" class="edit-message" :class="{ error: rideEditError }">{{ rideEditMessage }}</p>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" @click="closeEditRide">取消</button>
+          <button class="btn btn-primary" type="submit" :disabled="savingRide">
+            <Save :size="16" />
+            <span>{{ savingRide ? '保存中...' : '保存修改' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, markRaw, onMounted, reactive, ref } from 'vue'
-import { Copy, FileChartColumn, PackageOpen, PlusCircle, ReceiptText, Save, Settings } from '@lucide/vue'
+import { Copy, Eye, FileChartColumn, PackageOpen, Pencil, PlusCircle, Power, ReceiptText, Save, Settings, Trash2, X } from '@lucide/vue'
 import { useUserStore } from '../stores/user'
 import { ridesApi } from '../api/rides'
 import { ordersApi } from '../api/orders'
-import RideCard from '../components/ride/RideCard.vue'
-import type { Order, Ride } from '../types'
+import type { Order, ProductType, Ride } from '../types'
 
 interface SalesRide {
   ride_id: number
   ride_title: string
   order_count: number
+  unlock_count: number
   revenue: number
   total_seats: number
   remaining_seats: number
   status: string
+  latest_unlock_at?: string | null
 }
 
 interface SalesSummary {
   total_revenue: number
   total_orders: number
+  total_unlocks: number
   rides: SalesRide[]
 }
 
@@ -216,6 +359,11 @@ const orders = ref<Order[]>([])
 const ownedRides = ref<Ride[]>([])
 const sales = ref<SalesSummary | null>(null)
 const copyStates = ref<Record<string, boolean>>({})
+const actionLoadingId = ref<number | null>(null)
+const editingRide = ref<Ride | null>(null)
+const savingRide = ref(false)
+const rideEditMessage = ref('')
+const rideEditError = ref(false)
 
 const tabs = [
   { value: 'orders' as const, label: '我的拼车', icon: markRaw(ReceiptText) },
@@ -224,8 +372,24 @@ const tabs = [
   { value: 'settings' as const, label: '账户设置', icon: markRaw(Settings) },
 ]
 
+const unlockedOrders = computed(() => orders.value.filter((order) => order.status === 'paid'))
+
 const editForm = reactive({
   nickname: '',
+})
+
+const rideForm = reactive({
+  title: '',
+  product: 'chatgpt-plus' as ProductType,
+  total_seats: 2,
+  price_per_month: 1,
+  duration: 1,
+  warranty_days: 30,
+  description: '',
+  contact_info: '',
+  contact_website: '',
+  contact_price: 0,
+  status: 'open' as Ride['status'],
 })
 
 const formattedRegisterDate = computed(() => {
@@ -268,6 +432,110 @@ const handleSave = async () => {
   }
 }
 
+const openEditRide = (ride: Ride) => {
+  editingRide.value = ride
+  rideForm.title = ride.title
+  rideForm.product = ride.product
+  rideForm.total_seats = ride.total_seats
+  rideForm.price_per_month = Number(ride.price_per_month)
+  rideForm.duration = ride.duration
+  rideForm.warranty_days = ride.warranty_days
+  rideForm.description = ride.description || ''
+  rideForm.contact_info = ride.contact_info || ''
+  rideForm.contact_website = ride.contact_website || ''
+  rideForm.contact_price = Number(ride.contact_price || 0)
+  rideForm.status = ride.status
+  rideEditMessage.value = ''
+  rideEditError.value = false
+}
+
+const closeEditRide = () => {
+  if (savingRide.value) return
+  editingRide.value = null
+  rideEditMessage.value = ''
+  rideEditError.value = false
+}
+
+const validateRideForm = () => {
+  if (!rideForm.title.trim()) return '请填写车位标题'
+  if (!rideForm.contact_info.trim() && !rideForm.contact_website.trim()) return '请至少保留一种联系方式'
+  if (rideForm.contact_website && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(rideForm.contact_website)) return '个人网站需要以 http:// 或 https:// 开头'
+  if (editingRide.value && rideForm.total_seats < Number(editingRide.value.purchase_count || 0)) return '总人数不能小于已拼车人数'
+  return ''
+}
+
+const submitRideEdit = async () => {
+  if (!editingRide.value) return
+  const error = validateRideForm()
+  if (error) {
+    rideEditError.value = true
+    rideEditMessage.value = error
+    return
+  }
+  savingRide.value = true
+  rideEditMessage.value = ''
+  rideEditError.value = false
+  try {
+    const res = await ridesApi.updateRide(editingRide.value.id, {
+      title: rideForm.title,
+      product: rideForm.product,
+      total_seats: rideForm.total_seats,
+      price_per_month: rideForm.price_per_month,
+      duration: rideForm.duration,
+      warranty_days: rideForm.warranty_days,
+      description: rideForm.description,
+      contact_info: rideForm.contact_info,
+      contact_website: rideForm.contact_website,
+      contact_price: rideForm.contact_price,
+      status: rideForm.status,
+    })
+    ownedRides.value = ownedRides.value.map((ride) => (ride.id === res.data.id ? res.data : ride))
+    await loadSalesOnly()
+    rideEditMessage.value = '招募信息已更新'
+    setTimeout(closeEditRide, 500)
+  } catch (err) {
+    const apiError = err as { response?: { data?: { detail?: string } } }
+    rideEditError.value = true
+    rideEditMessage.value = apiError.response?.data?.detail || '保存失败，请稍后重试'
+  } finally {
+    savingRide.value = false
+  }
+}
+
+const loadSalesOnly = async () => {
+  const salesRes = await ordersApi.getMySales()
+  sales.value = salesRes.data
+}
+
+const toggleRideStatus = async (ride: Ride) => {
+  actionLoadingId.value = ride.id
+  try {
+    const nextStatus = ride.status === 'open' ? 'closed' : 'open'
+    const res = await ridesApi.updateRide(ride.id, { status: nextStatus })
+    ownedRides.value = ownedRides.value.map((item) => (item.id === ride.id ? res.data : item))
+    await loadSalesOnly()
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+const deleteRide = async (ride: Ride) => {
+  if ((ride.purchase_count || 0) > 0) return
+  const confirmedDelete = window.confirm(`确认删除「${ride.title}」吗？删除后市场和详情页将不再展示。`)
+  if (!confirmedDelete) return
+  actionLoadingId.value = ride.id
+  try {
+    await ridesApi.deleteRide(ride.id)
+    ownedRides.value = ownedRides.value.filter((item) => item.id !== ride.id)
+    await loadSalesOnly()
+  } catch (err) {
+    const apiError = err as { response?: { data?: { detail?: string } } }
+    window.alert(apiError.response?.data?.detail || '删除失败，请稍后重试')
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
 const copyText = async (text: string, id: number) => {
   if (!text) return
   await navigator.clipboard.writeText(text)
@@ -290,6 +558,14 @@ const productLabel = (product?: string) => {
   if (product === 'chatgpt-plus') return 'Plus 拼车'
   return '-'
 }
+
+const statusLabel = (status?: string) => {
+  if (status === 'closed') return '已暂停'
+  if (status === 'expired') return '已过期'
+  return '招募中'
+}
+
+const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 
 const formatDate = (dateText: string) => {
   const date = new Date(dateText)
@@ -576,6 +852,279 @@ const formatDate = (dateText: string) => {
   padding: var(--spacing-lg) 0;
 }
 
+/* Published ride manager */
+.published-manager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.published-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.published-toolbar h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.published-toolbar p,
+.manager-note {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.published-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.manage-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-secondary);
+}
+
+.manage-card-main {
+  min-width: 0;
+}
+
+.manage-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.manage-title {
+  display: block;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.manage-title:hover {
+  color: var(--color-team);
+}
+
+.manage-desc {
+  display: -webkit-box;
+  margin: 6px 0 14px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.manage-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.manage-metrics div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-inset);
+}
+
+.manage-metrics span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.manage-metrics strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.manage-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(72px, 1fr));
+  align-content: start;
+  gap: 8px;
+}
+
+.icon-action {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.icon-action:hover:not(:disabled) {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--text-inverse);
+}
+
+.icon-action.danger {
+  color: var(--color-danger);
+}
+
+.icon-action.danger:hover:not(:disabled) {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--text-inverse);
+}
+
+.icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.status-chip.closed {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.status-chip.expired {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.edit-ride-modal {
+  width: min(760px, 100%);
+  max-height: min(86vh, 860px);
+  overflow: auto;
+  padding: var(--spacing-xl);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.modal-close {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  border-color: var(--border-color-strong);
+}
+
+.edit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.form-control {
+  min-height: 44px;
+}
+
+.textarea-control {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.edit-message {
+  margin: var(--spacing-md) 0 0;
+  color: var(--color-success);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.edit-message.error {
+  color: var(--color-danger);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
 /* Settings Form */
 .settings-form {
   max-width: 400px;
@@ -634,6 +1183,53 @@ const formatDate = (dateText: string) => {
     flex: 0 0 auto;
   }
   .rides-grid {
+    grid-template-columns: 1fr;
+  }
+  .published-toolbar,
+  .manage-card {
+    grid-template-columns: 1fr;
+  }
+  .published-toolbar {
+    align-items: stretch;
+  }
+  .publish-toolbar-btn {
+    width: 100%;
+  }
+  .manage-metrics,
+  .edit-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .manage-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .icon-action {
+    min-width: 0;
+    padding: 0 6px;
+  }
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: var(--spacing-sm);
+  }
+  .edit-ride-modal {
+    max-height: 92vh;
+    padding: var(--spacing-lg);
+  }
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+  .modal-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .manage-metrics {
+    grid-template-columns: 1fr;
+  }
+  .manage-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .edit-form-grid {
     grid-template-columns: 1fr;
   }
 }

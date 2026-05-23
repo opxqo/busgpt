@@ -1,4 +1,10 @@
+from pathlib import Path
+from typing import Optional
+
+from sqlalchemy.engine import URL, make_url
 from pydantic_settings import BaseSettings
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "BusGPT"
@@ -6,6 +12,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # Database configuration
+    DATABASE_URL: Optional[str] = None
+    ASYNC_DATABASE_URL: Optional[str] = None
+    ROOT_DATABASE_URL: Optional[str] = None
     DB_HOST: str = "127.0.0.1"
     DB_PORT: str = "3306"
     DB_USER: str = "root"
@@ -39,21 +48,59 @@ class Settings(BaseSettings):
         if self.SECRET_KEY == default_secret or len(self.SECRET_KEY) < 32:
             raise RuntimeError("SECRET_KEY must be replaced with a strong random value")
 
+    def _fallback_mysql_url(self, database: Optional[str] = None) -> URL:
+        return URL.create(
+            "mysql+pymysql",
+            username=self.DB_USER,
+            password=self.DB_PASSWORD,
+            host=self.DB_HOST,
+            port=int(self.DB_PORT),
+            database=database,
+        )
+
+    @staticmethod
+    def _sync_to_async_url(database_url: str) -> str:
+        url = make_url(database_url)
+        driver_map = {
+            "mysql": "mysql+aiomysql",
+            "mysql+pymysql": "mysql+aiomysql",
+            "sqlite": "sqlite+aiosqlite",
+            "sqlite+pysqlite": "sqlite+aiosqlite",
+        }
+        return url.set(drivername=driver_map.get(url.drivername, url.drivername)).render_as_string(hide_password=False)
+
+    @staticmethod
+    def _database_name(database_url: str) -> str:
+        return make_url(database_url).database or ""
+
     @property
     def sync_database_url(self) -> str:
-        return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return self._fallback_mysql_url(self.DB_NAME).render_as_string(hide_password=False)
 
     @property
     def async_database_url(self) -> str:
-        return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        if self.ASYNC_DATABASE_URL:
+            return self.ASYNC_DATABASE_URL
+        return self._sync_to_async_url(self.sync_database_url)
         
     @property
     def root_sync_database_url(self) -> str:
-        # Used to create database if it doesn't exist
-        return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/"
+        # Used to create MySQL database if it doesn't exist.
+        if self.ROOT_DATABASE_URL:
+            return self.ROOT_DATABASE_URL
+        url = make_url(self.sync_database_url)
+        if not url.drivername.startswith("mysql"):
+            return self.sync_database_url
+        return url.set(database="").render_as_string(hide_password=False)
+
+    @property
+    def database_name(self) -> str:
+        return self._database_name(self.sync_database_url) or self.DB_NAME
 
     class Config:
-        env_file = ".env"
+        env_file = str(BACKEND_DIR / ".env")
         case_sensitive = True
 
 settings = Settings()

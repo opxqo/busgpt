@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, UniqueConstraint, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 from app.database import Base
 
 class RideMember(Base):
@@ -12,8 +12,8 @@ class RideMember(Base):
     joined_at = Column(DateTime, nullable=False, server_default=func.now())
 
     # Relationships
-    ride = relationship("Ride", back_populates="members")
-    user = relationship("User", back_populates="memberships")
+    ride = relationship("Ride", backref=backref("members", cascade="all, delete-orphan"))
+    user = relationship("User", backref=backref("memberships", cascade="all, delete-orphan"))
 
     __table_args__ = (
         UniqueConstraint("ride_id", "user_id", name="uk_ride_user"),

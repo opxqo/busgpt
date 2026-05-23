@@ -19,6 +19,7 @@ class Order(Base):
     payment_no = Column(String(64), nullable=True, unique=True, index=True)
     payment_status = Column(String(20), nullable=False, default="pending", index=True)
     paid_at = Column(DateTime, nullable=True)
+    contact_unlocked_at = Column(DateTime, nullable=True, index=True)
     expired_at = Column(DateTime, nullable=True, index=True)
     idempotency_key = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=func.now())

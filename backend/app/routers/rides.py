@@ -122,7 +122,7 @@ async def update_product(
     return product
 
 # 2. Get My Owned Rides
-@router.get("/my/rides/owned", response_model=List[RideResponse])
+@router.get("/my/rides/owned", response_model=List[RideDetailResponse])
 async def get_my_owned_rides(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -306,11 +306,39 @@ async def update_ride(
         
     if ride.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this ride")
-        
+
+    purchase_count = await get_ride_purchase_count(db, ride_id)
+    product_type = ride_in.product if ride_in.product is not None else ride.product
+    product_result = await db.execute(select(Product).filter(Product.type == product_type))
+    product = product_result.scalars().first()
+    if not product:
+        raise HTTPException(status_code=400, detail="Invalid product type")
+
+    total_seats = ride_in.total_seats if ride_in.total_seats is not None else ride.total_seats
+    if total_seats > product.max_seats:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Maximum seats allowed for {product.label} is {product.max_seats}"
+        )
+    if total_seats < purchase_count:
+        raise HTTPException(
+            status_code=400,
+            detail="Total seats cannot be lower than current paid passengers"
+        )
+
     if ride_in.title is not None:
         ride.title = ride_in.title
+    if ride_in.product is not None:
+        ride.product = ride_in.product
+    if ride_in.total_seats is not None:
+        ride.total_seats = ride_in.total_seats
     if ride_in.price_per_month is not None:
         ride.price_per_month = ride_in.price_per_month
+    if ride_in.duration is not None:
+        ride.duration = ride_in.duration
+        if ride_in.warranty_days is None:
+            ride.warranty_days = default_warranty_days(ride_in.duration)
+            ride.expires_at = datetime.utcnow() + timedelta(days=ride.warranty_days)
     if ride_in.warranty_days is not None:
         ride.warranty_days = ride_in.warranty_days
         ride.expires_at = datetime.utcnow() + timedelta(days=ride_in.warranty_days)
@@ -330,8 +358,16 @@ async def update_ride(
     db.add(ride)
     await db.flush()
     await db.commit()
-    
-    purchase_count = await get_ride_purchase_count(db, ride_id)
+
+    result = await db.execute(
+        select(Ride)
+        .filter(Ride.id == ride_id)
+        .options(
+            selectinload(Ride.owner),
+            selectinload(Ride.product_details),
+        )
+    )
+    ride = result.scalars().first()
     return build_ride_response(ride, purchase_count, ride.contact_info, ride.contact_website, True)
 
 # 7. Delete Ride
@@ -348,7 +384,11 @@ async def delete_ride(
         
     if ride.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this ride")
-        
+
+    purchase_count = await get_ride_purchase_count(db, ride_id)
+    if purchase_count > 0:
+        raise HTTPException(status_code=400, detail="Ride has paid passengers and cannot be deleted. Close it instead.")
+
     await db.delete(ride)
     await db.commit()
     return {"message": "Ride successfully deleted"}

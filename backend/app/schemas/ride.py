@@ -22,7 +22,10 @@ class RideCreate(RideBase):
 
 class RideUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=100)
+    product: Optional[str] = Field(None, description="Product type (chatgpt-plus, chatgpt-team, chatgpt-pro)")
+    total_seats: Optional[int] = Field(None, gt=1, le=20)
     price_per_month: Optional[Decimal] = Field(None, gt=0)
+    duration: Optional[int] = Field(None, gt=0, le=24)
     warranty_days: Optional[int] = Field(None, gt=0, le=730)
     description: Optional[str] = None
     contact_info: Optional[str] = None

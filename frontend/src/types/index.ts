@@ -48,7 +48,11 @@ export interface Order {
   user_id: number
   ride_id: number
   amount: number
-  status: 'paid' | 'refunded'
+  status: 'pending' | 'paid' | 'cancelled' | 'expired' | 'refunded'
+  payment_status?: string
+  paid_at?: string
+  contact_unlocked_at?: string
+  expired_at?: string
   created_at: string
   ride_title?: string
   ride_product?: string

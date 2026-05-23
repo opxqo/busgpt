@@ -17,6 +17,7 @@ class OrderResponse(BaseModel):
     payment_no: Optional[str] = None
     payment_status: str = "pending"
     paid_at: Optional[datetime] = None
+    contact_unlocked_at: Optional[datetime] = None
     expired_at: Optional[datetime] = None
     idempotency_key: Optional[str] = None
     created_at: datetime
