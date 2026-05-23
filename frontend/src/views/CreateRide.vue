@@ -5,7 +5,7 @@
       <div class="header-info">
         <span class="eyebrow">发布共享</span>
         <h1 class="page-title">发布订阅车位</h1>
-        <p class="page-subtitle">填写真实的共享车位，设置合理的分摊月费与解锁费，吸纳长期稳定的车友搭伙。</p>
+        <p class="page-subtitle">填写真实的共享车位，设置合理的分摊月费，吸纳长期稳定的车友搭伙。</p>
       </div>
     </header>
 
@@ -15,11 +15,15 @@
         <!-- Section 1: Public Info -->
         <section class="form-section">
           <div class="section-heading">
+            <span class="section-index">1</span>
             <Package :size="18" class="heading-icon" />
-            <h2>1. 公开展示信息</h2>
+            <div class="section-heading-copy">
+              <h2>公开展示信息</h2>
+              <p>这些内容会出现在市场卡片和详情页，用于帮助车友快速判断车位是否合适。</p>
+            </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group form-group-title">
             <label class="form-label" for="title">车位标题</label>
             <input
               id="title"
@@ -58,7 +62,7 @@
             </div>
           </div>
 
-          <div class="form-row-2">
+          <div class="form-row-3">
             <div class="form-group">
               <label class="form-label" for="total-seats">车位可容纳总人数</label>
               <input
@@ -83,18 +87,23 @@
                 </select>
               </div>
             </div>
-          </div>
-
-          <div class="form-row-2">
             <div class="form-group">
               <label class="form-label" for="seat-price">分摊月费 (¥)</label>
               <input id="seat-price" v-model.number="form.price_per_month" class="form-control" type="number" min="1" required />
               <span class="form-help">每位车友每月需支付给您的订阅分摊。</span>
             </div>
             <div class="form-group">
-              <label class="form-label" for="contact-price">信息解锁服务费 (¥)</label>
-              <input id="contact-price" v-model.number="form.contact_price" class="form-control" type="number" min="0" step="0.01" required />
-              <span class="form-help">车友解锁联系方式需支付的服务费。</span>
+              <label class="form-label" for="warranty-days">质保天数</label>
+              <input
+                id="warranty-days"
+                v-model.number="form.warranty_days"
+                class="form-control"
+                type="number"
+                min="1"
+                max="730"
+                required
+              />
+              <span class="form-help">保障可用天数，同步展示在市场卡片和详情页。</span>
             </div>
           </div>
 
@@ -113,8 +122,12 @@
         <!-- Section 2: Contact Info -->
         <section class="form-section">
           <div class="section-heading">
-            <LockKeyhole :size="18" class="heading-icon-locked" />
-            <h2>2. 付费解锁后可见信息</h2>
+            <span class="section-index">2</span>
+            <MessageCircle :size="18" class="heading-icon-contact" />
+            <div class="section-heading-copy">
+              <h2>联系方式信息</h2>
+              <p>联系方式不会作为公开说明展示，用于车友确认后继续沟通拼车细节。</p>
+            </div>
           </div>
 
           <div class="contacts-form-list">
@@ -143,7 +156,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="contact-note">解锁备注信息</label>
+            <label class="form-label" for="contact-note">备注信息</label>
             <textarea
               id="contact-note"
               v-model.trim="form.contact_note"
@@ -183,7 +196,7 @@
                   </svg>
                   <span>{{ activeProductLabel }} 拼车</span>
                 </span>
-                <span class="status-chip open">可解锁</span>
+                <span class="status-chip open">招募中</span>
               </div>
               <h3 class="sim-title">{{ form.title || '这里会展示您填写的标题' }}</h3>
               <p class="sim-desc">{{ form.description || '这里会展示公开的拼车规则说明...' }}</p>
@@ -193,10 +206,10 @@
                   <span class="sim-label">车位租金</span>
                   <strong class="sim-val">¥{{ formatMoney(form.price_per_month) }}<small>/月</small></strong>
                 </div>
-                <div class="sim-divider"></div>
-                <div class="sim-price-item text-right">
-                  <span class="sim-label">解锁费用</span>
-                  <strong class="sim-val val-purple">¥{{ formatMoney(form.contact_price) }}</strong>
+                <span class="sim-price-divider" :class="form.product" aria-hidden="true"></span>
+                <div class="sim-price-item sim-guarantee-item">
+                  <span class="sim-label">质保天数</span>
+                  <strong class="sim-val sim-guarantee-val" :class="form.product">{{ form.warranty_days }}<small>天</small></strong>
                 </div>
               </div>
 
@@ -210,7 +223,7 @@
           </div>
           <div class="preview-info-box">
             <ShieldCheck :size="16" class="safety-icon" />
-            <p>车位发布后将进入拼车市场。乘客需支付您设定的“信息服务费”以解锁联系方式，解锁后乘客会与您直接沟通。</p>
+            <p>车位发布后将进入拼车市场，车友可直接查看您的联系方式并与您沟通拼车细节。</p>
           </div>
         </div>
       </aside>
@@ -219,10 +232,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
-import { LockKeyhole, Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck } from '@lucide/vue'
+import { Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck } from '@lucide/vue'
 import { ridesApi } from '../api/rides'
 import type { ContactType, Product, ProductType } from '../types'
 
@@ -272,6 +285,7 @@ const form = reactive({
   total_seats: 4,
   price_per_month: 35,
   duration: 3,
+  warranty_days: 90,
   description: '',
   contacts: {
     email: '',
@@ -279,7 +293,6 @@ const form = reactive({
     telegram: '',
   } as Record<ContactType, string>,
   contact_note: '',
-  contact_price: 9.9,
 })
 
 const contactMethods: ContactMethod[] = [
@@ -321,6 +334,7 @@ const activeProductObj = computed(() => {
   return products.value.find((product) => product.type === form.product) || products.value[0]
 })
 
+const durationToWarrantyDays = (duration: number) => (duration >= 12 ? 365 : duration * 30)
 const activeProductLabel = computed(() => activeProductObj.value?.label || 'Plus')
 const maxSeatsAllowed = computed(() => activeProductObj.value?.max_seats || 4)
 const contactInfoPayload = computed(() => {
@@ -333,6 +347,13 @@ const contactInfoPayload = computed(() => {
   if (form.contact_note) lines.push(`备注：${form.contact_note}`)
   return lines.join('\n')
 })
+
+watch(
+  () => form.duration,
+  (duration) => {
+    form.warranty_days = durationToWarrantyDays(duration)
+  }
+)
 
 const selectProduct = (product: Product) => {
   form.product = product.type
@@ -369,9 +390,10 @@ const handleSubmit = async () => {
       total_seats: form.total_seats,
       price_per_month: form.price_per_month,
       duration: form.duration,
+      warranty_days: form.warranty_days,
       description: form.description,
       contact_info: contactInfoPayload.value,
-      contact_price: form.contact_price,
+      contact_price: 0,
     })
     router.push(`/ride/${res.data.id}`)
   } catch (err) {
@@ -405,38 +427,63 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .create-form {
-  padding: var(--spacing-xl);
+  padding: 0;
+  overflow: hidden;
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 20px;
+  padding: 28px 32px 32px;
 }
 
 .form-section + .form-section {
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-xl);
+  margin-top: 0;
+  padding-top: 28px;
   border-top: 1px solid var(--border-color);
 }
 
 .section-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 2px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-index {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
   align-items: center;
-  gap: 8px;
-  margin-bottom: var(--spacing-sm);
+  justify-content: center;
+  border-radius: var(--border-radius-full);
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .heading-icon {
+  margin-top: 3px;
   color: var(--text-muted);
 }
 
-.heading-icon-locked {
-  color: var(--color-pro);
+.heading-icon-contact {
+  margin-top: 3px;
+  color: var(--color-success);
 }
 
 .heading-icon-preview {
   color: var(--color-team);
+}
+
+.section-heading-copy {
+  min-width: 0;
 }
 
 .section-heading h2 {
@@ -446,19 +493,58 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   margin: 0;
 }
 
+.section-heading p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.form-group-title {
+  padding-top: 2px;
+}
+
+.form-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.form-help {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.form-control {
+  min-height: 44px;
+}
+
 /* Product selections */
 .product-selection-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-sm);
+  gap: 10px;
 }
 
 .product-option-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: var(--spacing-md);
+  gap: 10px;
+  min-height: 128px;
+  padding: 14px 16px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
@@ -470,11 +556,12 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .product-option-card:hover {
   border-color: var(--border-color-strong);
   background: var(--bg-secondary);
+  transform: translateY(-1px);
 }
 
 .product-option-card.active {
   background: var(--bg-secondary);
-  border-width: 2px;
+  border-width: 1px;
 }
 
 .product-option-card.chatgpt-plus.active {
@@ -497,23 +584,53 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   justify-content: space-between;
   width: 100%;
   align-items: center;
+  gap: 10px;
 }
 
 .product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-plus);
   font-size: 10px;
   font-weight: 800;
+  line-height: 1.2;
+}
+
+.product-badge.chatgpt-team {
+  color: var(--color-team);
+}
+
+.product-badge.chatgpt-pro {
+  color: var(--color-pro);
+}
+
+.product-badge .chip-logo {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+  opacity: 0.95;
 }
 
 .seats-limit {
   font-size: 10px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.product-option-card.active .seats-limit,
+.product-option-card:hover .seats-limit {
+  color: var(--text-secondary);
 }
 
 .official-cost {
+  margin-top: 2px;
   font-size: 18px;
   font-weight: 800;
   color: var(--text-primary);
+  line-height: 1;
 }
 
 .official-cost small {
@@ -525,14 +642,26 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .product-desc {
   font-size: 11px;
   color: var(--text-secondary);
+  display: -webkit-box;
+  flex: 1;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .form-row-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-md);
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 18px;
 }
 
 .textarea-control {
@@ -711,9 +840,10 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .sim-price-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 10px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -723,6 +853,28 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .sim-price-item {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.sim-guarantee-item {
+  align-items: flex-end;
+}
+
+.sim-price-divider {
+  width: 3px;
+  height: 24px;
+  align-self: center;
+  border-radius: var(--border-radius-full);
+  background: var(--color-plus);
+}
+
+.sim-price-divider.chatgpt-team {
+  background: var(--color-team);
+}
+
+.sim-price-divider.chatgpt-pro {
+  background: var(--color-pro);
 }
 
 .sim-label {
@@ -736,10 +888,25 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   font-size: 16px;
   font-weight: 800;
   color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .sim-val small {
   font-size: 10px;
+  margin-left: 1px;
+  color: currentColor;
+}
+
+.sim-guarantee-val {
+  color: var(--color-plus);
+}
+
+.sim-guarantee-val.chatgpt-team {
+  color: var(--color-team);
+}
+
+.sim-guarantee-val.chatgpt-pro {
+  color: var(--color-pro);
 }
 
 .val-purple {
@@ -805,6 +972,9 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   .form-row-2 {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+  .form-row-3 {
+    grid-template-columns: 1fr;
   }
 }
 

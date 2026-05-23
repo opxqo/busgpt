@@ -24,7 +24,7 @@
           </div>
           <h1 class="hero-title">
             发现可用 AI 订阅车位<br />
-            <span class="gradient-text">付费解锁车主联系方式</span>
+            <span class="gradient-text">直接获取车主联系方式</span>
           </h1>
           <p class="hero-subtitle">
             轻松找到志同道合的伙伴分摊 AI 订阅费。平台仅作商品与联系方式的信息共享，协助您与车主建立连接，不涉及中间差价与资金代收。
@@ -45,7 +45,7 @@
         <div class="process-panel surface-card">
           <div class="panel-header">
             <div class="icon-circle">
-              <LockKeyhole :size="20" />
+              <Search :size="20" />
             </div>
             <strong>极简拼车三步走</strong>
           </div>
@@ -60,7 +60,7 @@
           </div>
           <div class="panel-footer">
             <ShieldCheck :size="14" class="safety-icon" />
-            <span>信息服务费仅用于解锁车主联系方式，请线下确认订阅细节。</span>
+            <span>平台仅作信息聚合，请线下自行核实订阅细节与支付方式。</span>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@
       <div class="section-header">
         <div class="section-title-wrap">
           <span class="eyebrow">实时推荐</span>
-          <h2>最新可解锁车位</h2>
+          <h2>最新拼车车位</h2>
         </div>
         <div class="nav-and-view-all">
           <router-link to="/market" class="view-all-link">
@@ -224,8 +224,8 @@
                 <span class="product-chip mini" :class="item.product">{{ item.label }}</span>
               </div>
               <div class="rank-progress-bar-wrap">
-                <div class="rank-progress-bar" :style="{ width: `${(item.unlocks / 50) * 100}%`, background: item.color }"></div>
-                <span class="rank-val">{{ item.unlocks }} 次解锁</span>
+                <div class="rank-progress-bar" :style="{ width: `${(item.seats / 50) * 100}%`, background: item.color }"></div>
+                <span class="rank-val">{{ item.seats }} 人拼车</span>
               </div>
             </div>
           </div>
@@ -239,11 +239,11 @@
           </div>
           <div class="mini-stats-flow">
             <div class="mini-stat-box">
-              <span>本月累计拼车对接</span>
-              <strong>¥5,480 <small>服务费</small></strong>
+              <span>本月新增拼车</span>
+              <strong>326 <small>单</small></strong>
             </div>
             <div class="mini-stat-box">
-              <span>累计对接解锁量</span>
+              <span>累计成功对接</span>
               <strong>2,842 <small>次</small></strong>
             </div>
             <div class="mini-stat-box">
@@ -267,7 +267,6 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
-  LockKeyhole,
   PackageOpen,
   PieChart,
   PlusCircle,
@@ -297,17 +296,17 @@ const heroPatternTiles = computed(() => heroPatternCols.value * heroPatternRows.
 
 const steps = [
   { title: '挑选心仪车位', desc: '对比月费租金、拼车人数、使用期限及车主公开的详细拼车说明。' },
-  { title: '解锁联系方式', desc: '模拟完成服务费支付，即可实时揭晓车主的联系账号。' },
+  { title: '查看联系方式', desc: '直接查看车主的微信、Telegram 等联系账号，无需额外付费。' },
   { title: '自行对接拼车', desc: '添加车主微信或 Telegram，私下沟通订阅细节，完成搭车。' },
 ]
 
 // Simulated Data for charts
 const rankingData = [
-  { title: '稳定老车 - GPT-4o 4人拼车位', label: 'Plus 拼车', product: 'chatgpt-plus', unlocks: 45, color: 'var(--color-plus)' },
-  { title: 'Pro 极客无限 o1/o1-pro 终极车位', label: 'Pro 极客', product: 'chatgpt-pro', unlocks: 38, color: 'var(--color-pro)' },
-  { title: 'Team 大号协作车位，季付稳定招募', label: 'Team 协作', product: 'chatgpt-team', unlocks: 31, color: 'var(--color-team)' },
-  { title: 'Plus 体验车，支持月付测试', label: 'Plus 拼车', product: 'chatgpt-plus', unlocks: 22, color: 'var(--color-plus)' },
-  { title: 'Team 高性价比 10人车，随时加入', label: 'Team 协作', product: 'chatgpt-team', unlocks: 15, color: 'var(--color-team)' },
+  { title: '稳定老车 - GPT-4o 4人拼车位', label: 'Plus 拼车', product: 'chatgpt-plus', seats: 45, color: 'var(--color-plus)' },
+  { title: 'Pro 极客无限 o1/o1-pro 终极车位', label: 'Pro 极客', product: 'chatgpt-pro', seats: 38, color: 'var(--color-pro)' },
+  { title: 'Team 大号协作车位，季付稳定招募', label: 'Team 协作', product: 'chatgpt-team', seats: 31, color: 'var(--color-team)' },
+  { title: 'Plus 体验车，支持月付测试', label: 'Plus 拼车', product: 'chatgpt-plus', seats: 22, color: 'var(--color-plus)' },
+  { title: 'Team 高性价比 10人车，随时加入', label: 'Team 协作', product: 'chatgpt-team', seats: 15, color: 'var(--color-team)' },
 ]
 
 const maxCarouselIndex = computed(() => Math.max(rides.value.length - visibleRideCount.value, 0))

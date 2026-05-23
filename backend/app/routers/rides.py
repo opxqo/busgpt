@@ -20,6 +20,10 @@ from app.config import settings
 router = APIRouter(tags=["rides"])
 
 
+def default_warranty_days(duration: int) -> int:
+    return 365 if duration >= 12 else duration * 30
+
+
 async def get_ride_purchase_count(db: AsyncSession, ride_id: int) -> int:
     result = await db.execute(
         select(func.count(Order.id)).filter(
@@ -36,6 +40,7 @@ def build_ride_response(
     is_purchased: bool = False,
 ) -> RideDetailResponse:
     remaining_seats = max((ride.total_seats or 0) - purchase_count, 0)
+    warranty_days = ride.warranty_days or default_warranty_days(ride.duration)
     return RideDetailResponse(
         id=ride.id,
         title=ride.title,
@@ -44,6 +49,7 @@ def build_ride_response(
         total_seats=ride.total_seats,
         price_per_month=ride.price_per_month,
         duration=ride.duration,
+        warranty_days=warranty_days,
         description=ride.description or "",
         contact_price=ride.contact_price,
         status=ride.status,
@@ -197,7 +203,8 @@ async def create_ride(
         )
         
     # Calculate expiry date
-    expires_at = datetime.utcnow() + timedelta(days=30 * ride_in.duration)
+    warranty_days = ride_in.warranty_days or default_warranty_days(ride_in.duration)
+    expires_at = datetime.utcnow() + timedelta(days=warranty_days)
     
     db_ride = Ride(
         title=ride_in.title,
@@ -206,6 +213,7 @@ async def create_ride(
         total_seats=ride_in.total_seats,
         price_per_month=ride_in.price_per_month,
         duration=ride_in.duration,
+        warranty_days=warranty_days,
         description=ride_in.description,
         contact_info=ride_in.contact_info,
         contact_price=ride_in.contact_price,
@@ -299,6 +307,9 @@ async def update_ride(
         ride.title = ride_in.title
     if ride_in.price_per_month is not None:
         ride.price_per_month = ride_in.price_per_month
+    if ride_in.warranty_days is not None:
+        ride.warranty_days = ride_in.warranty_days
+        ride.expires_at = datetime.utcnow() + timedelta(days=ride_in.warranty_days)
     if ride_in.description is not None:
         ride.description = ride_in.description
     if ride_in.contact_info is not None:

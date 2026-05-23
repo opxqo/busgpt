@@ -22,7 +22,7 @@
     <!-- Stats grid -->
     <section class="stat-grid">
       <div class="stat-card surface-card">
-        <span class="stat-label">我解锁的联系方式</span>
+        <span class="stat-label">我加入的拼车</span>
         <strong class="stat-value">{{ orders.length }} <small>个</small></strong>
       </div>
       <div class="stat-card surface-card">
@@ -30,8 +30,8 @@
         <strong class="stat-value">{{ ownedRides.length }} <small>个</small></strong>
       </div>
       <div class="stat-card surface-card">
-        <span class="stat-label">信息解锁累计收益</span>
-        <strong class="stat-value text-purple">¥{{ formatMoney(sales?.total_revenue || 0) }}</strong>
+        <span class="stat-label">累计拼车次数</span>
+        <strong class="stat-value">{{ sales?.total_orders || 0 }} <small>次</small></strong>
       </div>
     </section>
 
@@ -61,8 +61,8 @@
         <div v-if="activeTab === 'orders'" class="table-wrap">
           <div v-if="orders.length === 0" class="empty-state">
             <ReceiptText :size="38" class="empty-icon" />
-            <h3>暂无解锁记录</h3>
-            <p>在车位详情页成功支付服务费后，解锁的车主联络方式会记录在这里。</p>
+            <h3>暂无拼车记录</h3>
+            <p>在市场中挑选心仪的车位，查看车主联系方式后即可开始拼车。</p>
             <router-link to="/market" class="btn btn-primary">去市场挑选车位</router-link>
           </div>
           <table v-else class="records-table">
@@ -71,8 +71,7 @@
                 <th>共享车位</th>
                 <th>产品类型</th>
                 <th>拼车进度</th>
-                <th>解锁服务费</th>
-                <th>解锁时间</th>
+                <th>加入时间</th>
                 <th class="text-right">车主联系方式</th>
               </tr>
             </thead>
@@ -96,7 +95,6 @@
                     <span>空余 {{ order.ride_remaining_seats || 0 }} 个名额</span>
                   </div>
                 </td>
-                <td>¥{{ formatMoney(order.amount) }}</td>
                 <td class="date-col">{{ formatDate(order.created_at) }}</td>
                 <td class="text-right">
                   <button class="btn-copy" type="button" @click="copyText(order.ride_contact_info || '', order.id)">
@@ -126,12 +124,12 @@
         <div v-if="activeTab === 'sales'" class="sales-section">
           <div class="sales-summary-cards">
             <div class="summary-card">
-              <span>车主服务订单总数</span>
+              <span>拼车订单总数</span>
               <strong>{{ sales?.total_orders || 0 }} 笔</strong>
             </div>
             <div class="summary-card">
-              <span>解锁总收益</span>
-              <strong class="text-purple">¥{{ formatMoney(sales?.total_revenue || 0) }}</strong>
+              <span>车位总载员</span>
+              <strong>{{ sales?.rides?.reduce((sum, r) => sum + r.order_count, 0) || 0 }} 人</strong>
             </div>
           </div>
           <div class="table-wrap">
@@ -139,9 +137,8 @@
               <thead>
                 <tr>
                   <th>发布的车位标题</th>
-                  <th>车友解锁次数</th>
+                  <th>拼车人数</th>
                   <th>车位当前载员</th>
-                  <th>信息费累计收益</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,17 +146,16 @@
                   <td>
                     <router-link :to="`/ride/${item.ride_id}`" class="record-title">{{ item.ride_title }}</router-link>
                   </td>
-                  <td>{{ item.order_count }} 次被解锁</td>
+                  <td>{{ item.order_count }} 人已拼</td>
                   <td>
                     <div class="seat-metric">
                       <strong>{{ item.order_count }}/{{ item.total_seats }} 人</strong>
                       <span>空位 {{ item.remaining_seats }} 个</span>
                     </div>
                   </td>
-                  <td>¥{{ formatMoney(item.revenue) }}</td>
                 </tr>
                 <tr v-if="!sales?.rides?.length">
-                  <td colspan="4" class="empty-cell">暂无车友解锁您的车位</td>
+                  <td colspan="3" class="empty-cell">暂无车友加入您的车位</td>
                 </tr>
               </tbody>
             </table>
@@ -222,9 +218,9 @@ const sales = ref<SalesSummary | null>(null)
 const copyStates = ref<Record<string, boolean>>({})
 
 const tabs = [
-  { value: 'orders' as const, label: '我的解锁', icon: markRaw(ReceiptText) },
+  { value: 'orders' as const, label: '我的拼车', icon: markRaw(ReceiptText) },
   { value: 'published' as const, label: '我的发布', icon: markRaw(PackageOpen) },
-  { value: 'sales' as const, label: '销售统计', icon: markRaw(FileChartColumn) },
+  { value: 'sales' as const, label: '拼车统计', icon: markRaw(FileChartColumn) },
   { value: 'settings' as const, label: '账户设置', icon: markRaw(Settings) },
 ]
 
@@ -292,8 +288,6 @@ const formatDate = (dateText: string) => {
   const date = new Date(dateText)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
-
-const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 </script>
 
 <style scoped>

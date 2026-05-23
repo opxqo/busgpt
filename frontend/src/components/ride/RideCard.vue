@@ -14,7 +14,7 @@
       <router-link :to="`/ride/${ride.id}`" class="title-link">
         {{ ride.title }}
       </router-link>
-      <p class="description">{{ ride.description || '车主暂未补充公开说明，支付信息服务费后可查看联系方式。' }}</p>
+      <p class="description">{{ ride.description || '车主暂未补充公开说明。' }}</p>
     </div>
 
     <div class="price-row">
@@ -22,10 +22,10 @@
         <span class="meta-label">车位租金</span>
         <strong class="seat-price">¥{{ formatMoney(ride.price_per_month) }}<small>/月</small></strong>
       </div>
-      <div class="divider"></div>
-      <div class="price-item unlock-fee">
-        <span class="meta-label">信息解锁费</span>
-        <strong>¥{{ formatMoney(ride.contact_price) }}</strong>
+      <span class="price-divider" :class="ride.product" aria-hidden="true"></span>
+      <div class="price-item warranty-item">
+        <span class="meta-label">质保天数</span>
+        <strong class="warranty-days" :class="ride.product">{{ warrantyDays }}<small>天</small></strong>
       </div>
     </div>
 
@@ -78,13 +78,14 @@ const productLabel = computed(() => {
 })
 
 const statusLabel = computed(() => {
-  if (props.ride.status === 'closed') return '已关闭'
+  if (props.ride.status === 'closed') return '已满员'
   if (props.ride.status === 'expired') return '已过期'
-  return '可解锁'
+  return '招募中'
 })
 
 const occupiedSeats = computed(() => Number(props.ride.purchase_count || 0))
 const remainingSeats = computed(() => Math.max(Number(props.ride.remaining_seats ?? props.ride.total_seats), 0))
+const warrantyDays = computed(() => Number(props.ride.warranty_days || (props.ride.duration >= 12 ? 365 : props.ride.duration * 30)))
 
 const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 </script>
@@ -147,9 +148,10 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .price-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: var(--spacing-md);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
@@ -161,6 +163,27 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+}
+
+.warranty-item {
+  align-items: flex-end;
+}
+
+.price-divider {
+  width: 3px;
+  height: 26px;
+  align-self: center;
+  border-radius: var(--border-radius-full);
+  background: var(--color-plus);
+}
+
+.price-divider.chatgpt-team {
+  background: var(--color-team);
+}
+
+.price-divider.chatgpt-pro {
+  background: var(--color-pro);
 }
 
 .divider {
@@ -188,6 +211,28 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
+}
+
+.warranty-days {
+  color: var(--color-plus);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.warranty-days.chatgpt-team {
+  color: var(--color-team);
+}
+
+.warranty-days.chatgpt-pro {
+  color: var(--color-pro);
+}
+
+.warranty-days small {
+  color: currentColor;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 1px;
 }
 
 .unlock-fee {
@@ -299,18 +344,119 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   flex-shrink: 0;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 680px) {
   .ride-card {
-    padding: var(--spacing-md);
+    padding: 12px;
+    border-radius: var(--border-radius-md);
+  }
+
+  .card-top {
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .product-chip,
+  .status-chip {
+    height: 24px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .card-body {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .title-link {
+    min-height: 36px;
+    font-size: 13px;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+  }
+
+  .description {
+    min-height: 34px;
+    font-size: 11px;
+    line-height: 1.5;
   }
 
   .price-row {
-    align-items: stretch;
-    gap: var(--spacing-sm);
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .warranty-item {
+    align-items: flex-start;
+  }
+
+  .price-divider {
+    width: 24px;
+    height: 3px;
+    justify-self: start;
+  }
+
+  .meta-label {
+    font-size: 9px;
+    letter-spacing: 0.03em;
+  }
+
+  .seat-price,
+  .warranty-days {
+    font-size: 16px;
+  }
+
+  .seat-price small,
+  .warranty-days small {
+    font-size: 9px;
   }
 
   .facts {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    margin-bottom: 10px;
+    padding: 0;
+  }
+
+  .fact-item {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .fact-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .seller-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  .avatar {
+    width: 26px;
+    height: 26px;
+  }
+
+  .seller-info strong {
+    font-size: 11px;
+  }
+
+  .verified-tag {
+    font-size: 9px;
+  }
+
+  .detail-btn {
+    width: 100%;
+    height: 32px;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 11px;
   }
 }
 </style>

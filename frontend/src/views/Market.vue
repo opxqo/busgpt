@@ -5,7 +5,7 @@
       <div class="header-info">
         <span class="eyebrow">共享市场</span>
         <h1 class="page-title">发现可用订阅车位</h1>
-        <p class="page-subtitle">筛选展示中的 ChatGPT 拼车车位。支付信息服务费即可解锁车主的详细联络方式。</p>
+        <p class="page-subtitle">筛选展示中的 ChatGPT 拼车车位，直接查看车主联系方式。</p>
       </div>
       <router-link to="/create" class="btn btn-primary publish-btn">
         <PlusCircle :size="16" />
@@ -35,10 +35,10 @@
       </div>
       <div class="metric-card surface-card">
         <div class="metric-info">
-          <span class="metric-label">平均解锁门槛</span>
+          <span class="metric-label">平均拼车期限</span>
           <strong class="metric-value">
             <span class="indicator-dot warning"></span>
-            ¥{{ avgUnlockFee }}
+            {{ avgDuration }} 个月
           </strong>
         </div>
       </div>
@@ -68,8 +68,8 @@
         <div class="select-wrapper">
           <select v-model="selectedStatus" class="status-select" @change="fetchData">
             <option value="">全部状态</option>
-            <option value="open">可解锁</option>
-            <option value="closed">已关闭</option>
+            <option value="open">招募中</option>
+            <option value="closed">已满员</option>
             <option value="expired">已过期</option>
           </select>
         </div>
@@ -121,9 +121,9 @@ const avgPrice = computed(() => {
   return Math.round(total / ridesStore.rides.length)
 })
 
-const avgUnlockFee = computed(() => {
+const avgDuration = computed(() => {
   if (!ridesStore.rides.length) return 0
-  const total = ridesStore.rides.reduce((sum, ride) => sum + Number(ride.contact_price), 0)
+  const total = ridesStore.rides.reduce((sum, ride) => sum + Number(ride.duration), 0)
   return Math.round(total / ridesStore.rides.length)
 })
 
@@ -357,14 +357,44 @@ onMounted(() => {
 }
 
 @media (max-width: 680px) {
+  .market-page {
+    gap: var(--spacing-md);
+  }
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-sm);
   }
+  .publish-btn {
+    width: 100%;
+  }
   .market-metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--spacing-sm);
+  }
+  .metric-card {
+    padding: 10px;
+  }
+  .metric-label {
+    font-size: 10px;
+  }
+  .metric-value {
+    align-items: flex-start;
+    gap: 5px;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+  .indicator-dot {
+    margin-top: 5px;
+    width: 6px;
+    height: 6px;
+  }
+  .toolbar-panel {
+    padding: 10px;
+  }
+  .search-input-wrapper {
+    height: 40px;
+    padding: 0 12px;
   }
   .filter-actions {
     flex-direction: column;
@@ -382,6 +412,13 @@ onMounted(() => {
   .select-wrapper select {
     width: 100%;
   }
+  .rides-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 360px) {
   .rides-grid {
     grid-template-columns: 1fr;
   }

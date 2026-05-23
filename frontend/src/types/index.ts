@@ -28,6 +28,7 @@ export interface Ride {
   total_seats: number
   price_per_month: number
   duration: number
+  warranty_days: number
   description: string
   contact_price: number
   contact_info?: string  // Only available after purchase or for owner

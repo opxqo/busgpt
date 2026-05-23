@@ -3,12 +3,12 @@
     <div class="container footer-inner">
       <div class="footer-info">
         <router-link to="/" class="footer-brand">BusGPT</router-link>
-        <p class="footer-desc">商品展示与联系方式解锁服务。平台不提供站内聊天，也不代收订阅费用。</p>
+        <p class="footer-desc">AI 订阅拼车信息聚合平台。平台不提供站内聊天，也不代收订阅费用。</p>
       </div>
       <div class="footer-links">
         <router-link to="/market" class="footer-link">发现车位</router-link>
         <router-link to="/create" class="footer-link">发布车位</router-link>
-        <router-link to="/profile" class="footer-link">我的解锁</router-link>
+        <router-link to="/profile" class="footer-link">个人中心</router-link>
       </div>
     </div>
     <div class="container footer-bottom">

@@ -5,7 +5,7 @@
       <div class="login-heading">
         <span class="eyebrow">账户中心</span>
         <h1>{{ isLoginMode ? '欢迎回来' : '创建全新账户' }}</h1>
-        <p>登录后可自由发布共享车位、生成拼车订单以及解锁车友联系渠道。</p>
+        <p>登录后可自由发布共享车位、查看车友联系方式。</p>
       </div>
 
       <!-- Tab Selectors -->

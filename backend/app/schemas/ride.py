@@ -11,6 +11,7 @@ class RideBase(BaseModel):
     total_seats: int = Field(..., gt=1, le=20)
     price_per_month: Decimal = Field(..., gt=0)
     duration: int = Field(..., gt=0, le=24, description="Duration in months")
+    warranty_days: Optional[int] = Field(None, gt=0, le=730, description="Guaranteed service days")
     description: Optional[str] = ""
     contact_info: str = Field(..., min_length=1, description="Owner contact info (WeChat, phone, etc.)")
     contact_price: Decimal = Field(..., ge=0, description="Price to view contact info in CNY")
@@ -21,6 +22,7 @@ class RideCreate(RideBase):
 class RideUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=100)
     price_per_month: Optional[Decimal] = Field(None, gt=0)
+    warranty_days: Optional[int] = Field(None, gt=0, le=730)
     description: Optional[str] = None
     contact_info: Optional[str] = None
     contact_price: Optional[Decimal] = Field(None, ge=0)
@@ -34,6 +36,7 @@ class RideResponse(BaseModel):
     total_seats: int
     price_per_month: Decimal
     duration: int
+    warranty_days: int
     description: str
     contact_price: Decimal
     status: str

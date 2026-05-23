@@ -48,7 +48,7 @@
         <ShieldCheck :size="16" class="notice-icon" />
         <div>
           <strong>信息共享服务</strong>
-          <p>平台仅作车位信息聚合。解锁联系方式后自行沟通后续交易。</p>
+          <p>平台仅作车位信息聚合。查看联系方式后自行沟通后续交易。</p>
         </div>
       </div>
 

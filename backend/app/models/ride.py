@@ -12,6 +12,7 @@ class Ride(Base):
     total_seats = Column(Integer, nullable=False)
     price_per_month = Column(Numeric(10, 2), nullable=False)
     duration = Column(Integer, nullable=False)  # in months
+    warranty_days = Column(Integer, nullable=False, default=30)
     description = Column(Text, default="")  # Public description
     contact_info = Column(Text, default="")  # Owner's contact info (WeChat, etc.) - only visible after purchase
     contact_price = Column(Numeric(10, 2), nullable=False, default=0)  # Price to view contact info (CNY)
