@@ -1,8 +1,11 @@
+import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from app.config import settings
+
+logger = logging.getLogger("busgpt.email")
 
 
 def send_activation_email(email: str, token: str) -> None:
@@ -43,24 +46,45 @@ def send_activation_email(email: str, token: str) -> None:
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
-        print(f"\n{'=' * 60}")
-        print(f"[DEV MODE] SMTP not configured. Activation link:")
-        print(f"  To: {email}")
-        print(f"  URL: {activation_url}")
-        print(f"{'=' * 60}\n")
+        logger.warning(
+            "SMTP is not fully configured; activation email will not be sent. to=%s activation_url=%s",
+            email,
+            activation_url,
+        )
         return
 
+    server = None
     try:
+        logger.info(
+            "Sending activation email to=%s smtp_host=%s smtp_port=%s use_ssl=%s",
+            email,
+            settings.SMTP_HOST,
+            settings.SMTP_PORT,
+            settings.SMTP_USE_SSL,
+        )
         if settings.SMTP_USE_SSL:
             server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT)
         else:
             server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
             server.starttls()
 
+        logger.info("Logging in to SMTP server host=%s username_configured=%s", settings.SMTP_HOST, bool(settings.SMTP_USERNAME))
         server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.sendmail(settings.SMTP_USERNAME, email, msg.as_string())
-        server.quit()
+        logger.info("Activation email sent successfully to=%s", email)
     except Exception as e:
-        print(f"[EMAIL ERROR] Failed to send activation email to {email}: {e}")
-        print(f"[DEV FALLBACK] Activation URL: {activation_url}")
+        logger.exception(
+            "Failed to send activation email to=%s via smtp_host=%s smtp_port=%s activation_url=%s error=%s",
+            email,
+            settings.SMTP_HOST,
+            settings.SMTP_PORT,
+            activation_url,
+            e,
+        )
         raise
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                logger.debug("SMTP server quit failed", exc_info=True)

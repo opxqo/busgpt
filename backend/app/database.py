@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -6,8 +8,10 @@ from sqlalchemy.engine import make_url
 
 from app.config import settings
 
+logger = logging.getLogger("busgpt.database")
+
 # Create async engine and sessionmaker
-async_engine = create_async_engine(settings.async_database_url, echo=True)
+async_engine = create_async_engine(settings.async_database_url, echo=True, pool_pre_ping=True)
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
     autocommit=False,
@@ -17,7 +21,7 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 # Create sync engine for startup/admin tasks
-sync_engine = create_engine(settings.sync_database_url, echo=False)
+sync_engine = create_engine(settings.sync_database_url, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=sync_engine, autocommit=False, autoflush=False)
 
 Base = declarative_base()
@@ -60,6 +64,7 @@ def _ensure_column(conn, table_name: str, column_name: str, definition: str):
         },
     ).scalar()
     if not exists:
+        logger.info("Adding missing column %s.%s", table_name, column_name)
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD COLUMN {_quote_identifier(column_name)} {definition}"))
         return True
     return False
@@ -83,6 +88,7 @@ def _ensure_index(conn, table_name: str, index_name: str, definition: str):
         },
     ).scalar()
     if not exists:
+        logger.info("Adding missing index %s on %s", index_name, table_name)
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD INDEX {_quote_identifier(index_name)} ({definition})"))
 
 
@@ -109,6 +115,7 @@ def _ensure_unique_index(conn, table_name: str, index_name: str, definition: str
         },
     ).scalar()
     if not existing_unique:
+        logger.info("Adding missing unique index %s on %s", index_name, table_name)
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD UNIQUE INDEX {_quote_identifier(index_name)} ({definition})"))
 
 
@@ -130,13 +137,16 @@ def _ensure_nullable_column(conn, table_name: str, column_name: str, definition:
         },
     ).scalar()
     if is_nullable == "NO":
+        logger.info("Making column nullable %s.%s", table_name, column_name)
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} MODIFY COLUMN {_quote_identifier(column_name)} {definition}"))
 
 
 def _run_lightweight_migrations():
     if not _is_mysql_database():
+        logger.info("Skipping lightweight migrations because database is not MySQL")
         return
 
+    logger.info("Running lightweight database migrations")
     with sync_engine.begin() as conn:
         _ensure_column(conn, "users", "role", "VARCHAR(20) NOT NULL DEFAULT 'user'")
         _ensure_column(conn, "users", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE")
@@ -182,18 +192,28 @@ def _run_lightweight_migrations():
         conn.execute(text("UPDATE orders SET payment_provider = 'mock' WHERE payment_provider IS NULL OR payment_provider = ''"))
         conn.execute(text("UPDATE orders SET paid_at = created_at WHERE status = 'paid' AND paid_at IS NULL"))
         conn.execute(text("UPDATE orders SET contact_unlocked_at = COALESCE(paid_at, created_at) WHERE status = 'paid' AND contact_unlocked_at IS NULL"))
+    logger.info("Lightweight database migrations completed")
 
 
 # Synchronously ensure the database exists and create all tables
 def init_db():
+    logger.info("init_db started for database %s", settings.database_name)
     if _is_mysql_database():
         database_name = settings.database_name
         if not database_name:
             raise RuntimeError("MySQL DATABASE_URL must include a database name")
 
         # Connect without database name first to create it.
-        temp_engine = create_engine(settings.root_sync_database_url, echo=False)
+        root_url = make_url(settings.root_sync_database_url)
+        logger.info(
+            "Connecting to MySQL root URL host=%s port=%s driver=%s to ensure database exists",
+            root_url.host,
+            root_url.port,
+            root_url.drivername,
+        )
+        temp_engine = create_engine(settings.root_sync_database_url, echo=False, pool_pre_ping=True)
         with temp_engine.connect() as conn:
+            logger.info("Ensuring MySQL database exists: %s", database_name)
             conn.execute(
                 text(
                     f"CREATE DATABASE IF NOT EXISTS {_quote_identifier(database_name)} "
@@ -202,8 +222,10 @@ def init_db():
             )
             conn.commit()
         temp_engine.dispose()
+        logger.info("Database existence check completed: %s", database_name)
 
     # Import models here to ensure they are registered on Base
+    logger.info("Importing SQLAlchemy models")
     from app.models.user import User
     from app.models.ride import Ride
     from app.models.product import Product
@@ -212,10 +234,13 @@ def init_db():
     from app.models.activation_token import ActivationToken
 
     # Create tables
+    logger.info("Creating missing tables with SQLAlchemy metadata")
     Base.metadata.create_all(bind=sync_engine)
+    logger.info("Table creation step completed")
     _run_lightweight_migrations()
 
     # Seed/update initial product data
+    logger.info("Syncing product defaults")
     db = SessionLocal()
     try:
         product_defaults = [
@@ -256,9 +281,11 @@ def init_db():
             else:
                 db.add(Product(**data))
         db.commit()
-        print("Successfully synced product types.")
+        logger.info("Successfully synced product types")
     except Exception as e:
         db.rollback()
+        logger.exception("Error seeding database")
         raise RuntimeError(f"Error seeding database: {e}") from e
     finally:
         db.close()
+        logger.info("init_db finished")

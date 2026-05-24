@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.engine import URL, make_url
 from pydantic_settings import BaseSettings
@@ -64,6 +64,36 @@ class Settings(BaseSettings):
         default_secret = "supersecretkeyforbusgptsessiontokens12345!@#%"
         if self.SECRET_KEY == default_secret or len(self.SECRET_KEY) < 32:
             raise RuntimeError("SECRET_KEY must be replaced with a strong random value")
+
+    def deployment_diagnostics(self) -> dict[str, Any]:
+        db_url = make_url(self.sync_database_url)
+        root_url = make_url(self.root_sync_database_url)
+        return {
+            "environment": self.ENVIRONMENT,
+            "api_prefix": self.API_V1_STR,
+            "database_driver": db_url.drivername,
+            "database_host": db_url.host,
+            "database_port": db_url.port,
+            "database_name": db_url.database,
+            "root_database_driver": root_url.drivername,
+            "root_database_host": root_url.host,
+            "root_database_port": root_url.port,
+            "cors_origins": self.cors_origins,
+            "frontend_url": self.FRONTEND_URL,
+            "backend_url": self.BACKEND_URL,
+            "payment_provider": self.PAYMENT_PROVIDER,
+            "mock_payment_enabled": self.MOCK_PAYMENT_ENABLED,
+            "order_expire_minutes": self.ORDER_EXPIRE_MINUTES,
+            "smtp_host": self.SMTP_HOST,
+            "smtp_port": self.SMTP_PORT,
+            "smtp_use_ssl": self.SMTP_USE_SSL,
+            "smtp_username_configured": bool(self.SMTP_USERNAME),
+            "smtp_password_configured": bool(self.SMTP_PASSWORD),
+            "secret_key_configured": bool(self.SECRET_KEY),
+            "secret_key_length": len(self.SECRET_KEY),
+            "admin_email_count": len(self.admin_email_set),
+            "admin_phone_count": len(self.admin_phone_set),
+        }
 
     def _fallback_mysql_url(self, database: Optional[str] = None) -> URL:
         return URL.create(
