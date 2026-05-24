@@ -1,7 +1,7 @@
 <template>
   <div class="create-page container">
     <!-- Header -->
-    <header class="page-header">
+    <header class="page-header anim-fade-up">
       <div class="header-info">
         <span class="eyebrow">发布共享</span>
         <h1 class="page-title">发布订阅车位</h1>
@@ -11,7 +11,7 @@
 
     <div class="create-grid">
       <!-- Form Area -->
-      <form class="create-form surface-card" @submit.prevent="handleSubmit">
+      <form class="create-form surface-card anim-fade-up anim-d1" @submit.prevent="handleSubmit">
         <!-- Section 1: Public Info -->
         <section class="form-section">
           <div class="section-heading">
@@ -24,7 +24,10 @@
           </div>
 
           <div class="form-group form-group-title">
-            <label class="form-label" for="title">车位标题</label>
+            <label class="form-label" for="title">
+              车位标题
+              <span class="char-count" :class="{ warn: form.title.length > 80 }">{{ form.title.length }}/100</span>
+            </label>
             <input
               id="title"
               v-model.trim="form.title"
@@ -84,10 +87,10 @@
                 class="form-control"
                 type="number"
                 :min="1"
-                :max="maxRecruitSeats"
+                :max="maxOnboardSeats"
                 required
               />
-              <span class="form-help">不含车主本人，表示还可以上车的车友人数。</span>
+              <span class="form-help">包含车主本人，表示当前已经在车上的人数。</span>
             </div>
             <div class="form-group">
               <label class="form-label" for="duration">车位有效期限</label>
@@ -121,12 +124,16 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="description">详细拼车说明</label>
+            <label class="form-label" for="description">
+              详细拼车说明
+              <span class="char-count" :class="{ warn: form.description.length > 400 }">{{ form.description.length }}/500</span>
+            </label>
             <textarea
               id="description"
               v-model.trim="form.description"
               class="form-control textarea-control"
               rows="4"
+              maxlength="500"
               placeholder="请明确写清拼车规则、使用频率要求、续费方式及适合人群，请勿在此透露联系方式。"
             ></textarea>
           </div>
@@ -179,21 +186,26 @@
             ></textarea>
           </div>
 
-          <label class="agreement-checkbox">
-            <input v-model="confirmed" type="checkbox" required />
-            <span class="checkbox-text">我保证填写的内容均真实准确，并自愿遵守信息共享平台规范。</span>
+          <label class="agreement-checkbox" :class="{ checked: confirmed }">
+            <span class="checkbox-visual" :class="{ checked: confirmed }">
+              <Check v-if="confirmed" :size="12" />
+            </span>
+            <input v-model="confirmed" type="checkbox" required class="sr-only" />
+            <span class="checkbox-text">我保证填写的内容均真实准确，并自愿遵守 <a href="/platform-spec.html" target="_blank" class="spec-link">信息共享平台规范</a>。</span>
           </label>
         </section>
 
-        <button type="submit" class="btn btn-primary submit-btn" :disabled="submitting || !confirmed">
-          <Send :size="16" />
-          <span>{{ submitting ? '正在创建并发布车位...' : '立即确认并发布' }}</span>
-        </button>
-        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+        <div class="submit-area">
+          <button type="submit" class="btn btn-primary submit-btn submit-shimmer" :disabled="submitting || !confirmed">
+            <Send :size="16" />
+            <span>{{ submitting ? '正在创建并发布车位...' : '立即确认并发布' }}</span>
+          </button>
+          <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+        </div>
       </form>
 
       <!-- Preview Column (Sticky) -->
-      <aside class="preview-column">
+      <aside class="preview-column anim-fade-up anim-d2">
         <div class="preview-sticky">
           <div class="section-heading">
             <ReceiptText :size="18" class="heading-icon-preview" />
@@ -226,10 +238,23 @@
                 </div>
               </div>
 
-              <div class="sim-footer">
-                <div class="sim-facts">
-                  <span>已拼 0/{{ form.recruit_seats }} 人</span>
-                  <span>{{ form.duration }}个月有效期</span>
+              <div class="sim-seat-progress">
+                <div class="sim-progress-header">
+                  <div class="sim-progress-label">
+                    <Users :size="13" />
+                    <span>拼车进度</span>
+                  </div>
+                  <span class="sim-progress-count">{{ form.recruit_seats }}/{{ form.total_seats }}</span>
+                </div>
+                <div class="sim-progress-track">
+                  <div class="sim-progress-bar" :class="form.product" :style="{ width: previewFillPercent + '%' }"></div>
+                </div>
+                <div class="sim-progress-meta">
+                  <span class="sim-remaining-tag">还差 {{ previewRemainingSeats }} 人</span>
+                  <span class="sim-duration-tag">
+                    <CalendarClock :size="11" />
+                    {{ form.duration }}个月
+                  </span>
                 </div>
               </div>
             </article>
@@ -248,7 +273,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
-import { Globe, Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck } from '@lucide/vue'
+import { CalendarClock, Check, Globe, Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck, Users } from '@lucide/vue'
 import { ridesApi } from '../api/rides'
 import type { ContactType, Product, ProductType } from '../types'
 
@@ -359,7 +384,12 @@ const activeProductObj = computed(() => {
 const durationToWarrantyDays = (duration: number) => (duration >= 12 ? 365 : duration * 30)
 const activeProductLabel = computed(() => activeProductObj.value?.label || 'Plus')
 const maxSeatsAllowed = computed(() => activeProductObj.value?.max_seats || 4)
-const maxRecruitSeats = computed(() => Math.max(form.total_seats - 1, 1))
+const maxOnboardSeats = computed(() => Math.max(form.total_seats - 1, 1))
+const previewRemainingSeats = computed(() => Math.max(form.total_seats - form.recruit_seats, 0))
+const previewFillPercent = computed(() => {
+  if (form.total_seats <= 0) return 0
+  return Math.min(Math.round((form.recruit_seats / form.total_seats) * 100), 100)
+})
 const contactInfoPayload = computed(() => {
   const lines = contactMethods
     .map((method) => {
@@ -381,7 +411,7 @@ watch(
 watch(
   () => form.total_seats,
   () => {
-    if (form.recruit_seats > maxRecruitSeats.value) form.recruit_seats = maxRecruitSeats.value
+    if (form.recruit_seats > maxOnboardSeats.value) form.recruit_seats = maxOnboardSeats.value
     if (form.recruit_seats < 1) form.recruit_seats = 1
   }
 )
@@ -402,7 +432,7 @@ const validateContact = () => {
   const website = form.contacts.website.trim()
 
   if (!email && !wechat && !telegram && !website) return '请至少填写一种隐藏的联系方式'
-  if (form.recruit_seats >= form.total_seats) return '上车人数必须小于车位总人数'
+  if (form.recruit_seats >= form.total_seats) return '上车人数必须小于车位总人数，至少留出 1 个可拼名额'
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '请填写有效的邮箱地址'
   if (wechat && !/^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(wechat)) return '请填写正确的微信号格式'
   if (telegram && !/^(@?[-_a-zA-Z0-9]{5,32}|https:\/\/t\.me\/[-_a-zA-Z0-9]{5,32})$/.test(telegram)) return '请填写有效的 Telegram 用户名'
@@ -451,6 +481,43 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   gap: var(--spacing-lg);
 }
 
+/* ===== Animations ===== */
+.anim-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-d1 { animation-delay: 0.08s; }
+.anim-d2 { animation-delay: 0.16s; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Submit shimmer */
+.submit-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.submit-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.submit-shimmer:hover::after {
+  transform: translateX(100%);
+}
+
 .page-header {
   border-bottom: 1px solid var(--border-color);
   padding-bottom: var(--spacing-lg);
@@ -489,6 +556,23 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   margin-bottom: 2px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.section-heading::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 48px;
+  height: 2px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-primary);
+  opacity: 0.6;
+}
+
+.form-section:nth-child(2) .section-heading::after {
+  background: var(--color-success);
 }
 
 .section-index {
@@ -498,11 +582,12 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-full);
-  background: var(--color-primary);
+  background: var(--color-team);
   color: var(--text-inverse);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-team) 25%, transparent);
 }
 
 .heading-icon {
@@ -551,11 +636,24 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .form-label {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   min-height: 18px;
   color: var(--text-primary);
   font-size: 12px;
   font-weight: 750;
   line-height: 1.2;
+}
+
+.char-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--transition-fast);
+}
+
+.char-count.warn {
+  color: var(--color-warning);
 }
 
 .form-help {
@@ -593,26 +691,94 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .product-option-card:hover {
   border-color: var(--border-color-strong);
   background: var(--bg-secondary);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .product-option-card.active {
   background: var(--bg-secondary);
   border-width: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.product-option-card.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+}
+
+.product-option-card.chatgpt-plus.active::before { background: var(--color-plus); }
+.product-option-card.chatgpt-team.active::before { background: var(--color-team); }
+.product-option-card.chatgpt-pro.active::before { background: var(--color-pro); }
+
+.product-option-card.active::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-success);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px;
+  animation: checkPop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes checkPop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.product-option-card.chatgpt-plus:hover,
+.product-option-card.chatgpt-plus.active {
+  border-color: var(--color-plus);
+}
+
+.product-option-card.chatgpt-plus:hover {
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.12), 0 0 0 1px rgba(16, 185, 129, 0.06);
 }
 
 .product-option-card.chatgpt-plus.active {
-  border-color: var(--color-plus);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
+.product-option-card.chatgpt-team:hover,
 .product-option-card.chatgpt-team.active {
   border-color: var(--color-team);
+}
+
+.product-option-card.chatgpt-team:hover {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.06);
+}
+
+.product-option-card.chatgpt-team.active {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.product-option-card.chatgpt-pro:hover,
 .product-option-card.chatgpt-pro.active {
   border-color: var(--color-pro);
+}
+
+.product-option-card.chatgpt-pro:hover {
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.12), 0 0 0 1px rgba(139, 92, 246, 0.06);
+}
+
+.product-option-card.chatgpt-pro.active {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
@@ -739,6 +905,56 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.contact-input-box:hover {
+  border-color: var(--border-color-strong);
+}
+
+.contact-input-box:focus-within {
+  border-color: var(--color-team);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.contact-input-box.wechat:focus-within {
+  border-color: #15803d;
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.1);
+}
+
+.contact-input-box.email:focus-within {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+}
+
+.contact-input-box.telegram:focus-within {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+.contact-input-box.website:focus-within {
+  border-color: var(--color-pro);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+:global([data-theme="dark"] .contact-input-box.wechat:focus-within ){
+  border-color: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+}
+
+:global([data-theme="dark"] .contact-input-box.email:focus-within ){
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+:global([data-theme="dark"] .contact-input-box.telegram:focus-within ){
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+:global([data-theme="dark"] .contact-input-box.website:focus-within ){
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
 }
 
 .input-box-header {
@@ -778,6 +994,26 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   color: var(--color-pro);
 }
 
+:global([data-theme="dark"] .contact-input-box.wechat .method-icon-wrap ){
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+}
+
+:global([data-theme="dark"] .contact-input-box.email .method-icon-wrap ){
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
+:global([data-theme="dark"] .contact-input-box.telegram .method-icon-wrap ){
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
+
+:global([data-theme="dark"] .contact-input-box.website .method-icon-wrap ){
+  background: rgba(167, 139, 250, 0.12);
+  color: #a78bfa;
+}
+
 .method-meta {
   display: flex;
   flex-direction: column;
@@ -796,20 +1032,75 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 
 .agreement-checkbox {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-start;
   margin-top: var(--spacing-md);
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
   cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.agreement-checkbox input {
-  margin-top: 3px;
+.agreement-checkbox:hover {
+  border-color: var(--border-color-strong);
+  background: var(--bg-tertiary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.checkbox-visual {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 2px solid var(--border-color-strong);
+  background: var(--bg-secondary);
+  color: white;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.checkbox-visual.checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  animation: checkPop 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .checkbox-text {
   font-size: 12px;
-  color: var(--color-warning);
-  line-height: 1.5;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.spec-link {
+  color: var(--color-team);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.spec-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.submit-area {
+  padding: 0 32px var(--spacing-xl);
 }
 
 .submit-btn {
@@ -823,6 +1114,17 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   font-weight: 700;
   text-align: center;
   margin-top: var(--spacing-sm);
+  padding: 10px 14px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--border-radius-md);
+  background: var(--color-danger-soft);
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 /* Preview column */
@@ -843,6 +1145,25 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-card-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  transition: background var(--transition-normal);
+}
+
+:global([data-theme="dark"] .preview-card-wrapper ){
+  background: var(--bg-tertiary);
 }
 
 /* Simulated Ride Card */
@@ -965,17 +1286,78 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   background: var(--border-color);
 }
 
-.sim-footer {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  border-top: 1px dashed var(--border-color);
-  padding-top: var(--spacing-sm);
+/* Preview seat progress */
+.sim-seat-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
 }
 
-.sim-facts {
+.sim-progress-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+}
+
+.sim-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sim-progress-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.sim-progress-track {
+  height: 3px;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.sim-progress-bar {
+  height: 100%;
+  border-radius: var(--border-radius-full);
+  background: var(--color-plus);
+}
+
+.sim-progress-bar.chatgpt-team {
+  background: var(--color-team);
+}
+
+.sim-progress-bar.chatgpt-pro {
+  background: var(--color-pro);
+}
+
+.sim-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sim-remaining-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sim-duration-tag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .preview-info-box {
@@ -1012,6 +1394,12 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   .create-form {
     padding: var(--spacing-lg);
   }
+  .form-section {
+    padding: 20px 0;
+  }
+  .submit-area {
+    padding: 0 0 var(--spacing-md);
+  }
   .product-selection-grid {
     grid-template-columns: 1fr;
   }
@@ -1029,5 +1417,40 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   height: 14px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+/* Dark mode product card glows */
+:global([data-theme="dark"] .product-option-card.chatgpt-plus:hover ){
+  box-shadow: 0 4px 16px rgba(52, 211, 153, 0.15), 0 0 0 1px rgba(52, 211, 153, 0.1);
+}
+
+:global([data-theme="dark"] .product-option-card.chatgpt-team:hover ){
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.15), 0 0 0 1px rgba(96, 165, 250, 0.1);
+}
+
+:global([data-theme="dark"] .product-option-card.chatgpt-pro:hover ){
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.15), 0 0 0 1px rgba(167, 139, 250, 0.1);
+}
+
+:global([data-theme="dark"] .agreement-checkbox ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .checkbox-visual ){
+  background: var(--bg-secondary);
+  border-color: var(--border-color-strong);
+}
+
+:global([data-theme="dark"] .spec-link ){
+  color: var(--color-team);
+}
+
+:global([data-theme="dark"] .preview-card-wrapper::before ){
+  background: transparent;
+}
+
+.agreement-checkbox.checked {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: color-mix(in srgb, var(--color-success-soft) 40%, var(--bg-inset));
 }
 </style>

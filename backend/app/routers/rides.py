@@ -24,20 +24,25 @@ def default_warranty_days(duration: int) -> int:
     return 365 if duration >= 12 else duration * 30
 
 
-def get_recruit_seats(ride: Ride) -> int:
-    return max(int(ride.recruit_seats or max((ride.total_seats or 1) - 1, 1)), 1)
+def get_onboard_seats(ride: Ride) -> int:
+    total_seats = max(int(ride.total_seats or 1), 1)
+    return min(max(int(ride.recruit_seats or max(total_seats - 1, 1)), 1), total_seats)
 
 
-def validate_seats(total_seats: int, recruit_seats: int, product: Product, purchase_count: int = 0) -> None:
+def get_available_seats(ride: Ride) -> int:
+    return max(int(ride.total_seats or 0) - get_onboard_seats(ride), 0)
+
+
+def validate_seats(total_seats: int, onboard_seats: int, product: Product, purchase_count: int = 0) -> None:
     if total_seats > product.max_seats:
         raise HTTPException(
             status_code=400,
             detail=f"Maximum seats allowed for {product.label} is {product.max_seats}"
         )
-    if recruit_seats >= total_seats:
-        raise HTTPException(status_code=400, detail="上车人数必须小于车位总人数，车主本人也占 1 位")
-    if recruit_seats < purchase_count:
-        raise HTTPException(status_code=400, detail="上车人数不能小于已拼车人数")
+    if onboard_seats >= total_seats:
+        raise HTTPException(status_code=400, detail="上车人数必须小于车位总人数，至少留出 1 个可拼名额")
+    if onboard_seats + purchase_count > total_seats:
+        raise HTTPException(status_code=400, detail="当前总人数不能小于已上车人数与已拼车人数之和")
 
 
 async def get_ride_purchase_count(db: AsyncSession, ride_id: int) -> int:
@@ -56,8 +61,8 @@ def build_ride_response(
     contact_website: Optional[str] = None,
     is_purchased: bool = False,
 ) -> RideDetailResponse:
-    recruit_seats = get_recruit_seats(ride)
-    remaining_seats = max(recruit_seats - purchase_count, 0)
+    onboard_seats = get_onboard_seats(ride)
+    remaining_seats = max((ride.total_seats or 0) - onboard_seats - purchase_count, 0)
     warranty_days = ride.warranty_days or default_warranty_days(ride.duration)
     return RideDetailResponse(
         id=ride.id,
@@ -65,7 +70,7 @@ def build_ride_response(
         product=ride.product,
         owner_id=ride.owner_id,
         total_seats=ride.total_seats,
-        recruit_seats=recruit_seats,
+        recruit_seats=onboard_seats,
         price_per_month=ride.price_per_month,
         duration=ride.duration,
         warranty_days=warranty_days,
@@ -215,8 +220,8 @@ async def create_ride(
     if not product:
         raise HTTPException(status_code=400, detail="Invalid product type")
         
-    recruit_seats = ride_in.recruit_seats or max(ride_in.total_seats - 1, 1)
-    validate_seats(ride_in.total_seats, recruit_seats, product)
+    onboard_seats = ride_in.recruit_seats or max(ride_in.total_seats - 1, 1)
+    validate_seats(ride_in.total_seats, onboard_seats, product)
         
     # Calculate expiry date
     warranty_days = ride_in.warranty_days or default_warranty_days(ride_in.duration)
@@ -227,7 +232,7 @@ async def create_ride(
         product=ride_in.product,
         owner_id=current_user.id,
         total_seats=ride_in.total_seats,
-        recruit_seats=recruit_seats,
+        recruit_seats=onboard_seats,
         price_per_month=ride_in.price_per_month,
         duration=ride_in.duration,
         warranty_days=warranty_days,
@@ -330,8 +335,8 @@ async def update_ride(
         raise HTTPException(status_code=400, detail="Invalid product type")
 
     total_seats = ride_in.total_seats if ride_in.total_seats is not None else ride.total_seats
-    recruit_seats = ride_in.recruit_seats if ride_in.recruit_seats is not None else get_recruit_seats(ride)
-    validate_seats(total_seats, recruit_seats, product, purchase_count)
+    onboard_seats = ride_in.recruit_seats if ride_in.recruit_seats is not None else get_onboard_seats(ride)
+    validate_seats(total_seats, onboard_seats, product, purchase_count)
 
     if ride_in.title is not None:
         ride.title = ride_in.title

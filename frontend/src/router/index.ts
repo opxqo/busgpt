@@ -3,6 +3,9 @@ import { useUserStore } from '../stores/user'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(_to, _from, savedPosition) {
+    return savedPosition || { top: 0, behavior: 'smooth' }
+  },
   routes: [
     {
       path: '/',
@@ -33,7 +36,41 @@ const router = createRouter({
     },
     {
       path: '/products',
-      name: 'products',
+      redirect: '/admin/products',
+    },
+    {
+      path: '/admin',
+      name: 'admin-dashboard',
+      component: () => import('../views/admin/Dashboard.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: () => import('../views/admin/UserManagement.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/rides',
+      name: 'admin-rides',
+      component: () => import('../views/admin/RideManagement.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/orders',
+      name: 'admin-orders',
+      component: () => import('../views/admin/OrderManagement.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/analytics',
+      name: 'admin-analytics',
+      component: () => import('../views/admin/AnalyticsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/products',
+      name: 'admin-products',
       component: () => import('../views/ProductAdmin.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
@@ -41,6 +78,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/Login.vue'),
+    },
+    {
+      path: '/activate',
+      name: 'activate',
+      component: () => import('../views/Activate.vue'),
     },
   ],
 })

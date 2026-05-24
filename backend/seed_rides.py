@@ -228,15 +228,18 @@ def seed_rides():
         # Create test users as ride owners
         owners = []
         for i in range(1, 11):
+            email = f"owner{i}@busgpt.local"
             phone = f"1380000{i:04d}"
-            user = db.query(User).filter(User.phone == phone).first()
+            user = db.query(User).filter(User.email == email).first()
             if not user:
                 user = User(
+                    email=email,
                     phone=phone,
                     nickname=f"车友{i}号",
                     avatar=f"https://api.dicebear.com/7.x/avataaars/svg?seed=owner{i}",
                     role="user",
                     password_hash=get_password_hash("123456"),
+                    email_verified_at=datetime.utcnow(),
                 )
                 db.add(user)
                 db.flush()
@@ -270,15 +273,18 @@ def seed_rides():
         db.flush()
 
         # Create some test orders (purchases) for a buyer user
+        buyer_email = "buyer@busgpt.local"
         buyer_phone = "13900000001"
-        buyer = db.query(User).filter(User.phone == buyer_phone).first()
+        buyer = db.query(User).filter(User.email == buyer_email).first()
         if not buyer:
             buyer = User(
+                email=buyer_email,
                 phone=buyer_phone,
                 nickname="测试买家",
                 avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=buyer",
                 role="user",
                 password_hash=get_password_hash("123456"),
+                email_verified_at=datetime.utcnow(),
             )
             db.add(buyer)
             db.flush()

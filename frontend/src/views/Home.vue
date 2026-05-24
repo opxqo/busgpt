@@ -50,7 +50,7 @@
             <strong>极简拼车三步走</strong>
           </div>
           <div class="steps-flow">
-            <div v-for="(step, idx) in steps" :key="step.title" class="step-item">
+            <div v-for="(step, idx) in steps" :key="step.title" class="step-item" :class="`step-${idx + 1}`">
               <div class="step-num">0{{ idx + 1 }}</div>
               <div class="step-info">
                 <strong>{{ step.title }}</strong>
@@ -67,7 +67,7 @@
     </section>
 
     <!-- Recommended Marketplace Section (Carousel) -->
-    <section class="container marketplace-section">
+    <section class="container marketplace-section anim-fade-up anim-d1">
       <div class="section-header">
         <div class="section-title-wrap">
           <span class="eyebrow">实时推荐</span>
@@ -119,7 +119,7 @@
     </section>
 
     <!-- Platform Data Dashboard Section -->
-    <section class="container stats-dashboard-section">
+    <section class="container stats-dashboard-section anim-fade-up anim-d2">
       <div class="section-header">
         <div class="section-title-wrap">
           <span class="eyebrow">数据洞察</span>
@@ -217,19 +217,19 @@
           <div class="mini-stats-flow">
             <div class="mini-stat-box">
               <span>本月成交订单</span>
-              <strong>{{ salesOverview?.paid_orders ?? '—' }} <small>单</small></strong>
+              <strong>{{ animPaidOrders }} <small>单</small></strong>
             </div>
             <div class="mini-stat-box">
               <span>累计成交金额</span>
-              <strong>¥{{ salesOverview?.total_revenue ?? '—' }} <small></small></strong>
+              <strong>¥{{ formatCompactMoney(animTotalRevenue) }} <small></small></strong>
             </div>
             <div class="mini-stat-box">
               <span>平台已托管活跃车位</span>
-              <strong>{{ salesOverview?.active_rides ?? '—' }} <small>个车位</small></strong>
+              <strong>{{ animActiveRides }} <small>个车位</small></strong>
             </div>
             <div class="mini-stat-box">
               <span>本月新增车位</span>
-              <strong>{{ salesOverview?.new_rides ?? '—' }} <small>个</small></strong>
+              <strong>{{ animNewRides }} <small>个</small></strong>
             </div>
             <div class="mini-stat-box">
               <span>平均拼车规模</span>
@@ -243,7 +243,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { type Ref, computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   BarChart3,
   ChevronLeft,
@@ -319,6 +319,36 @@ const avgSeatsPerRide = computed(() => {
   const total = rides.value.reduce((sum, r) => sum + Number(r.total_seats || 0), 0)
   return Math.round(total / rides.value.length)
 })
+
+// Count-up animation
+const animateValue = (target: Ref<number>, end: number, duration = 600) => {
+  const start = target.value
+  if (start === end) return
+  const startTime = performance.now()
+  const tick = (now: number) => {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    target.value = Math.round(start + (end - start) * eased)
+    if (progress < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+const animPaidOrders = ref(0)
+const animTotalRevenue = ref(0)
+const animActiveRides = ref(0)
+const animNewRides = ref(0)
+
+const formatCompactMoney = (value: number) => {
+  if (value >= 10000) return `${(value / 10000).toFixed(1)}万`
+  return Math.round(value)
+}
+
+watch(() => salesOverview.value?.paid_orders ?? 0, (v) => animateValue(animPaidOrders, Number(v)), { immediate: true })
+watch(() => salesOverview.value?.total_revenue ?? 0, (v) => animateValue(animTotalRevenue, Number(v)), { immediate: true })
+watch(() => salesOverview.value?.active_rides ?? 0, (v) => animateValue(animActiveRides, Number(v)), { immediate: true })
+watch(() => salesOverview.value?.new_rides ?? 0, (v) => animateValue(animNewRides, Number(v)), { immediate: true })
 
 // Price trend chart coordinates
 const CHART_PADDING = { top: 20, right: 20, bottom: 20, left: 45 }
@@ -529,6 +559,24 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xxl);
+  padding-top: 0;
+}
+
+/* Entrance animations */
+.anim-fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.anim-d1 { animation-delay: 0.1s; }
+.anim-d2 { animation-delay: 0.2s; }
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Hero Section */
@@ -537,7 +585,7 @@ onBeforeUnmount(() => {
   padding: var(--spacing-xxl) 0;
   overflow: hidden;
   border-bottom: 1px solid var(--border-color);
-  --hero-pattern-bg: #fbfaf8;
+  --hero-pattern-bg: var(--bg-inset);
   --hero-pattern-cell-size: 36px;
   --hero-pattern-half-move-size: -36px;
   --hero-pattern-move-size: -72px;
@@ -547,12 +595,13 @@ onBeforeUnmount(() => {
   --hero-pattern-duration: 7.6s;
   --hero-pattern-ease: cubic-bezier(0.45, 0, 0.12, 1);
   background-color: var(--hero-pattern-bg);
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .hero-section {
-  --hero-pattern-bg: #181816;
-  --hero-pattern-color: 243, 240, 233;
-  --hero-pattern-dot-opacity: 0.22;
+:global([data-theme="dark"] .hero-section ){
+  --hero-pattern-bg: var(--bg-primary);
+  --hero-pattern-color: 255, 255, 255;
+  --hero-pattern-dot-opacity: 0.16;
   --hero-pattern-icon-opacity: 0.3;
 }
 
@@ -697,9 +746,7 @@ onBeforeUnmount(() => {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--color-plus) 0%, var(--color-team) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-team);
 }
 
 .hero-subtitle {
@@ -768,11 +815,37 @@ onBeforeUnmount(() => {
   background: var(--bg-inset);
   border: 1px solid var(--border-color);
   transition: all var(--transition-fast);
+  opacity: 0;
+  transform: translateX(-12px);
+  animation: stepSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.step-item.step-1 { animation-delay: 0.15s; }
+.step-item.step-2 { animation-delay: 0.25s; }
+.step-item.step-3 { animation-delay: 0.35s; }
+
+@keyframes stepSlideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .step-item:hover {
   border-color: var(--border-color-strong);
   transform: translateX(4px);
+}
+
+.step-item.step-1 {
+  border-left: 3px solid var(--color-plus);
+}
+
+.step-item.step-2 {
+  border-left: 3px solid var(--color-team);
+}
+
+.step-item.step-3 {
+  border-left: 3px solid var(--color-pro);
 }
 
 .step-num {
@@ -860,6 +933,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   width: 100%;
+  padding-inline: 12px;
   overflow: hidden;
 }
 
@@ -905,14 +979,15 @@ onBeforeUnmount(() => {
   background: var(--bg-inset);
   color: var(--text-primary);
   border-color: var(--border-color-strong);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
 }
 
 .carousel-arrow.left {
-  left: -20px;
+  left: 12px;
 }
 
 .carousel-arrow.right {
-  right: -20px;
+  right: 12px;
 }
 
 /* Stats Dashboard Section */
@@ -935,6 +1010,30 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.dashboard-card:hover {
+  border-color: var(--border-color-strong);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-color-strong);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.dashboard-card:hover::before {
+  opacity: 0.6;
 }
 
 .card-header-wrap {
@@ -1115,9 +1214,7 @@ onBeforeUnmount(() => {
 /* Operational highlights */
 .summary-card-dashboard {
   border-color: color-mix(in srgb, var(--color-info) 24%, var(--border-color));
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-info-soft) 72%, transparent) 0%, transparent 62%),
-    var(--bg-card);
+  background: var(--bg-card);
 }
 
 .mini-stats-flow {
@@ -1136,6 +1233,13 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transition: all var(--transition-fast);
+}
+
+.mini-stat-box:hover {
+  border-color: color-mix(in srgb, var(--color-info) 35%, var(--border-color));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.08);
 }
 
 .mini-stat-box span {
@@ -1193,6 +1297,31 @@ onBeforeUnmount(() => {
   .carousel-arrow {
     display: none; /* Hide arrows on mobile and rely on swipe snap */
   }
+}
+
+/* Dark mode */
+:global([data-theme="dark"] .step-item.step-1 ){
+  border-left-color: rgba(52, 211, 153, 0.5);
+}
+
+:global([data-theme="dark"] .step-item.step-2 ){
+  border-left-color: rgba(96, 165, 250, 0.5);
+}
+
+:global([data-theme="dark"] .step-item.step-3 ){
+  border-left-color: rgba(167, 139, 250, 0.5);
+}
+
+:global([data-theme="dark"] .dashboard-card:hover::before ){
+  opacity: 0.4;
+}
+
+:global([data-theme="dark"] .mini-stat-box:hover ){
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.12);
+}
+
+:global([data-theme="dark"] .carousel-arrow:hover ){
+  box-shadow: 0 2px 12px rgba(96, 165, 250, 0.2);
 }
 
 @media (prefers-reduced-motion: reduce) {

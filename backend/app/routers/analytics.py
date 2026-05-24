@@ -13,6 +13,8 @@ from app.models.product import Product
 from app.models.ride import Ride
 from app.models.user import User
 from app.schemas.analytics import (
+    GmvByProduct,
+    GmvResponse,
     PriceTrendPoint,
     ProductRankingItem,
     RideRankingItem,
@@ -211,20 +213,95 @@ async def get_ride_rankings(
     items = []
     for row in result.all():
         orders = row[8] or 0
-        recruit_seats = max(int(row[4] or max((row[3] or 1) - 1, 1)), 1)
+        onboard_seats = min(max(int(row[4] or max((row[3] or 1) - 1, 1)), 1), int(row[3] or 1))
         items.append(
             RideRankingItem(
                 ride_id=row[0],
                 ride_title=row[1],
                 product=row[2],
                 total_seats=row[3],
-                recruit_seats=recruit_seats,
+                recruit_seats=onboard_seats,
                 status=row[5],
                 owner_id=row[6],
                 owner_nickname=row[7],
                 orders=orders,
                 revenue=_decimal(row[9]),
-                remaining_seats=max(recruit_seats - orders, 0),
+                remaining_seats=max((row[3] or 0) - onboard_seats - orders, 0),
             )
         )
     return items
+
+
+@router.get("/gmv", response_model=GmvResponse)
+async def get_gmv(
+    db: AsyncSession = Depends(get_db),
+):
+    # Subquery: paid order count per ride
+    purchase_count_sq = (
+        select(Order.ride_id, func.count(Order.id).label("cnt"))
+        .filter(Order.status == PAID_STATUS)
+        .group_by(Order.ride_id)
+        .subquery()
+    )
+
+    result = await db.execute(
+        select(
+            Ride.product,
+            Product.label,
+            func.sum(Ride.price_per_month * Ride.duration * func.coalesce(purchase_count_sq.c.cnt, 0)).label("exercised_gmv"),
+            func.sum(Ride.price_per_month * Ride.duration * (Ride.total_seats - Ride.recruit_seats)).label("potential_gmv"),
+            func.sum(Product.official_price * Ride.duration * func.coalesce(purchase_count_sq.c.cnt, 0)).label("benchmark_gmv"),
+            func.sum(func.coalesce(purchase_count_sq.c.cnt, 0)).label("exercised_count"),
+            func.sum(Ride.total_seats - Ride.recruit_seats).label("potential_count"),
+            func.count(Ride.id).label("ride_count"),
+        )
+        .join(Product, Product.type == Ride.product)
+        .outerjoin(purchase_count_sq, purchase_count_sq.c.ride_id == Ride.id)
+        .filter(Ride.status.in_(["open", "closed"]))
+        .group_by(Ride.product, Product.label)
+    )
+
+    by_product = []
+    total_exercised = Decimal("0")
+    total_potential = Decimal("0")
+    total_benchmark = Decimal("0")
+    total_exercised_count = 0
+    total_potential_count = 0
+
+    for row in result.all():
+        exercised = _decimal(row[2])
+        potential = _decimal(row[3])
+        remaining = potential - exercised
+        by_product.append(
+            GmvByProduct(
+                product=row[0],
+                product_label=row[1],
+                exercised_gmv=exercised,
+                potential_gmv=potential,
+                remaining_gmv=remaining,
+                exercised_count=int(row[5] or 0),
+                potential_count=int(row[6] or 0),
+                ride_count=int(row[7] or 0),
+            )
+        )
+        total_exercised += exercised
+        total_potential += potential
+        total_benchmark += _decimal(row[4])
+        total_exercised_count += int(row[5] or 0)
+        total_potential_count += int(row[6] or 0)
+
+    active_rides_result = await db.execute(
+        select(func.count(Ride.id)).filter(Ride.status == "open")
+    )
+    active_rides = active_rides_result.scalar() or 0
+
+    return GmvResponse(
+        exercised_gmv=total_exercised,
+        potential_gmv=total_potential,
+        remaining_gmv=total_potential - total_exercised,
+        benchmark_gmv=total_benchmark,
+        exercised_count=total_exercised_count,
+        potential_count=total_potential_count,
+        active_rides=active_rides,
+        by_product=by_product,
+    )

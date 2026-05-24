@@ -1,9 +1,12 @@
 export interface User {
   id: number
-  phone: string
+  email: string
+  phone?: string
   nickname: string
   avatar: string
   role: 'user' | 'admin'
+  is_active: boolean
+  email_verified?: boolean
   created_at: string
 }
 
@@ -67,4 +70,57 @@ export interface Order {
   ride_contact_info?: string
   ride_contact_website?: string
   ride_owner?: User
+}
+
+export interface AdminOverview {
+  total_users: number
+  total_rides: number
+  total_orders: number
+  total_revenue: number
+  active_rides: number
+  today_new_users: number
+}
+
+export interface AdminUserListItem {
+  id: number
+  email: string
+  phone?: string
+  nickname: string
+  avatar: string
+  role: 'user' | 'admin'
+  is_active: boolean
+  created_at: string
+  ride_count: number
+  order_count: number
+}
+
+export interface AdminRideListItem {
+  id: number
+  title: string
+  product: ProductType
+  status: string
+  total_seats: number
+  recruit_seats: number
+  price_per_month: number
+  duration: number
+  purchase_count: number
+  remaining_seats: number
+  owner_id: number
+  owner_nickname?: string
+  created_at: string
+}
+
+export interface AdminOrderListItem {
+  id: number
+  user_id: number
+  ride_id: number
+  amount: number
+  status: string
+  paid_at?: string
+  created_at: string
+  ride_title: string
+  ride_product: string
+  user_nickname: string
+  user_email: string
+  user_phone?: string
 }

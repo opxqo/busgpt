@@ -86,12 +86,60 @@ def _ensure_index(conn, table_name: str, index_name: str, definition: str):
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD INDEX {_quote_identifier(index_name)} ({definition})"))
 
 
+def _ensure_unique_index(conn, table_name: str, index_name: str, definition: str, columns: str):
+    existing_unique = conn.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM (
+                SELECT INDEX_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS indexed_columns
+                FROM INFORMATION_SCHEMA.STATISTICS
+                WHERE TABLE_SCHEMA = :schema
+                  AND TABLE_NAME = :table_name
+                  AND NON_UNIQUE = 0
+                GROUP BY INDEX_NAME
+            ) AS unique_indexes
+            WHERE indexed_columns = :columns
+            """
+        ),
+        {
+            "schema": settings.database_name,
+            "table_name": table_name,
+            "columns": columns,
+        },
+    ).scalar()
+    if not existing_unique:
+        conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} ADD UNIQUE INDEX {_quote_identifier(index_name)} ({definition})"))
+
+
+def _ensure_nullable_column(conn, table_name: str, column_name: str, definition: str):
+    is_nullable = conn.execute(
+        text(
+            """
+            SELECT IS_NULLABLE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = :schema
+              AND TABLE_NAME = :table_name
+              AND COLUMN_NAME = :column_name
+            """
+        ),
+        {
+            "schema": settings.database_name,
+            "table_name": table_name,
+            "column_name": column_name,
+        },
+    ).scalar()
+    if is_nullable == "NO":
+        conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} MODIFY COLUMN {_quote_identifier(column_name)} {definition}"))
+
+
 def _run_lightweight_migrations():
     if not _is_mysql_database():
         return
 
     with sync_engine.begin() as conn:
         _ensure_column(conn, "users", "role", "VARCHAR(20) NOT NULL DEFAULT 'user'")
+        _ensure_column(conn, "users", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE")
         _ensure_column(conn, "rides", "contact_info", "TEXT")
         _ensure_column(conn, "rides", "contact_website", "VARCHAR(255) NOT NULL DEFAULT ''")
         _ensure_column(conn, "rides", "contact_price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
@@ -105,6 +153,14 @@ def _run_lightweight_migrations():
         _ensure_column(conn, "orders", "expired_at", "DATETIME NULL")
         _ensure_column(conn, "orders", "idempotency_key", "VARCHAR(64)")
         _ensure_column(conn, "orders", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+        _ensure_column(conn, "users", "email", "VARCHAR(255) NULL")
+        _ensure_column(conn, "users", "email_verified_at", "DATETIME NULL")
+        _ensure_nullable_column(conn, "users", "phone", "VARCHAR(20) NULL")
+        conn.execute(text("UPDATE users SET email = CONCAT('legacy-user-', id, '@busgpt.local') WHERE email IS NULL OR email = ''"))
+        conn.execute(text("UPDATE users SET email_verified_at = created_at WHERE email_verified_at IS NULL AND email LIKE 'legacy-user-%@busgpt.local'"))
+        _ensure_unique_index(conn, "users", "uq_users_email", "`email`", "email")
+        _ensure_column(conn, "activation_tokens", "token_hash", "VARCHAR(64) NOT NULL")
+        _ensure_unique_index(conn, "activation_tokens", "uq_activation_tokens_token_hash", "`token_hash`", "token_hash")
         _ensure_index(conn, "orders", "ix_orders_status", "`status`")
         _ensure_index(conn, "orders", "ix_orders_payment_status", "`payment_status`")
         _ensure_index(conn, "orders", "ix_orders_expired_at", "`expired_at`")
@@ -153,6 +209,7 @@ def init_db():
     from app.models.product import Product
     from app.models.order import Order
     from app.models.ride_member import RideMember
+    from app.models.activation_token import ActivationToken
 
     # Create tables
     Base.metadata.create_all(bind=sync_engine)

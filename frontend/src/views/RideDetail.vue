@@ -110,8 +110,8 @@
                 <strong class="metric-val price-val">¥<span class="price-num">{{ formatMoney(ride.price_per_month) }}</span><small>/月</small></strong>
               </div>
               <div class="metric-box">
-                <span class="metric-label">已拼人数</span>
-                <strong class="metric-val">{{ ride.purchase_count || 0 }}<small> 人</small></strong>
+                <span class="metric-label">上车人数</span>
+                <strong class="metric-val">{{ occupiedSeats }}<small> 人</small></strong>
               </div>
               <div class="metric-box">
                 <span class="metric-label">剩余空位</span>
@@ -126,6 +126,35 @@
                 <strong class="metric-val highlight-info">{{ warrantyDays }}<small> 天</small></strong>
               </div>
             </div>
+
+            <!-- Seat Progress Bar -->
+            <div class="detail-seat-progress">
+              <div class="detail-progress-header">
+                <div class="detail-progress-label">
+                  <Users :size="14" />
+                  <span>拼车进度</span>
+                </div>
+                <span class="detail-progress-count" :class="{ 'almost-full': fillPercent >= 80 }">
+                  {{ occupiedSeats }}/{{ totalSeats }}
+                </span>
+              </div>
+              <div class="detail-progress-track">
+                <div
+                  class="detail-progress-bar"
+                  :class="[ride.product, { full: fillPercent >= 100 }]"
+                  :style="{ width: fillPercent + '%' }"
+                ></div>
+              </div>
+              <div class="detail-progress-meta">
+                <span class="detail-remaining-tag" :class="{ urgent: remainingSeats <= 1 && ride.status === 'open' }">
+                  {{ remainingSeats <= 1 && ride.status === 'open' ? '仅剩 ' + remainingSeats + ' 个名额' : '还差 ' + remainingSeats + ' 人拼满' }}
+                </span>
+                <span class="detail-duration-tag">
+                  <CalendarClock :size="12" />
+                  {{ ride.duration }}个月
+                </span>
+              </div>
+            </div>
           </section>
 
           <!-- Specifications -->
@@ -134,7 +163,7 @@
               <FileText :size="18" class="section-icon" />
               <h2>拼车基本参数</h2>
             </div>
-            <div class="spec-list">
+            <div class="spec-list" :class="ride.product">
               <div class="spec-item">
                 <span class="spec-label">订阅产品</span>
                 <strong class="spec-val">{{ productLabel }}</strong>
@@ -157,10 +186,10 @@
               </div>
               <div class="spec-item">
                 <span class="spec-label">上车人数</span>
-                <strong class="spec-val">{{ recruitSeats }} 人</strong>
+                <strong class="spec-val">{{ onboardSeats }} 人</strong>
               </div>
               <div class="spec-item">
-                <span class="spec-label">已拼人数</span>
+                <span class="spec-label">新增上车</span>
                 <strong class="spec-val">{{ ride.purchase_count || 0 }} 人</strong>
               </div>
             </div>
@@ -190,16 +219,25 @@
             <div class="owner-header">
               <div class="owner-avatar-wrap">
                 <img :src="ride.owner?.avatar || defaultAvatar" alt="车主头像" class="owner-avatar" />
+                <span class="owner-online-dot"></span>
               </div>
               <div class="owner-meta">
                 <strong>{{ ride.owner?.nickname || '认证车友' }}</strong>
                 <span class="badge"><BadgeCheck :size="12" /> 车主已认证</span>
               </div>
             </div>
-            <div class="owner-stats">
-              <div class="owner-stat-item">
-                <ReceiptText :size="14" />
-                <span>当前车位已对接 {{ ride.purchase_count || 0 }} 次</span>
+            <div class="owner-trust-items">
+              <div class="trust-item">
+                <ShieldCheck :size="14" class="trust-icon" />
+                <span>平台实名认证车主</span>
+              </div>
+              <div class="trust-item">
+                <ReceiptText :size="14" class="trust-icon" />
+                <span>已成功对接 {{ ride.purchase_count || 0 }} 位车友</span>
+              </div>
+              <div class="trust-item">
+                <Clock :size="14" class="trust-icon" />
+                <span>质保 {{ warrantyDays }} 天可用保障</span>
               </div>
             </div>
           </section>
@@ -263,15 +301,25 @@
 
             <div v-else class="no-contact-hint">
               <template v-if="ride.is_purchased">
+                <div class="no-contact-icon">
+                  <MessageCircle :size="20" />
+                </div>
+                <strong>暂无联系方式</strong>
                 <p>车主暂未填写联系方式，请通过市场页面留言联系。</p>
               </template>
               <template v-else>
+                <div class="lock-visual">
+                  <div class="lock-icon-wrap">
+                    <Lock :size="22" />
+                  </div>
+                </div>
                 <strong>联系方式已隐藏</strong>
-                <p>解锁后可查看车主填写的微信、Telegram、邮箱或个人网站。</p>
-                <button type="button" class="btn btn-primary action-btn-full" :disabled="unlocking" @click="unlockContact">
-                  <ReceiptText :size="16" />
+                <p>免费解锁后即可查看车主的微信、Telegram、邮箱或个人网站。</p>
+                <button type="button" class="btn btn-unlock" :disabled="unlocking" @click="unlockContact">
+                  <Unlock :size="16" />
                   <span>{{ unlocking ? '正在解锁...' : '免费解锁联系方式' }}</span>
                 </button>
+                <span class="unlock-hint">无需付费 · 即解即看 · 安全可靠</span>
               </template>
             </div>
           </section>
@@ -288,20 +336,25 @@ import { useRoute } from 'vue-router'
 import {
   ArrowLeft,
   BadgeCheck,
+  CalendarClock,
   Check,
   ChevronDown,
   ChevronRight,
   CircleAlert,
+  Clock,
   Copy,
   ExternalLink,
   FileText,
   Globe,
+  Lock,
   Mail,
   MessageCircle,
   ReceiptText,
   SendHorizontal,
   Share2,
   ShieldCheck,
+  Unlock,
+  Users,
 } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ordersApi } from '../api/orders'
@@ -512,14 +565,29 @@ const warrantyDays = computed(() => {
   return Number(ride.value.warranty_days || (ride.value.duration >= 12 ? 365 : ride.value.duration * 30))
 })
 
-const recruitSeats = computed(() => {
+const totalSeats = computed(() => {
   if (!ride.value) return 0
-  return Number(ride.value.recruit_seats || Math.max((ride.value.total_seats || 1) - 1, 1))
+  return Number(ride.value.total_seats || 0)
+})
+
+const onboardSeats = computed(() => {
+  if (!ride.value) return 0
+  return Number(ride.value.recruit_seats || Math.max((totalSeats.value || 1) - 1, 1))
+})
+
+const occupiedSeats = computed(() => {
+  if (!ride.value) return 0
+  return Math.min(onboardSeats.value + Number(ride.value.purchase_count || 0), totalSeats.value)
 })
 
 const remainingSeats = computed(() => {
   if (!ride.value) return 0
-  return Math.max(Number(ride.value.remaining_seats ?? recruitSeats.value), 0)
+  return Math.max(Number(ride.value.remaining_seats ?? (totalSeats.value - occupiedSeats.value)), 0)
+})
+
+const fillPercent = computed(() => {
+  if (!ride.value || totalSeats.value <= 0) return 0
+  return Math.min(Math.round((occupiedSeats.value / totalSeats.value) * 100), 100)
 })
 
 const formattedCreatedAt = computed(() => {
@@ -624,7 +692,7 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .skel {
-  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-inset) 50%, var(--bg-tertiary) 75%);
+  background: var(--bg-tertiary);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--border-radius-sm);
@@ -764,8 +832,24 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .listing-header,
 .info-card,
 .owner-card,
-.unlock-card {
+.contact-card {
   padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+.listing-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.listing-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-color-strong);
+  opacity: 0.5;
 }
 
 .header-top-row {
@@ -799,6 +883,7 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   border-color: var(--border-color-strong);
   color: var(--text-primary);
   background: var(--bg-tertiary);
+  transform: scale(1.05);
 }
 
 .ride-title {
@@ -832,12 +917,36 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   text-align: center;
   transition: all var(--transition-fast);
   cursor: default;
+  position: relative;
+  overflow: hidden;
 }
+
+.metric-box::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--text-primary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.metric-box:nth-child(1)::before { background: var(--color-plus); }
+.metric-box:nth-child(2)::before { background: var(--color-team); }
+.metric-box:nth-child(3)::before { background: var(--color-success); }
+.metric-box:nth-child(4)::before { background: var(--color-pro); }
+.metric-box:nth-child(5)::before { background: var(--color-info); }
 
 .metric-box:hover {
   border-color: var(--border-color-strong);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.metric-box:hover::before {
+  opacity: 1;
 }
 
 .metric-box.highlighted {
@@ -897,6 +1006,110 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   color: var(--color-info);
 }
 
+/* ===== Seat Progress (Detail) ===== */
+.detail-seat-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--spacing-md);
+  padding: 14px 16px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+.detail-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.detail-progress-count {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.detail-progress-count.almost-full {
+  color: var(--color-success);
+}
+
+.detail-progress-track {
+  height: 6px;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.detail-progress-bar {
+  height: 100%;
+  border-radius: var(--border-radius-full);
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--color-plus);
+}
+
+.detail-progress-bar.chatgpt-team {
+  background: var(--color-team);
+}
+
+.detail-progress-bar.chatgpt-pro {
+  background: var(--color-pro);
+}
+
+.detail-progress-bar.full {
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-progress-bar.full::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  animation: progressShimmer 2s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.detail-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-remaining-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.detail-remaining-tag.urgent {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.detail-duration-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 /* ===== Specs ===== */
 .section-title {
   display: flex;
@@ -907,6 +1120,19 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   user-select: none;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 36px;
+  height: 2px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-team);
+  opacity: 0.6;
 }
 
 .section-icon {
@@ -969,12 +1195,18 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   background: var(--bg-inset);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
+  border-left: 3px solid transparent;
 }
 
 .spec-item:hover {
   border-color: var(--border-color-strong);
+  background: var(--bg-secondary);
 }
+
+.spec-list.chatgpt-plus .spec-item:hover { border-left-color: var(--color-plus); }
+.spec-list.chatgpt-team .spec-item:hover { border-left-color: var(--color-team); }
+.spec-list.chatgpt-pro .spec-item:hover { border-left-color: var(--color-pro); }
 
 .spec-label {
   font-size: 13px;
@@ -1009,6 +1241,8 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 /* ===== Owner Card ===== */
 .owner-card {
   overflow: hidden;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--color-success);
 }
 
 .owner-header {
@@ -1020,6 +1254,7 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .owner-avatar-wrap {
+  position: relative;
   display: inline-flex;
   width: 56px;
   height: 56px;
@@ -1029,7 +1264,7 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   border-radius: var(--border-radius-full);
   background: var(--bg-inset);
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .owner-avatar {
@@ -1067,29 +1302,145 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   white-space: nowrap;
 }
 
-.owner-stats {
+.owner-online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-success);
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.owner-trust-items {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  padding-top: var(--spacing-sm);
+  gap: 8px;
+  padding-top: var(--spacing-md);
   border-top: 1px solid var(--border-color);
 }
 
-.owner-stat-item {
+.trust-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-radius: var(--border-radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.owner-stat-item span {
-  min-width: 0;
+.trust-item:hover {
+  background: var(--bg-inset);
+  color: var(--text-primary);
+}
+
+.trust-icon {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+.no-contact-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  margin: 0 auto;
+}
+
+.lock-visual {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.lock-icon-wrap {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--color-team) 12%, var(--bg-inset));
+  color: var(--text-secondary);
+  animation: lockPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.btn-unlock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  color: var(--text-inverse);
+  background: var(--color-team);
+  transition: all var(--transition-fast);
+  position: relative;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.btn-unlock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.btn-unlock:hover::before {
+  transform: translateX(100%);
+}
+
+.btn-unlock:hover {
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--color-team) 30%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--color-team) 15%, transparent);
+  transform: translateY(-1px);
+}
+
+.btn-unlock:active {
+  transform: scale(0.97) translateY(0);
+}
+
+.btn-unlock:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.btn-unlock:disabled::before {
+  display: none;
+}
+
+.unlock-hint {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+  letter-spacing: 0.02em;
 }
 
 /* ===== Contact Card ===== */
@@ -1114,6 +1465,11 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   background: var(--color-success-soft);
   color: var(--color-success);
   flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.contact-card:hover .contact-icon-wrap {
+  transform: scale(1.05);
 }
 
 .contact-header h2 {
@@ -1188,13 +1544,30 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   padding: 12px;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
   background: var(--bg-secondary);
   transition: all var(--transition-fast);
 }
 
 .contact-row-new:hover {
   border-color: var(--border-color-strong);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.contact-row-new.wechat:hover {
+  border-left-color: #07c160;
+}
+
+.contact-row-new.telegram:hover {
+  border-left-color: #26a5e4;
+}
+
+.contact-row-new.email:hover {
+  border-left-color: #2563eb;
+}
+
+.contact-row-new.website:hover {
+  border-left-color: var(--color-pro);
 }
 
 .brand-logo-wrapper {
@@ -1358,6 +1731,63 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 .toast-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-12px) scale(0.95);
+}
+
+/* ===== Dark Mode ===== */
+:global([data-theme="dark"] .owner-card ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .contact-row-new ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .metric-box ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .spec-item ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .no-contact-hint ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .btn-unlock ){
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border: 1px solid var(--text-primary);
+}
+
+:global([data-theme="dark"] .btn-unlock:hover ){
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
+}
+
+:global([data-theme="dark"] .owner-online-dot ){
+  border-color: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .listing-header::before ){
+  opacity: 0.35;
+}
+
+:global([data-theme="dark"] .owner-card ){
+  border-left-color: rgba(52, 211, 153, 0.5);
+}
+
+:global([data-theme="dark"] .section-title::after ){
+  opacity: 0.4;
+}
+
+:global([data-theme="dark"] .trust-item:hover ){
+  background: color-mix(in srgb, var(--color-success-soft) 20%, var(--bg-inset));
+}
+
+:global([data-theme="dark"] .detail-progress-bar.full::after ){
+  background: transparent;
 }
 
 /* ===== Responsive ===== */

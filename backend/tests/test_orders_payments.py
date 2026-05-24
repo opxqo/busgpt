@@ -4,11 +4,13 @@ from typing import Optional
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.requests import Request
 
 from app.config import settings
 from app.database import Base
+from app.models.activation_token import ActivationToken
 from app.models.order import Order
 from app.models.product import Product
 from app.models.ride import Ride
@@ -43,24 +45,27 @@ async def db_session():
                 ),
                 User(
                     id=1,
-                    phone="13800000001",
+                    email="owner1@example.com",
                     nickname="owner",
                     role="user",
                     password_hash=get_password_hash("secret123"),
+                    email_verified_at=datetime.utcnow(),
                 ),
                 User(
                     id=2,
-                    phone="13800000002",
+                    email="buyer@example.com",
                     nickname="buyer",
                     role="user",
                     password_hash=get_password_hash("secret123"),
+                    email_verified_at=datetime.utcnow(),
                 ),
                 User(
                     id=3,
-                    phone="13800000003",
+                    email="other@example.com",
                     nickname="other",
                     role="user",
                     password_hash=get_password_hash("secret123"),
+                    email_verified_at=datetime.utcnow(),
                 ),
                 Ride(
                     id=1,
@@ -169,7 +174,7 @@ async def test_owner_cannot_buy_and_full_ride_cannot_be_paid(db_session):
 async def test_login_rate_limit_returns_429(db_session):
     reset_auth_rate_limits()
     request = _request(host="10.0.0.1")
-    payload = auth.LoginRequest(phone="13800000002", password="bad-password")
+    payload = auth.LoginRequest(email="buyer@example.com", password="bad-password")
 
     for _ in range(5):
         with pytest.raises(HTTPException) as login_error:
@@ -179,6 +184,50 @@ async def test_login_rate_limit_returns_429(db_session):
     with pytest.raises(HTTPException) as limited_error:
         await auth.login_json(payload, request, db_session)
     assert limited_error.value.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_email_registration_requires_activation_and_hashes_token(db_session, monkeypatch):
+    reset_auth_rate_limits()
+    sent = {}
+
+    def fake_send_activation_email(email: str, token: str) -> None:
+        sent["email"] = email
+        sent["token"] = token
+
+    monkeypatch.setattr(auth, "send_activation_email", fake_send_activation_email)
+    request = _request(host="10.0.0.2")
+
+    created = await auth.register(
+        auth.UserCreate(
+            email="new-user@example.com",
+            nickname="new user",
+            password="secret123",
+        ),
+        request,
+        db_session,
+    )
+
+    assert created.email == "new-user@example.com"
+    assert created.email_verified is False
+    assert sent["email"] == "new-user@example.com"
+    assert sent["token"]
+
+    token_result = await db_session.execute(select(ActivationToken))
+    activation = token_result.scalars().one()
+    assert activation.token_hash == auth._activation_token_hash(sent["token"])
+    assert activation.token_hash != sent["token"]
+
+    login_payload = auth.LoginRequest(email="new-user@example.com", password="secret123")
+    with pytest.raises(HTTPException) as inactive_error:
+        await auth.login_json(login_payload, request, db_session)
+    assert inactive_error.value.status_code == 403
+
+    response = await auth.activate_account(sent["token"], redirect=False, db=db_session)
+    assert response["detail"] == "邮箱已激活"
+
+    login_response = await auth.login_json(login_payload, request, db_session)
+    assert login_response["access_token"]
 
 
 @pytest.mark.asyncio

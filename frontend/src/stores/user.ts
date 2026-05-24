@@ -27,19 +27,19 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function login(phone: string, password: string) {
+  async function login(email: string, password: string) {
     loading.value = true
     error.value = null
     try {
-      const response = await authApi.login(phone, password)
+      const response = await authApi.login(email, password)
       const accessToken = response.data.access_token
       token.value = accessToken
       localStorage.setItem('token', accessToken)
-      
+
       const userProfile = await authApi.getMe()
       user.value = userProfile.data
       localStorage.setItem('user', JSON.stringify(userProfile.data))
-      
+
       return true
     } catch (err) {
       const errorVal = err as { response?: { data?: { detail?: string } } }
@@ -50,16 +50,46 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function register(phone: string, nickname: string, password: string) {
+  async function register(email: string, nickname: string, password: string) {
     loading.value = true
     error.value = null
     try {
-      await authApi.register(phone, nickname, password)
-      // Auto login after registration
-      return await login(phone, password)
+      await authApi.register(email, nickname, password)
+      // Registration succeeds — user must activate email before login
+      return true
     } catch (err) {
       const errorVal = err as { response?: { data?: { detail?: string } } }
       error.value = errorVal.response?.data?.detail || '注册失败，请检查输入'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function activate(token: string) {
+    loading.value = true
+    error.value = null
+    try {
+      await authApi.activate(token)
+      return true
+    } catch (err) {
+      const errorVal = err as { response?: { data?: { detail?: string } } }
+      error.value = errorVal.response?.data?.detail || '激活失败'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function resendActivation(email: string) {
+    loading.value = true
+    error.value = null
+    try {
+      await authApi.resendActivation(email)
+      return true
+    } catch (err) {
+      const errorVal = err as { response?: { data?: { detail?: string } } }
+      error.value = errorVal.response?.data?.detail || '重发失败'
       return false
     } finally {
       loading.value = false
@@ -99,6 +129,8 @@ export const useUserStore = defineStore('user', () => {
     init,
     login,
     register,
+    activate,
+    resendActivation,
     logout,
     updateProfile,
   }

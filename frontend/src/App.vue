@@ -57,13 +57,20 @@ onMounted(() => {
   padding: 0 0 var(--spacing-xxl);
 }
 
-/* Global transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s ease;
+/* Global page transitions */
+.fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.fade-enter-from,
+.fade-leave-active {
+  transition: opacity 0.12s ease;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
 .fade-leave-to {
   opacity: 0;
 }

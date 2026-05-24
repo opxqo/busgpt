@@ -1,7 +1,7 @@
 <template>
   <div class="profile-page container">
     <!-- Profile Header Banner -->
-    <header class="profile-header surface-card">
+    <header class="profile-header surface-card anim-fade-up">
       <div class="profile-main">
         <div class="avatar-wrap">
           <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar-large" />
@@ -10,17 +10,17 @@
         <div class="user-meta">
           <span class="eyebrow">账户控制中心</span>
           <h1 class="user-name">{{ userStore.user?.nickname }}</h1>
-          <p class="user-sub">{{ userStore.user?.phone }} · 加入于 {{ formattedRegisterDate }}</p>
+          <p class="user-sub">{{ userStore.user?.email }} · 加入于 {{ formattedRegisterDate }}</p>
         </div>
       </div>
-      <router-link to="/create" class="btn btn-primary publish-shortcut-btn">
+      <router-link to="/create" class="btn btn-primary publish-shortcut-btn submit-shimmer">
         <PlusCircle :size="16" />
         <span>发布新车位</span>
       </router-link>
     </header>
 
     <!-- Stats grid -->
-    <section class="stat-grid">
+    <section class="stat-grid anim-fade-up anim-d1">
       <div class="stat-card surface-card">
         <span class="stat-label">我解锁查看的联系方式</span>
         <strong class="stat-value">{{ unlockedOrders.length }} <small>次</small></strong>
@@ -36,7 +36,7 @@
     </section>
 
     <!-- Workspace -->
-    <section class="workspace surface-card">
+    <section class="workspace surface-card anim-fade-up anim-d2">
       <div class="workspace-tabs">
         <button
           v-for="tab in tabs"
@@ -51,9 +51,14 @@
         </button>
       </div>
 
-      <div v-if="loading" class="loading-container">
-        <div class="spinner"></div>
-        <p>正在获取您的账户数据...</p>
+      <div v-if="loading" class="skeleton-workspace">
+        <div class="skel-row" v-for="i in 4" :key="i">
+          <div class="skel skel-cell skel-w20"></div>
+          <div class="skel skel-cell skel-w15"></div>
+          <div class="skel skel-cell skel-w25"></div>
+          <div class="skel skel-cell skel-w15"></div>
+          <div class="skel skel-cell skel-w10"></div>
+        </div>
       </div>
 
       <div v-else class="tab-content">
@@ -91,7 +96,7 @@
                 </td>
                 <td>
                   <div class="seat-metric">
-                    <strong>已拼 {{ order.ride_purchase_count || 0 }}/{{ orderRecruitSeats(order) }} 人</strong>
+                    <strong>进度 {{ orderOccupiedSeats(order) }}/{{ order.ride_total_seats || 0 }} 人</strong>
                     <span>空余 {{ order.ride_remaining_seats || 0 }} 个名额</span>
                   </div>
                 </td>
@@ -128,7 +133,7 @@
             </div>
 
             <div class="published-list">
-              <article v-for="ride in ownedRides" :key="ride.id" class="manage-card">
+              <article v-for="ride in ownedRides" :key="ride.id" class="manage-card" :class="ride.product">
                 <div class="manage-card-main">
                   <div class="manage-title-row">
                     <span class="product-chip" :class="ride.product">
@@ -152,7 +157,7 @@
                     </div>
                     <div>
                       <span>拼车进度</span>
-                      <strong>{{ ride.purchase_count || 0 }}/{{ rideRecruitSeats(ride) }} 人</strong>
+                      <strong>{{ rideOccupiedSeats(ride) }}/{{ ride.total_seats }} 人</strong>
                     </div>
                     <div>
                       <span>到期日</span>
@@ -213,7 +218,7 @@
                   <td>{{ item.unlock_count || item.order_count }} 人已解锁</td>
                   <td>
                     <div class="seat-metric">
-                      <strong>{{ item.order_count }}/{{ item.recruit_seats }} 人</strong>
+                      <strong>{{ Math.min(item.recruit_seats + item.order_count, item.total_seats) }}/{{ item.total_seats }} 人</strong>
                       <span>空位 {{ item.remaining_seats }} 个</span>
                     </div>
                   </td>
@@ -273,7 +278,8 @@
       </div>
     </section>
 
-    <div v-if="editingRide" class="modal-backdrop" @click.self="closeEditRide">
+    <Transition name="modal">
+      <div v-if="editingRide" class="modal-backdrop" @click.self="closeEditRide">
       <form class="edit-ride-modal surface-card" @submit.prevent="submitRideEdit">
         <div class="modal-header">
           <div>
@@ -353,6 +359,7 @@
         </div>
       </form>
     </div>
+    </Transition>
   </div>
 </template>
 
@@ -412,8 +419,10 @@ const tabs = [
 ]
 
 const unlockedOrders = computed(() => orders.value.filter((order) => order.status === 'paid'))
-const rideRecruitSeats = (ride: Ride) => Number(ride.recruit_seats || Math.max((ride.total_seats || 1) - 1, 1))
-const orderRecruitSeats = (order: Order) => Number(order.ride_recruit_seats || Math.max((order.ride_total_seats || 1) - 1, 1))
+const rideOnboardSeats = (ride: Ride) => Number(ride.recruit_seats || Math.max((ride.total_seats || 1) - 1, 1))
+const rideOccupiedSeats = (ride: Ride) => Math.min(rideOnboardSeats(ride) + Number(ride.purchase_count || 0), Number(ride.total_seats || 0))
+const orderOnboardSeats = (order: Order) => Number(order.ride_recruit_seats || Math.max((order.ride_total_seats || 1) - 1, 1))
+const orderOccupiedSeats = (order: Order) => Math.min(orderOnboardSeats(order) + Number(order.ride_purchase_count || 0), Number(order.ride_total_seats || 0))
 
 const editForm = reactive({
   nickname: '',
@@ -515,7 +524,7 @@ const openEditRide = (ride: Ride) => {
   rideForm.title = ride.title
   rideForm.product = ride.product
   rideForm.total_seats = ride.total_seats
-  rideForm.recruit_seats = rideRecruitSeats(ride)
+  rideForm.recruit_seats = rideOnboardSeats(ride)
   rideForm.price_per_month = Number(ride.price_per_month)
   rideForm.duration = ride.duration
   rideForm.warranty_days = ride.warranty_days
@@ -539,8 +548,8 @@ const validateRideForm = () => {
   if (!rideForm.title.trim()) return '请填写车位标题'
   if (!rideForm.contact_info.trim() && !rideForm.contact_website.trim()) return '请至少保留一种联系方式'
   if (rideForm.contact_website && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(rideForm.contact_website)) return '个人网站需要以 http:// 或 https:// 开头'
-  if (rideForm.recruit_seats >= rideForm.total_seats) return '上车人数必须小于总人数，车主本人也占 1 位'
-  if (editingRide.value && rideForm.recruit_seats < Number(editingRide.value.purchase_count || 0)) return '上车人数不能小于已拼车人数'
+  if (rideForm.recruit_seats >= rideForm.total_seats) return '上车人数必须小于总人数，至少留出 1 个可拼名额'
+  if (editingRide.value && rideForm.recruit_seats + Number(editingRide.value.purchase_count || 0) > rideForm.total_seats) return '上车人数与已新增人数不能超过总人数'
   return ''
 }
 
@@ -661,16 +670,81 @@ const formatDate = (dateText: string) => {
   gap: var(--spacing-lg);
 }
 
+/* ===== Animations ===== */
+.anim-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-d1 { animation-delay: 0.08s; }
+.anim-d2 { animation-delay: 0.16s; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Skeleton Loading ===== */
+.skeleton-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--spacing-xl);
+}
+
+.skel-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.skel {
+  background: var(--bg-tertiary);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--border-radius-sm);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skel-cell {
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.skel-w10 { width: 10%; }
+.skel-w15 { width: 15%; }
+.skel-w20 { width: 20%; }
+.skel-w25 { width: 25%; }
+
 .profile-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
   padding: var(--spacing-lg) var(--spacing-xl);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-info-soft) 74%, transparent) 0%, transparent 62%),
-    var(--bg-card);
+  background: var(--bg-card);
   border-color: color-mix(in srgb, var(--color-info) 24%, var(--border-color));
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-color-strong);
+  opacity: 0.5;
 }
 
 .profile-main {
@@ -735,7 +809,40 @@ const formatDate = (dateText: string) => {
   flex-direction: column;
   gap: 8px;
   background: var(--bg-card);
+  transition: all var(--transition-fast);
+  cursor: default;
+  position: relative;
+  overflow: hidden;
 }
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+.stat-card:nth-child(1)::before { background: var(--color-team); }
+.stat-card:nth-child(2)::before { background: var(--color-success); }
+.stat-card:nth-child(3)::before { background: var(--color-pro); }
+
+.stat-card:hover {
+  border-color: var(--border-color-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.stat-card:nth-child(1) .stat-value { color: var(--color-team); }
+.stat-card:nth-child(2) .stat-value { color: var(--color-success); }
+.stat-card:nth-child(3) .stat-value { color: var(--color-pro); }
 
 .stat-label {
   color: var(--text-secondary);
@@ -764,7 +871,6 @@ const formatDate = (dateText: string) => {
 /* Workspace tab content */
 .workspace {
   border-color: var(--border-color-strong);
-  overflow: hidden;
 }
 
 .workspace-tabs {
@@ -774,6 +880,7 @@ const formatDate = (dateText: string) => {
   padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-inset);
+  position: relative;
 }
 
 .tab-btn {
@@ -802,38 +909,49 @@ const formatDate = (dateText: string) => {
   color: var(--text-primary);
   background: var(--bg-secondary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  border-radius: var(--border-radius-full);
+  background: var(--color-team);
+  animation: tabIndicator 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes tabIndicator {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 24px;
+    opacity: 1;
+  }
 }
 
 .tab-content {
   padding: var(--spacing-xl);
 }
 
-.table-wrap {
-  overflow-x: auto;
-}
-
 .records-table {
-  width: 100%;
-  border-collapse: collapse;
   min-width: 800px;
 }
 
 .records-table th {
-  padding: 12px;
-  border-bottom: 2px solid var(--border-color);
-  color: var(--text-muted);
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
-  text-align: left;
 }
 
 .records-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
-  font-size: 13px;
   font-weight: 600;
   vertical-align: middle;
 }
@@ -915,6 +1033,32 @@ const formatDate = (dateText: string) => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.summary-card:hover::before {
+  opacity: 1;
+}
+
+.summary-card:nth-child(1)::before { background: var(--color-team); }
+.summary-card:nth-child(2)::before { background: var(--color-success); }
+
+.summary-card:hover {
+  border-color: var(--border-color-strong);
+  transform: translateY(-1px);
 }
 
 .summary-card span {
@@ -949,6 +1093,19 @@ const formatDate = (dateText: string) => {
   gap: var(--spacing-md);
   padding-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.published-toolbar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 48px;
+  height: 2px;
+  background: var(--color-success);
+  border-radius: var(--border-radius-full);
+  opacity: 0.6;
 }
 
 .published-toolbar h2 {
@@ -979,9 +1136,20 @@ const formatDate = (dateText: string) => {
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   border: 1px solid var(--border-color);
+  border-left: 3px solid transparent;
   border-radius: var(--border-radius-md);
   background: var(--bg-secondary);
+  transition: all var(--transition-fast);
 }
+
+.manage-card:hover {
+  border-color: var(--border-color-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.manage-card.chatgpt-plus:hover { border-left-color: var(--color-plus); }
+.manage-card.chatgpt-team:hover { border-left-color: var(--color-team); }
+.manage-card.chatgpt-pro:hover { border-left-color: var(--color-pro); }
 
 .manage-card-main {
   min-width: 0;
@@ -1007,6 +1175,10 @@ const formatDate = (dateText: string) => {
 .manage-title:hover {
   color: var(--color-team);
 }
+
+.manage-card.chatgpt-plus .manage-title:hover { color: var(--color-plus); }
+.manage-card.chatgpt-team .manage-title:hover { color: var(--color-team); }
+.manage-card.chatgpt-pro .manage-title:hover { color: var(--color-pro); }
 
 .manage-desc {
   display: -webkit-box;
@@ -1105,6 +1277,11 @@ const formatDate = (dateText: string) => {
   color: var(--color-danger);
 }
 
+:global([data-theme="dark"] .status-chip.expired ){
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1115,6 +1292,40 @@ const formatDate = (dateText: string) => {
   padding: var(--spacing-lg);
   background: rgba(15, 23, 42, 0.52);
   backdrop-filter: blur(8px);
+}
+
+.modal-enter-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-active .edit-ride-modal {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.modal-leave-active .edit-ride-modal {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.modal-enter-from {
+  opacity: 0;
+}
+
+.modal-enter-from .edit-ride-modal {
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+}
+
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-leave-to .edit-ride-modal {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
 }
 
 .edit-ride-modal {
@@ -1220,6 +1431,31 @@ const formatDate = (dateText: string) => {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
+  position: relative;
+}
+
+.settings-panel:first-child::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-team);
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  opacity: 0.5;
+}
+
+.settings-panel:last-child::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-pro);
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  opacity: 0.5;
 }
 
 .settings-panel-heading h3 {
@@ -1374,5 +1610,57 @@ const formatDate = (dateText: string) => {
   height: 14px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.submit-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.submit-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.submit-shimmer:hover::after {
+  transform: translateX(100%);
+}
+
+/* Dark mode polish */
+:global([data-theme="dark"] .stat-card:hover ){
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"] .manage-card:hover ){
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme="dark"] .manage-card.chatgpt-plus:hover ){
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
+}
+
+:global([data-theme="dark"] .manage-card.chatgpt-team:hover ){
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
+}
+
+:global([data-theme="dark"] .manage-card.chatgpt-pro:hover ){
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+}
+
+:global([data-theme="dark"] .settings-panel ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .summary-card:hover ){
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme="dark"] .btn-copy:hover ){
+  background: var(--color-team);
+  border-color: var(--color-team);
 }
 </style>

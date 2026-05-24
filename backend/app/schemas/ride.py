@@ -9,7 +9,7 @@ class RideBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=100)
     product: str = Field(..., description="Product type (chatgpt-plus, chatgpt-team, chatgpt-pro)")
     total_seats: int = Field(..., gt=1, le=20)
-    recruit_seats: Optional[int] = Field(None, gt=0, le=19, description="Passenger seats to recruit, excluding owner")
+    recruit_seats: Optional[int] = Field(None, gt=0, le=19, description="Current onboard people, including owner")
     price_per_month: Decimal = Field(..., gt=0)
     duration: int = Field(..., gt=0, le=24, description="Duration in months")
     warranty_days: Optional[int] = Field(None, gt=0, le=730, description="Guaranteed service days")

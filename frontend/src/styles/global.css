@@ -2,12 +2,17 @@
 @import './reset.css';
 @import './animations.css';
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 .container {
@@ -20,10 +25,11 @@ body {
 /* Card Styles */
 .surface-card {
   background: var(--bg-card);
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--card-shadow);
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal), background-color var(--transition-normal);
 }
 
 .glass-card {
@@ -96,7 +102,12 @@ body {
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.form-control:hover:not(:focus) {
+  border-color: var(--border-color-strong);
+  background: var(--bg-card);
 }
 
 .form-control:focus {
@@ -107,6 +118,11 @@ body {
 
 .form-control::placeholder {
   color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.form-control:focus::placeholder {
+  color: var(--border-color-strong);
 }
 
 /* Buttons */
@@ -133,25 +149,33 @@ body {
 
 .btn-primary {
   color: var(--text-inverse);
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  position: relative;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  background: color-mix(in srgb, var(--text-primary) 88%, var(--color-team));
+  border-color: color-mix(in srgb, var(--text-primary) 88%, var(--color-team));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--text-primary) 18%, transparent);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.97) translateY(0);
 }
 
 .btn-secondary {
   color: var(--text-primary);
   background: var(--bg-secondary);
   border-color: var(--border-color);
+  transition: all var(--transition-fast);
 }
 
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--border-color-strong);
   background: var(--bg-tertiary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .btn-danger {
@@ -170,6 +194,12 @@ body {
   opacity: 0.5;
 }
 
+.btn-sm {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
 /* Chips */
 .status-chip,
 .product-chip {
@@ -182,6 +212,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+  transition: all var(--transition-fast);
 }
 
 .status-chip.open {
@@ -252,19 +283,137 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--border-color-strong);
   border-radius: var(--border-radius-full);
+  border: 2px solid var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
 
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-color: var(--bg-primary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color-strong);
+}
+
+[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .btn-primary {
+  color: var(--text-inverse);
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+[data-theme="dark"] .form-control {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color-strong);
+}
+
+[data-theme="dark"] .form-control:hover:not(:focus) {
+  background: var(--bg-secondary);
+  border-color: var(--border-color-hover);
+}
+
+[data-theme="dark"] .form-control:focus {
+  border-color: var(--color-team);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+}
+
+/* Text selection */
+::selection {
+  background: color-mix(in srgb, var(--color-team) 20%, transparent);
+  color: var(--text-primary);
+}
+
+/* Global focus-visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-team);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-team);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
 /* Sub-page top padding to compensate for global header flush alignment */
+.home-page,
 .market-page,
 .detail-page,
 .create-page,
 .profile-page,
 .products-page {
   padding-top: var(--spacing-xl);
+}
+
+/* ===== Table Styles ===== */
+.table-wrap,
+.table-container {
+  overflow-x: auto;
+}
+
+.table-container {
+  padding: 0;
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.records-table th,
+.records-table td {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.records-table th {
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--bg-inset);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.records-table tbody tr {
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.records-table tbody tr:hover {
+  background: var(--bg-tertiary);
+  box-shadow: inset 0 0 0 1px var(--border-color);
+}
+
+.records-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.records-table td img {
+  vertical-align: middle;
 }
 
 @media (max-width: 768px) {

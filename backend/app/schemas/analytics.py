@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -50,3 +50,25 @@ class RideRankingItem(BaseModel):
     status: str
     owner_id: int
     owner_nickname: Optional[str] = None
+
+
+class GmvByProduct(BaseModel):
+    product: str
+    product_label: str
+    exercised_gmv: Decimal
+    potential_gmv: Decimal
+    remaining_gmv: Decimal
+    exercised_count: int
+    potential_count: int
+    ride_count: int
+
+
+class GmvResponse(BaseModel):
+    exercised_gmv: Decimal
+    potential_gmv: Decimal
+    remaining_gmv: Decimal
+    benchmark_gmv: Decimal
+    exercised_count: int
+    potential_count: int
+    active_rides: int
+    by_product: List[GmvByProduct]

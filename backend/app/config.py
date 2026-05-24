@@ -26,7 +26,20 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     ADMIN_PHONES: str = ""
+    ADMIN_EMAILS: str = ""
     BACKEND_CORS_ORIGINS: str = "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5174,http://localhost:5174,http://127.0.0.1:3000,http://localhost:3000"
+
+    # SMTP email configuration
+    SMTP_HOST: str = "smtp.qiye.aliyun.com"
+    SMTP_PORT: int = 465
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_NAME: str = "BusGPT"
+    SMTP_USE_SSL: bool = True
+
+    # URLs used by email activation links
+    BACKEND_URL: str = "http://127.0.0.1:8000"
+    FRONTEND_URL: str = "http://127.0.0.1:5173"
 
     # Payment configuration
     PAYMENT_PROVIDER: str = "mock"
@@ -36,6 +49,10 @@ class Settings(BaseSettings):
     @property
     def admin_phone_set(self) -> set[str]:
         return {phone.strip() for phone in self.ADMIN_PHONES.split(",") if phone.strip()}
+
+    @property
+    def admin_email_set(self) -> set[str]:
+        return {email.strip().lower() for email in self.ADMIN_EMAILS.split(",") if email.strip()}
 
     @property
     def cors_origins(self) -> list[str]:

@@ -44,6 +44,24 @@
           <div class="nav-item-inner">
             <component :is="item.icon" :size="18" class="nav-icon" />
             <span>{{ item.label }}</span>
+            <kbd v-if="item.shortcut" class="nav-shortcut">{{ item.shortcut }}</kbd>
+          </div>
+        </router-link>
+      </nav>
+
+      <nav v-if="userStore.isAdmin" class="nav-list admin-nav" aria-label="管理后台导航">
+        <span class="nav-divider">管理后台</span>
+        <router-link
+          v-for="item in adminNavItems"
+          :key="item.to"
+          :to="item.to"
+          class="nav-item"
+          active-class="active"
+          @click="mobileOpen = false"
+        >
+          <div class="nav-item-inner">
+            <component :is="item.icon" :size="18" class="nav-icon" />
+            <span>{{ item.label }}</span>
           </div>
         </router-link>
       </nav>
@@ -79,7 +97,7 @@
             <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar" />
             <div class="user-info">
               <strong>{{ userStore.user?.nickname }}</strong>
-              <small>{{ userStore.user?.phone }}</small>
+              <small>{{ userStore.user?.email }}</small>
             </div>
           </router-link>
           <button type="button" class="logout-btn" @click="handleLogout">
@@ -98,7 +116,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Boxes, Car, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon } from '@lucide/vue'
+import { Boxes, Car, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
 
 const userStore = useUserStore()
@@ -130,15 +148,21 @@ onMounted(() => {
 })
 
 const navItems = computed(() => [
-  { to: '/', label: '首页市场', icon: Home },
-  { to: '/market', label: '发现车位', icon: Search },
-  { to: '/create', label: '发布车位', icon: PlusCircle },
+  { to: '/', label: '首页市场', icon: Home, shortcut: '' },
+  { to: '/market', label: '发现车位', icon: Search, shortcut: '/' },
+  { to: '/create', label: '发布车位', icon: PlusCircle, shortcut: '' },
   ...(userStore.isLoggedIn
-    ? [
-        { to: '/profile', label: '我的账户', icon: UserRound },
-        ...(userStore.isAdmin ? [{ to: '/products', label: '产品维护', icon: Boxes }] : []),
-      ]
+    ? [{ to: '/profile', label: '我的账户', icon: UserRound, shortcut: '' }]
     : []),
+])
+
+const adminNavItems = computed(() => [
+  { to: '/admin', label: '平台概览', icon: LayoutDashboard },
+  { to: '/admin/users', label: '用户管理', icon: Users },
+  { to: '/admin/rides', label: '车位管理', icon: ParkingSquare },
+  { to: '/admin/orders', label: '订单管理', icon: ClipboardList },
+  { to: '/admin/analytics', label: '数据分析', icon: BarChart3 },
+  { to: '/admin/products', label: '产品维护', icon: Boxes },
 ])
 
 const handleLogout = () => {
@@ -229,6 +253,10 @@ const handleLogout = () => {
   box-shadow: var(--sidebar-shadow);
 }
 
+:global([data-theme="dark"] .sidebar ){
+  background: var(--bg-secondary);
+}
+
 .sidebar-scrim {
   display: none;
   background: transparent;
@@ -245,6 +273,19 @@ const handleLogout = () => {
 .brand-block {
   padding: 0 var(--spacing-sm) var(--spacing-lg) var(--spacing-sm);
   border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.brand-block::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: var(--spacing-sm);
+  right: var(--spacing-sm);
+  height: 2px;
+  background: var(--border-color-strong);
+  border-radius: var(--border-radius-full);
+  opacity: 0.5;
 }
 
 .brand-text {
@@ -273,6 +314,25 @@ const handleLogout = () => {
   padding: var(--spacing-lg) 0;
 }
 
+.admin-nav {
+  flex: 0;
+  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-xs) var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  background: color-mix(in srgb, var(--color-pro-soft) 30%, transparent);
+  border-radius: var(--border-radius-md);
+}
+
+.nav-divider {
+  display: block;
+  padding: 0 14px var(--spacing-sm);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-pro);
+}
+
 .nav-item {
   display: block;
   text-decoration: none;
@@ -281,6 +341,22 @@ const handleLogout = () => {
   font-weight: 600;
   font-size: 14px;
   transition: all var(--transition-fast);
+  position: relative;
+  opacity: 0;
+  transform: translateX(-8px);
+  animation: navSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.nav-item:nth-child(1) { animation-delay: 0.05s; }
+.nav-item:nth-child(2) { animation-delay: 0.1s; }
+.nav-item:nth-child(3) { animation-delay: 0.15s; }
+.nav-item:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes navSlideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .nav-item-inner {
@@ -299,6 +375,8 @@ const handleLogout = () => {
 .nav-item:hover {
   color: var(--text-primary);
   background: var(--bg-tertiary);
+  transform: translateX(2px);
+  box-shadow: inset 0 0 0 1px var(--border-color);
 }
 
 .nav-item:hover .nav-icon {
@@ -309,11 +387,67 @@ const handleLogout = () => {
   color: var(--text-primary);
   background: var(--bg-tertiary);
   font-weight: 700;
-  box-shadow: inset 4px 0 0 var(--text-primary);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 var(--border-radius-full) var(--border-radius-full) 0;
+  background: var(--text-primary);
+  box-shadow: 0 0 8px rgba(15, 23, 42, 0.15);
+  animation: indicatorSlide 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes indicatorSlide {
+  from {
+    opacity: 0;
+    height: 8px;
+  }
+  to {
+    opacity: 1;
+    height: 20px;
+  }
+}
+
+.admin-nav .nav-item.active {
+  color: var(--color-pro);
+  background: var(--color-pro-soft);
+}
+
+.admin-nav .nav-item.active::before {
+  background: var(--color-pro);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
+}
+
+.admin-nav .nav-item.active .nav-icon {
+  color: var(--color-pro);
 }
 
 .nav-item.active .nav-icon {
   color: var(--text-primary);
+}
+
+.nav-shortcut {
+  display: inline-flex;
+  height: 18px;
+  min-width: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  margin-left: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
 }
 
 .notice-card {
@@ -321,10 +455,17 @@ const handleLogout = () => {
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--border-color);
+  border-left: 3px solid var(--color-plus);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
   color: var(--text-secondary);
   margin-bottom: var(--spacing-md);
+  transition: all var(--transition-fast);
+}
+
+.notice-card:hover {
+  border-color: var(--border-color-strong);
+  background: var(--bg-tertiary);
 }
 
 .notice-icon {
@@ -367,10 +508,28 @@ const handleLogout = () => {
   font-size: 11px;
   text-decoration: none;
   transition: color var(--transition-fast);
+  position: relative;
 }
 
 .legal-link:hover {
-  color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.legal-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--text-primary);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--transition-fast);
+}
+
+.legal-link:hover::after {
+  transform: scaleX(1);
 }
 
 .legal-sep {
@@ -383,13 +542,20 @@ const handleLogout = () => {
   gap: 12px;
   align-items: center;
   text-decoration: none;
-  padding: 6px;
+  padding: 8px 10px;
   border-radius: var(--border-radius-md);
-  transition: background-color var(--transition-fast);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
 }
 
 .user-card:hover {
   background: var(--bg-tertiary);
+  border-color: var(--border-color-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.user-card:hover .avatar {
+  box-shadow: 0 0 0 2px var(--color-team-soft);
 }
 
 .avatar {
@@ -430,12 +596,29 @@ const handleLogout = () => {
   font-weight: 700;
   text-decoration: none;
   color: var(--text-inverse);
-  background: var(--color-primary);
-  transition: background-color var(--transition-fast);
+  background: var(--color-team);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
 }
 
 .login-btn:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-team-hover);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-team) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.login-btn:hover::after {
+  transform: translateX(100%);
 }
 
 .logout-btn {
@@ -519,6 +702,11 @@ const handleLogout = () => {
   transition: all var(--transition-fast);
 }
 
+.theme-toggle-row:hover {
+  border-color: var(--border-color-strong);
+  background: var(--bg-tertiary);
+}
+
 .theme-label {
   display: flex;
   align-items: center;
@@ -533,11 +721,11 @@ const handleLogout = () => {
   width: 40px;
   height: 22px;
   border-radius: var(--border-radius-full);
-  background: var(--border-color-strong);
-  border: none;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color-strong);
   cursor: pointer;
   padding: 0;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .theme-toggle-switch:focus {
@@ -550,23 +738,63 @@ const handleLogout = () => {
   outline-offset: 2px;
 }
 
-[data-theme="dark"] .theme-toggle-switch {
-  background: var(--color-success);
+:global([data-theme="dark"] .theme-toggle-switch ){
+  background: var(--bg-inset);
+  border-color: var(--border-color-strong);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .toggle-slider {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 1px;
+  left: 1px;
   width: 18px;
   height: 18px;
   border-radius: var(--border-radius-full);
-  background: var(--bg-secondary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform var(--transition-fast);
+  background: var(--text-muted);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+:global([data-theme="dark"] .toggle-slider ){
+  background: var(--text-primary);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
 }
 
 .toggle-slider.is-dark {
   transform: translateX(18px);
+}
+
+/* Dark mode */
+:global([data-theme="dark"] .nav-item.active::before ){
+  box-shadow: 0 0 8px rgba(243, 240, 233, 0.15);
+}
+
+:global([data-theme="dark"] .admin-nav .nav-item.active::before ){
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+}
+
+:global([data-theme="dark"] .notice-card ){
+  background: var(--bg-inset);
+}
+
+:global([data-theme="dark"] .user-card:hover ){
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"] .user-card:hover .avatar ){
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+:global([data-theme="dark"] .login-btn ){
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border: 1px solid var(--text-primary);
+}
+
+:global([data-theme="dark"] .login-btn:hover ){
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 2px 12px rgba(255, 255, 255, 0.12);
 }
 </style>

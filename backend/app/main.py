@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.routers import analytics, auth, users, rides, orders
+from app.routers import admin, analytics, auth, users, rides, orders
 from app.database import init_db
 
 @asynccontextmanager
@@ -45,6 +45,7 @@ app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(rides.router, prefix=settings.API_V1_STR)
 app.include_router(orders.router, prefix=settings.API_V1_STR)
 app.include_router(analytics.router, prefix=settings.API_V1_STR)
+app.include_router(admin.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

@@ -1,5 +1,5 @@
 <template>
-  <article class="ride-card hover-lift">
+  <article class="ride-card hover-lift" :class="ride.product">
     <div class="card-top">
       <span class="product-chip" :class="ride.product">
         <svg viewBox="0 0 24 24" class="chip-logo" fill="currentColor">
@@ -29,18 +29,30 @@
       </div>
     </div>
 
-    <div class="facts">
-      <div class="fact-item">
-        <Users :size="14" class="fact-icon" />
-        <span>已拼 {{ occupiedSeats }}/{{ recruitSeats }} 人</span>
+    <!-- Seat Progress -->
+    <div class="seat-progress">
+      <div class="progress-header">
+        <div class="progress-label">
+          <Users :size="13" class="progress-icon" />
+          <span>拼车进度</span>
+        </div>
+        <span class="progress-count" :class="{ 'almost-full': fillPercent >= 80 }">{{ occupiedSeats }}/{{ totalSeats }}</span>
       </div>
-      <div class="fact-item">
-        <Armchair :size="14" class="fact-icon" />
-        <span>还差 {{ remainingSeats }} 人</span>
+      <div class="progress-track">
+        <div
+          class="progress-bar"
+          :class="[ride.product, { full: fillPercent >= 100 }]"
+          :style="{ width: fillPercent + '%' }"
+        ></div>
       </div>
-      <div class="fact-item">
-        <CalendarClock :size="14" class="fact-icon" />
-        <span>{{ ride.duration }}个月</span>
+      <div class="progress-meta">
+        <span class="remaining-tag" :class="{ urgent: remainingSeats <= 1 && ride.status === 'open' }">
+          {{ remainingSeats <= 1 && ride.status === 'open' ? '仅剩 ' + remainingSeats + ' 位' : '还差 ' + remainingSeats + ' 人' }}
+        </span>
+        <span class="duration-tag">
+          <CalendarClock :size="11" />
+          {{ ride.duration }}个月
+        </span>
       </div>
     </div>
 
@@ -49,7 +61,7 @@
         <img :src="ride.owner?.avatar || defaultAvatar" alt="车主头像" class="avatar" />
         <div class="seller-info">
           <strong>{{ ride.owner?.nickname || '车主' }}</strong>
-          <span class="verified-tag">已认证车主</span>
+          <span class="verified-tag"><BadgeCheck :size="12" /> 已认证车主</span>
         </div>
       </div>
       <router-link :to="`/ride/${ride.id}`" class="detail-btn">
@@ -62,7 +74,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Armchair, CalendarClock, ChevronRight, Users } from '@lucide/vue'
+import { BadgeCheck, CalendarClock, ChevronRight, Users } from '@lucide/vue'
 import type { Ride } from '../../types'
 
 const props = defineProps<{
@@ -83,10 +95,15 @@ const statusLabel = computed(() => {
   return '招募中'
 })
 
-const occupiedSeats = computed(() => Number(props.ride.purchase_count || 0))
-const recruitSeats = computed(() => Number(props.ride.recruit_seats || Math.max((props.ride.total_seats || 1) - 1, 1)))
-const remainingSeats = computed(() => Math.max(Number(props.ride.remaining_seats ?? recruitSeats.value), 0))
+const totalSeats = computed(() => Number(props.ride.total_seats || 0))
+const onboardSeats = computed(() => Number(props.ride.recruit_seats || Math.max((totalSeats.value || 1) - 1, 1)))
+const occupiedSeats = computed(() => Math.min(onboardSeats.value + Number(props.ride.purchase_count || 0), totalSeats.value))
+const remainingSeats = computed(() => Math.max(Number(props.ride.remaining_seats ?? (totalSeats.value - occupiedSeats.value)), 0))
 const warrantyDays = computed(() => Number(props.ride.warranty_days || (props.ride.duration >= 12 ? 365 : props.ride.duration * 30)))
+const fillPercent = computed(() => {
+  if (totalSeats.value <= 0) return 0
+  return Math.min(Math.round((occupiedSeats.value / totalSeats.value) * 100), 100)
+})
 
 const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 </script>
@@ -102,6 +119,54 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   background: var(--bg-secondary);
   box-shadow: var(--card-shadow);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.ride-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--border-color-strong);
+}
+
+.ride-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-plus);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.ride-card.chatgpt-team::before {
+  background: var(--color-team);
+}
+
+.ride-card.chatgpt-pro::before {
+  background: var(--color-pro);
+}
+
+.ride-card:hover::before {
+  opacity: 1;
+}
+
+/* Product chip glow on card hover */
+.ride-card:hover .product-chip.chatgpt-plus {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ride-card:hover .product-chip.chatgpt-team {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.ride-card:hover .product-chip.chatgpt-pro {
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .card-top {
@@ -133,9 +198,9 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   overflow: hidden;
 }
 
-.title-link:hover {
-  color: var(--color-team);
-}
+.ride-card.chatgpt-plus .title-link:hover { color: var(--color-plus); }
+.ride-card.chatgpt-team .title-link:hover { color: var(--color-team); }
+.ride-card.chatgpt-pro .title-link:hover { color: var(--color-pro); }
 
 .description {
   display: -webkit-box;
@@ -158,6 +223,12 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
   margin-bottom: var(--spacing-md);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.price-row:hover {
+  border-color: var(--border-color-strong);
+  background: var(--bg-tertiary);
 }
 
 .price-item {
@@ -247,26 +318,117 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   line-height: 1;
 }
 
-.facts {
+/* Seat Progress */
+.seat-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--spacing-md);
+  padding: 10px 12px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+.progress-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: var(--spacing-lg);
-  padding: 0 var(--spacing-xs);
 }
 
-.fact-item {
+.progress-label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.fact-icon {
+.progress-icon {
+  color: var(--text-muted);
+}
+
+.progress-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.progress-count.almost-full {
+  color: var(--color-success);
+}
+
+.progress-track {
+  height: 4px;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: var(--border-radius-full);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--color-plus);
+}
+
+.progress-bar.chatgpt-team {
+  background: var(--color-team);
+}
+
+.progress-bar.chatgpt-pro {
+  background: var(--color-pro);
+}
+
+.progress-bar.full {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar.full::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  animation: progressShimmer 2s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.remaining-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.remaining-tag.urgent {
+  color: var(--color-warning);
+  font-weight: 700;
+  animation: urgentPulse 2s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.duration-tag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -308,6 +470,9 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .verified-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   color: var(--color-success);
   font-size: 10px;
   font-weight: 700;
@@ -318,20 +483,40 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   height: 34px;
   align-items: center;
   gap: 4px;
-  padding: 0 12px;
+  padding: 0 14px;
   border-radius: var(--border-radius-sm);
-  background: var(--color-primary);
+  background: var(--color-team);
   color: var(--text-inverse);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
   transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
 }
 
 .detail-btn:hover {
-  background: var(--color-primary-hover);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  background: var(--color-team-hover);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-team) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.detail-btn:hover::after {
+  transform: translateX(100%);
+}
+
+.detail-btn:active {
+  transform: scale(0.96) translateY(0);
 }
 
 .detail-btn:active {
@@ -343,6 +528,47 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   height: 14px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+/* Dark mode */
+:global([data-theme="dark"] .ride-card ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .price-row ){
+  background: var(--bg-inset);
+}
+
+:global([data-theme="dark"] .seat-progress ){
+  background: var(--bg-inset);
+}
+
+:global([data-theme="dark"] .detail-btn ){
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border: 1px solid var(--text-primary);
+}
+
+:global([data-theme="dark"] .detail-btn:hover ){
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 2px 12px rgba(255, 255, 255, 0.12);
+}
+
+:global([data-theme="dark"] .ride-card:hover::before ){
+  opacity: 0.7;
+}
+
+:global([data-theme="dark"] .progress-bar.full::after ){
+  background: transparent;
+}
+
+:global([data-theme="dark"] .seller-row ){
+  border-top-color: var(--border-color-strong);
+}
+
+:global([data-theme="dark"] .avatar ){
+  border-color: var(--border-color-strong);
 }
 
 @media (max-width: 680px) {
@@ -418,22 +644,20 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
     font-size: 8px;
   }
 
-  .facts {
-    justify-content: flex-start;
-    gap: 4px 8px;
-    margin-bottom: 8px;
-    padding: 0;
-  }
-
-  .fact-item {
+  .seat-progress {
     gap: 4px;
-    font-size: 9px;
-    line-height: 1.2;
+    padding: 8px 10px;
+    margin-bottom: 8px;
   }
 
-  .fact-icon {
-    width: 12px;
-    height: 12px;
+  .progress-label span,
+  .progress-count {
+    font-size: 10px;
+  }
+
+  .remaining-tag,
+  .duration-tag {
+    font-size: 9px;
   }
 
   .seller-row {

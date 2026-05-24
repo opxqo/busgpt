@@ -16,12 +16,12 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _auth_key(request: Request, phone: str) -> str:
-    return f"{_client_ip(request)}:{phone}"
+def _auth_key(request: Request, identifier: str) -> str:
+    return f"{_client_ip(request)}:{identifier}"
 
 
-def check_auth_rate_limit(request: Request, phone: str) -> str:
-    key = _auth_key(request, phone)
+def check_auth_rate_limit(request: Request, identifier: str) -> str:
+    key = _auth_key(request, identifier)
     now = monotonic()
     failures = _auth_failures[key]
     while failures and now - failures[0] > AUTH_WINDOW_SECONDS:

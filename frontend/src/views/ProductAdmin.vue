@@ -1,6 +1,6 @@
 <template>
   <div class="products-page container">
-    <header class="page-header surface-card">
+    <header class="page-header surface-card anim-fade-up">
       <div>
         <span class="eyebrow">产品维护</span>
         <h1 class="page-title">订阅产品信息</h1>
@@ -12,12 +12,12 @@
       </button>
     </header>
 
-    <div v-if="loading" class="loading-container surface-card">
+    <div v-if="loading" class="loading-container surface-card anim-fade-up anim-d1">
       <div class="spinner"></div>
       <p>加载产品信息中</p>
     </div>
 
-    <section v-else class="product-grid">
+    <section v-else class="product-grid anim-fade-up anim-d1">
       <article v-for="product in productForms" :key="product.type" class="product-card surface-card">
         <div class="product-card__header">
           <span class="product-chip" :class="product.type">
@@ -99,7 +99,9 @@
       </article>
     </section>
 
-    <p v-if="message" class="feedback" role="status">{{ message }}</p>
+    <Transition name="fade">
+      <p v-if="message" class="feedback" role="status">{{ message }}</p>
+    </Transition>
   </div>
 </template>
 
@@ -161,12 +163,57 @@ onMounted(loadProducts)
   gap: var(--spacing-lg);
 }
 
+/* ===== Animations ===== */
+.anim-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-d1 { animation-delay: 0.08s; }
+.anim-d2 { animation-delay: 0.16s; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-enter-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.fade-leave-to {
+  opacity: 0;
+}
+
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-lg);
   padding: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-color-strong);
+  opacity: 0.6;
 }
 
 .page-title {
@@ -184,7 +231,39 @@ onMounted(loadProducts)
   flex-direction: column;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-fast);
 }
+
+.product-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.product-card:hover::before {
+  opacity: 1;
+}
+
+.product-card:hover {
+  border-color: var(--border-color-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.product-card:nth-child(1)::before { background: var(--color-plus); }
+.product-card:nth-child(2)::before { background: var(--color-team); }
+.product-card:nth-child(3)::before { background: var(--color-pro); }
+
+.product-card:nth-child(1):hover { border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08); }
+.product-card:nth-child(2):hover { border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08); }
+.product-card:nth-child(3):hover { border-color: rgba(139, 92, 246, 0.3); box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08); }
 
 .product-card__header,
 .color-field,
@@ -200,8 +279,14 @@ onMounted(loadProducts)
 .color-dot {
   width: 24px;
   height: 24px;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
   border-radius: var(--border-radius-full);
+  box-shadow: 0 0 0 2px var(--bg-card);
+  transition: box-shadow var(--transition-fast);
+}
+
+.product-card:hover .color-dot {
+  box-shadow: 0 0 8px 2px currentColor;
 }
 
 .product-form {
@@ -244,9 +329,15 @@ onMounted(loadProducts)
   margin-bottom: var(--spacing-md);
   padding: 14px;
   border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
+  transition: border-color var(--transition-fast);
 }
+
+.product-card:nth-child(1) .product-summary { border-left-color: var(--color-plus); }
+.product-card:nth-child(2) .product-summary { border-left-color: var(--color-team); }
+.product-card:nth-child(3) .product-summary { border-left-color: var(--color-pro); }
 
 .product-summary span {
   display: block;
@@ -263,9 +354,13 @@ onMounted(loadProducts)
 }
 
 .feedback {
-  color: var(--color-primary);
+  color: var(--color-success);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
+  padding: 10px 14px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--border-radius-md);
+  background: var(--color-success-soft);
 }
 
 @media (max-width: 1080px) {
@@ -291,5 +386,38 @@ onMounted(loadProducts)
   height: 14px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+/* Dark mode */
+:global([data-theme="dark"] .product-card:nth-child(1):hover ){
+  box-shadow: 0 4px 16px rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+:global([data-theme="dark"] .product-card:nth-child(2):hover ){
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+:global([data-theme="dark"] .product-card:nth-child(3):hover ){
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
+:global([data-theme="dark"] .product-card ){
+  background: var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .product-summary ){
+  background: var(--bg-inset);
+}
+
+:global([data-theme="dark"] .color-dot ){
+  box-shadow: 0 0 0 2px var(--bg-tertiary);
+}
+
+:global([data-theme="dark"] .feedback ){
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.15);
 }
 </style>
