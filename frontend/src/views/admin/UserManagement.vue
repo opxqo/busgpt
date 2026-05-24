@@ -1,12 +1,21 @@
 <template>
-  <div class="admin-page container">
-    <header class="page-header surface-card anim-fade-up">
-      <div>
-        <span class="eyebrow">管理后台</span>
+  <div class="admin-page console-page container">
+    <header class="console-header anim-fade-up">
+      <div class="console-title-block">
+        <span class="eyebrow">Admin Console</span>
         <h1 class="page-title">用户管理</h1>
-        <p class="page-subtitle">查看和管理平台注册用户，支持搜索和状态控制。</p>
+        <span class="console-meta">table-users</span>
       </div>
     </header>
+
+    <nav class="segmented-tabs anim-fade-up anim-d1" aria-label="后台导航">
+      <router-link to="/admin">概览</router-link>
+      <router-link to="/admin/users">用户</router-link>
+      <router-link to="/admin/rides">车位</router-link>
+      <router-link to="/admin/orders">订单</router-link>
+      <router-link to="/admin/analytics">分析</router-link>
+      <router-link to="/admin/products">产品</router-link>
+    </nav>
 
     <div class="toolbar surface-card anim-fade-up anim-d1">
       <div class="toolbar-fields">
@@ -483,9 +492,18 @@ onMounted(loadUsers)
 }
 
 @media (max-width: 768px) {
-  .page-header {
+  .console-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .segmented-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .segmented-tabs a {
+    flex: 0 0 auto;
   }
 
   .toolbar {
@@ -508,6 +526,44 @@ onMounted(loadUsers)
 
 .table-container:hover {
   border-color: var(--border-color-strong);
+}
+
+.admin-page {
+  gap: var(--spacing-md);
+}
+
+.toolbar {
+  padding: 10px 12px;
+  border-radius: var(--border-radius-md);
+}
+
+.toolbar-fields .form-control {
+  max-width: 220px;
+}
+
+.summary-bar {
+  padding: 8px 12px;
+  border-radius: var(--border-radius-md);
+  background: var(--bg-secondary);
+}
+
+.table-container {
+  border-radius: var(--border-radius-md);
+}
+
+.table-row-animate {
+  opacity: 1;
+  animation: none;
+}
+
+.pagination {
+  padding: 10px 12px;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+}
+
+.btn-danger,
+.btn-secondary {
+  box-shadow: none;
 }
 
 /* Dark mode */

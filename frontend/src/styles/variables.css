@@ -3,22 +3,22 @@
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
 
-  /* Claude-style Warm Cream Theme */
-  --bg-primary: #f7f4ee;
+  /* Zeabur-inspired console theme */
+  --bg-primary: #f7f7f8;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f0ede6;
-  --bg-inset: #faf8f3;
+  --bg-tertiary: #f3f4f6;
+  --bg-inset: #f9fafb;
   --bg-card: #ffffff;
-  --bg-glass: rgba(247, 244, 238, 0.75);
+  --bg-glass: rgba(255, 255, 255, 0.86);
 
-  --text-primary: #191f24;
-  --text-secondary: #52606b;
-  --text-muted: #87919b;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #8b95a1;
   --text-inverse: #ffffff;
 
-  --color-primary: #191f24; /* Bold warm-charcoal primary */
-  --color-primary-hover: #2d363d;
-  --color-primary-soft: #f0ede6;
+  --color-primary: #111827;
+  --color-primary-hover: #1f2937;
+  --color-primary-soft: #f3f4f6;
 
   /* Product-specific brandings */
   --color-plus: #10b981;
@@ -37,25 +37,28 @@
   --color-info: #0f6abf;
   --color-info-soft: #edf6ff;
   --color-success: #059669;
+  --color-success-soft: #ecfdf5;
 
-  --border-color: #ded8cd;
-  --border-color-strong: #c9c1b4;
-  --border-color-hover: #b8afa1;
-  --border-glass: rgba(255, 255, 255, 0.4);
-  --focus-ring: rgba(25, 31, 36, 0.1);
+  --border-color: #e5e7eb;
+  --border-color-strong: #d1d5db;
+  --border-color-hover: #9ca3af;
+  --border-glass: rgba(255, 255, 255, 0.7);
+  --focus-ring: rgba(17, 24, 39, 0.12);
 
-  /* Premium shadows */
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.02), 0 8px 24px -4px rgba(0, 0, 0, 0.04);
-  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 40px -4px rgba(0, 0, 0, 0.08);
+  --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --card-shadow-hover: 0 3px 10px rgba(16, 24, 40, 0.06);
   --sidebar-shadow: 1px 0 0 var(--border-color);
-  --glow-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+  --glow-shadow: 0 0 0 1px var(--border-color-strong);
 
-  --border-radius-xs: 6px;
-  --border-radius-sm: 8px;
-  --border-radius-md: 12px;
-  --border-radius-lg: 16px;
-  --border-radius-xl: 24px;
+  --border-radius-xs: 4px;
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 10px;
+  --border-radius-xl: 12px;
   --border-radius-full: 9999px;
+
+  --sidebar-width: 184px;
+  --layout-content-max: 1088px;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -71,22 +74,21 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  /* Pure black theme: black surfaces, white copy, restrained gray structure */
-  --bg-primary: #000000;
-  --bg-secondary: #050505;
-  --bg-tertiary: #111111;
-  --bg-inset: #080808;
-  --bg-card: #050505;
-  --bg-glass: rgba(0, 0, 0, 0.88);
+  --bg-primary: #0f1115;
+  --bg-secondary: #16181d;
+  --bg-tertiary: #1f232b;
+  --bg-inset: #14171c;
+  --bg-card: #171a20;
+  --bg-glass: rgba(22, 24, 29, 0.88);
 
-  --text-primary: #ffffff;
-  --text-secondary: #e5e5e5;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
   --text-muted: #a3a3a3;
-  --text-inverse: #000000;
+  --text-inverse: #111827;
 
-  --color-primary: #ffffff;
-  --color-primary-hover: #e5e5e5;
-  --color-primary-soft: #111111;
+  --color-primary: #f9fafb;
+  --color-primary-hover: #e5e7eb;
+  --color-primary-soft: #252a33;
 
   /* Product-specific brandings - optimized transparency for dark theme */
   --color-plus: #34d399;
@@ -105,16 +107,17 @@
   --color-info: #38bdf8;
   --color-info-soft: rgba(56, 189, 248, 0.12);
   --color-success: #34d399;
+  --color-success-soft: rgba(52, 211, 153, 0.12);
 
-  --border-color: #262626;
-  --border-color-strong: #3f3f3f;
-  --border-color-hover: #737373;
+  --border-color: #2a2f38;
+  --border-color-strong: #3a414d;
+  --border-color-hover: #596272;
   --border-glass: rgba(255, 255, 255, 0.12);
   --focus-ring: rgba(255, 255, 255, 0.18);
 
   /* Dark theme shadows */
-  --card-shadow: 0 0 0 1px var(--border-color);
-  --card-shadow-hover: 0 0 0 1px var(--border-color-hover), 0 14px 32px -18px rgba(255, 255, 255, 0.22);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --card-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.26);
   --sidebar-shadow: 1px 0 0 var(--border-color);
   --glow-shadow: 0 0 0 1px var(--border-color-strong);
   --focus-ring: rgba(255, 255, 255, 0.18);

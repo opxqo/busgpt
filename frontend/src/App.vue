@@ -45,7 +45,7 @@ onMounted(() => {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding-left: 248px;
+  padding-left: var(--sidebar-width);
   min-height: 100vh;
   min-width: 0;
   width: auto;

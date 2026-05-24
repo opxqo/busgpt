@@ -1,16 +1,14 @@
 <template>
-  <div class="market-page container">
-    <!-- Header -->
-    <header class="page-header anim-fade-up">
-      <div class="header-accent" aria-hidden="true"></div>
-      <div class="header-info">
-        <span class="eyebrow">共享市场</span>
-        <h1 class="page-title">发现可用订阅车位</h1>
-        <p class="page-subtitle">筛选展示中的 ChatGPT 拼车车位，直接查看车主联系方式。</p>
+  <div class="market-page console-page container">
+    <header class="console-header anim-fade-up">
+      <div class="console-title-block">
+        <span class="eyebrow">Marketplace</span>
+        <h1 class="page-title">发现车位</h1>
+        <p class="page-subtitle">查看正在招募的 AI 订阅共享资源。</p>
       </div>
-      <router-link to="/create" class="btn btn-primary publish-btn publish-shimmer">
+      <router-link to="/create" class="btn btn-primary publish-btn">
         <PlusCircle :size="16" />
-        <span>发布我的车位</span>
+        <span>发布车位</span>
       </router-link>
     </header>
 
@@ -129,9 +127,52 @@
     </div>
 
     <div v-else class="rides-grid anim-fade-up anim-d3">
-      <div v-for="(ride, index) in ridesStore.rides" :key="ride.id" class="grid-card-wrapper" :style="{ animationDelay: (index * 0.04) + 's' }">
-        <RideCard :ride="ride" />
-      </div>
+      <router-link
+        v-for="(ride, index) in ridesStore.rides"
+        :key="ride.id"
+        :to="`/ride/${ride.id}`"
+        class="resource-card surface-card"
+        :class="ride.product"
+        :style="{ animationDelay: (index * 0.04) + 's' }"
+      >
+        <div class="resource-card-head">
+          <div class="resource-title-wrap">
+            <span class="resource-icon" :class="ride.product" aria-hidden="true">{{ productInitial(ride.product) }}</span>
+            <div class="resource-title">
+              <strong>{{ ride.title }}</strong>
+              <span>{{ ownerName(ride) }}</span>
+            </div>
+          </div>
+          <span class="resource-status" :class="statusTone(ride.status)">
+            <span class="status-dot" :class="statusTone(ride.status)"></span>
+            {{ statusLabel(ride.status) }}
+          </span>
+        </div>
+
+        <dl class="resource-kv">
+          <div>
+            <dt>产品</dt>
+            <dd>{{ productLabel(ride.product) }}</dd>
+          </div>
+          <div>
+            <dt>拼车进度</dt>
+            <dd>{{ occupiedSeats(ride) }}/{{ ride.total_seats }} 人</dd>
+          </div>
+          <div>
+            <dt>价格 / 期限</dt>
+            <dd>¥{{ formatMoney(ride.price_per_month) }}/月 · {{ ride.duration }}个月</dd>
+          </div>
+        </dl>
+
+        <div class="resource-progress" aria-label="拼车进度">
+          <span :style="{ width: fillPercent(ride) + '%' }"></span>
+        </div>
+
+        <div class="resource-foot">
+          <span>{{ remainingSeats(ride) > 0 ? `还差 ${remainingSeats(ride)} 人` : '已满员' }}</span>
+          <strong>查看详情</strong>
+        </div>
+      </router-link>
     </div>
   </div>
 </template>
@@ -139,9 +180,8 @@
 <script setup lang="ts">
 import { type Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Filter, PackageOpen, PlusCircle, Search, X } from '@lucide/vue'
-import RideCard from '../components/ride/RideCard.vue'
 import { useRidesStore } from '../stores/rides'
-import type { ProductType } from '../types'
+import type { ProductType, Ride } from '../types'
 
 const ridesStore = useRidesStore()
 const searchQuery = ref('')
@@ -226,6 +266,53 @@ const selectProduct = (product: ProductType | '') => {
   fetchData()
 }
 
+const productLabels: Record<ProductType, string> = {
+  'chatgpt-plus': 'ChatGPT Plus',
+  'chatgpt-team': 'ChatGPT Business',
+  'chatgpt-pro': 'ChatGPT Pro',
+}
+
+const productInitials: Record<ProductType, string> = {
+  'chatgpt-plus': 'P',
+  'chatgpt-team': 'B',
+  'chatgpt-pro': 'R',
+}
+
+const productLabel = (product: ProductType) => productLabels[product] || product
+const productInitial = (product: ProductType) => productInitials[product] || 'A'
+
+const statusLabel = (status: Ride['status']) => {
+  if (status === 'closed') return '已满员'
+  if (status === 'expired') return '已过期'
+  return '招募中'
+}
+
+const statusTone = (status: Ride['status']) => {
+  if (status === 'open') return 'success'
+  if (status === 'expired') return 'warning'
+  return 'muted'
+}
+
+const occupiedSeats = (ride: Ride) => {
+  const total = Number(ride.total_seats || 0)
+  const base = Number(ride.recruit_seats || Math.max(total - 1, 1))
+  return Math.min(base + Number(ride.purchase_count || 0), total)
+}
+
+const remainingSeats = (ride: Ride) => {
+  const total = Number(ride.total_seats || 0)
+  return Math.max(Number(ride.remaining_seats ?? (total - occupiedSeats(ride))), 0)
+}
+
+const fillPercent = (ride: Ride) => {
+  const total = Number(ride.total_seats || 0)
+  if (total <= 0) return 0
+  return Math.min(Math.round((occupiedSeats(ride) / total) * 100), 100)
+}
+
+const ownerName = (ride: Ride) => ride.owner?.nickname || '车主'
+const formatMoney = (value: number | string) => Math.round(Number(value || 0))
+
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
     const target = e.target as HTMLElement
@@ -265,56 +352,6 @@ onUnmounted(() => {
   }
 }
 
-.market-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: var(--spacing-lg);
-  position: relative;
-}
-
-.header-accent {
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--border-color-strong);
-  opacity: 0.4;
-}
-
-.publish-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.publish-shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: transparent;
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-}
-
-.publish-shimmer:hover::after {
-  transform: translateX(100%);
-}
-
-.header-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
 .publish-btn {
   flex-shrink: 0;
 }
@@ -323,42 +360,19 @@ onUnmounted(() => {
 .market-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .metric-card {
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: 12px 14px;
   display: flex;
   align-items: center;
-  transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
 }
 
-.metric-card::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.metric-card:nth-child(1)::before { background: var(--color-success); }
-.metric-card:nth-child(2)::before { background: var(--color-team); }
-.metric-card:nth-child(3)::before { background: var(--color-pro); }
-.metric-card:nth-child(4)::before { background: var(--color-info); }
-
 .metric-card:hover {
   border-color: var(--border-color-strong);
-  transform: translateY(-1px);
-  box-shadow: var(--card-shadow);
-}
-
-.metric-card:hover::before {
-  opacity: 1;
 }
 
 .metric-info {
@@ -375,7 +389,7 @@ onUnmounted(() => {
 
 .metric-value {
   color: var(--text-primary);
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -392,22 +406,18 @@ onUnmounted(() => {
 
 .indicator-dot.success {
   background: var(--color-success);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .indicator-dot.primary {
   background: var(--color-team);
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
 }
 
 .indicator-dot.warning {
   background: var(--color-pro);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
 .indicator-dot.info {
   background: var(--color-info);
-  box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
 }
 
 /* Toolbar Panel */
@@ -416,15 +426,14 @@ onUnmounted(() => {
   grid-template-columns: 1fr auto;
   gap: var(--spacing-md);
   align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-color: var(--border-color-strong);
+  padding: 10px 12px;
 }
 
 .search-input-wrapper {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  height: 40px;
+  height: 36px;
   padding: 0 12px;
   background: var(--bg-inset);
   border: 1px solid var(--border-color);
@@ -433,8 +442,8 @@ onUnmounted(() => {
 }
 
 .search-input-wrapper.focused {
-  border-color: var(--color-team);
-  box-shadow: 0 0 0 3px var(--focus-ring), 0 2px 8px rgba(59, 130, 246, 0.08);
+  border-color: var(--border-color-hover);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .search-icon {
@@ -539,27 +548,7 @@ onUnmounted(() => {
 }
 
 .tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 2px;
-  border-radius: var(--border-radius-full);
-  background: var(--text-primary);
-  animation: tabPop 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes tabPop {
-  from {
-    width: 0;
-    opacity: 0;
-  }
-  to {
-    width: 16px;
-    opacity: 1;
-  }
+  display: none;
 }
 
 .tab-btn.active.chatgpt-plus::after { background: var(--color-plus); }
@@ -626,14 +615,182 @@ onUnmounted(() => {
 
 .rides-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--spacing-md);
 }
 
-.grid-card-wrapper {
+.resource-card {
+  display: flex;
+  min-height: 176px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  color: var(--text-primary);
+  text-decoration: none;
   opacity: 0;
   transform: translateY(12px);
   animation: fadeUp 0.45s ease-out forwards;
+}
+
+.resource-card:hover {
+  border-color: var(--border-color-strong);
+  background: var(--bg-secondary);
+}
+
+.resource-card-head,
+.resource-title-wrap,
+.resource-status,
+.resource-foot {
+  display: flex;
+  align-items: center;
+}
+
+.resource-card-head {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resource-title-wrap {
+  min-width: 0;
+  gap: 10px;
+}
+
+.resource-icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.resource-icon.chatgpt-plus {
+  color: var(--color-plus);
+  background: var(--color-plus-soft);
+}
+
+.resource-icon.chatgpt-team {
+  color: var(--color-team);
+  background: var(--color-team-soft);
+}
+
+.resource-icon.chatgpt-pro {
+  color: var(--color-pro);
+  background: var(--color-pro-soft);
+}
+
+.resource-title {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resource-title strong,
+.resource-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-title strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.resource-title span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.resource-status {
+  flex: 0 0 auto;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.resource-status.muted .status-dot {
+  background: var(--text-muted);
+}
+
+.resource-kv {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.resource-kv div {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.resource-kv dt,
+.resource-kv dd {
+  margin: 0;
+  font-size: 12px;
+}
+
+.resource-kv dt {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.resource-kv dd {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-progress {
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-tertiary);
+}
+
+.resource-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-primary);
+}
+
+.resource-card.chatgpt-plus .resource-progress span {
+  background: var(--color-plus);
+}
+
+.resource-card.chatgpt-team .resource-progress span {
+  background: var(--color-team);
+}
+
+.resource-card.chatgpt-pro .resource-progress span {
+  background: var(--color-pro);
+}
+
+.resource-foot {
+  justify-content: space-between;
+  margin-top: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.resource-foot strong {
+  color: var(--text-primary);
+  font-size: 12px;
 }
 
 .empty-icon {
@@ -759,12 +916,8 @@ onUnmounted(() => {
   background: var(--bg-tertiary);
 }
 
-:global([data-theme="dark"] .metric-card::before ){
-  filter: brightness(1.2);
-}
-
 :global([data-theme="dark"] .search-input-wrapper.focused ){
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
 }
 
 @media (max-width: 1080px) {
@@ -794,7 +947,7 @@ onUnmounted(() => {
     width: 100%;
   }
   .market-metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--spacing-sm);
   }
   .metric-card {
@@ -842,7 +995,7 @@ onUnmounted(() => {
   }
   .rides-grid,
   .skeleton-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 }

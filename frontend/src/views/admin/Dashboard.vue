@@ -1,16 +1,25 @@
 <template>
-  <div class="admin-page container">
-    <header class="page-header surface-card anim-fade-up">
-      <div>
-        <span class="eyebrow">管理后台</span>
+  <div class="admin-page console-page container">
+    <header class="console-header anim-fade-up">
+      <div class="console-title-block">
+        <span class="eyebrow">Admin Console</span>
         <h1 class="page-title">平台概览</h1>
-        <p class="page-subtitle">查看平台核心运营数据，掌握整体业务状况。</p>
+        <span class="console-meta">service-busgpt-dashboard</span>
       </div>
       <button type="button" class="btn btn-secondary" :disabled="loading" @click="loadOverview">
         <RefreshCw :size="16" />
         刷新
       </button>
     </header>
+
+    <nav class="segmented-tabs anim-fade-up anim-d1" aria-label="后台导航">
+      <router-link to="/admin">概览</router-link>
+      <router-link to="/admin/users">用户</router-link>
+      <router-link to="/admin/rides">车位</router-link>
+      <router-link to="/admin/orders">订单</router-link>
+      <router-link to="/admin/analytics">分析</router-link>
+      <router-link to="/admin/products">产品</router-link>
+    </nav>
 
     <div v-if="loading" class="loading-container surface-card anim-fade-up anim-d1">
       <div class="spinner"></div>
@@ -24,6 +33,8 @@
         </div>
         <span class="stat-label">总用户数</span>
         <strong class="stat-value">{{ animUsers }}</strong>
+        <span class="stat-meta">今日新增 {{ animNewUsers }}</span>
+        <span class="stat-track"><span :style="{ width: activityPercent(animNewUsers, animUsers) + '%' }"></span></span>
       </router-link>
 
       <router-link to="/admin/rides" class="stat-card surface-card stat-link">
@@ -32,6 +43,8 @@
         </div>
         <span class="stat-label">总车位数</span>
         <strong class="stat-value">{{ animRides }}</strong>
+        <span class="stat-meta">活跃 {{ animActive }} 个</span>
+        <span class="stat-track"><span :style="{ width: activityPercent(animActive, animRides) + '%' }"></span></span>
       </router-link>
 
       <router-link to="/admin/rides" class="stat-card surface-card stat-link">
@@ -40,6 +53,8 @@
         </div>
         <span class="stat-label">活跃车位</span>
         <strong class="stat-value">{{ animActive }}</strong>
+        <span class="stat-meta">占用率参考</span>
+        <span class="stat-track success"><span :style="{ width: activityPercent(animActive, animRides) + '%' }"></span></span>
       </router-link>
 
       <router-link to="/admin/orders" class="stat-card surface-card stat-link">
@@ -48,6 +63,8 @@
         </div>
         <span class="stat-label">总订单数</span>
         <strong class="stat-value">{{ animOrders }}</strong>
+        <span class="stat-meta">订单转化参考</span>
+        <span class="stat-track"><span :style="{ width: activityPercent(animOrders, animUsers) + '%' }"></span></span>
       </router-link>
 
       <router-link to="/admin/orders" class="stat-card surface-card stat-link">
@@ -56,6 +73,8 @@
         </div>
         <span class="stat-label">总收入</span>
         <strong class="stat-value">¥{{ formatMoney(animRevenue) }}</strong>
+        <span class="stat-meta">GMV 累计</span>
+        <span class="stat-track warning"><span :style="{ width: Math.min(animRevenue / 100, 100) + '%' }"></span></span>
       </router-link>
 
       <router-link to="/admin/users" class="stat-card surface-card stat-link">
@@ -64,6 +83,8 @@
         </div>
         <span class="stat-label">今日新增用户</span>
         <strong class="stat-value">{{ animNewUsers }}</strong>
+        <span class="stat-meta">增长指标</span>
+        <span class="stat-track info"><span :style="{ width: Math.min(animNewUsers * 12, 100) + '%' }"></span></span>
       </router-link>
     </section>
 
@@ -158,19 +179,18 @@ const formatMoney = (value: number | string) => {
   return Math.round(num)
 }
 
+const activityPercent = (value: number, total: number) => {
+  if (!total) return 0
+  return Math.min(Math.round((value / total) * 100), 100)
+}
+
 onMounted(loadOverview)
 </script>
 
 <style scoped>
-.admin-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
 /* ===== Animations ===== */
 .anim-fade-up {
-  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fadeUp 0.35s ease-out both;
 }
 .anim-d1 { animation-delay: 0.08s; }
 .anim-d2 { animation-delay: 0.16s; }
@@ -178,7 +198,7 @@ onMounted(loadOverview)
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -186,79 +206,30 @@ onMounted(loadOverview)
   }
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
-  position: relative;
-  overflow: hidden;
-}
-
-.page-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--border-color-strong);
-  opacity: 0.6;
-}
-
-.page-title {
-  margin: 4px 0 6px;
-}
-
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .stat-card {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
+  gap: 8px;
+  min-height: 154px;
+  padding: var(--spacing-md);
   position: relative;
   overflow: hidden;
 }
 
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  border-radius: 0 0 var(--border-radius-full) var(--border-radius-full);
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
-}
-
-.stat-card:nth-child(1)::before { background: var(--color-info); }
-.stat-card:nth-child(2)::before { background: var(--color-plus); }
-.stat-card:nth-child(3)::before { background: var(--color-plus); }
-.stat-card:nth-child(4)::before { background: var(--color-team); }
-.stat-card:nth-child(5)::before { background: var(--color-warning); }
-.stat-card:nth-child(6)::before { background: var(--color-info); }
-
 .stat-link {
   text-decoration: none;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
   border: 1px solid var(--border-color);
 }
 
 .stat-link:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow-hover);
   border-color: var(--border-color-strong);
 }
 
@@ -268,8 +239,8 @@ onMounted(loadOverview)
 
 .stat-icon-wrap {
   display: inline-flex;
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
@@ -311,15 +282,50 @@ onMounted(loadOverview)
 
 .stat-label {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .stat-value {
   color: var(--text-primary);
-  font-size: 28px;
-  font-weight: 900;
+  font-size: 26px;
+  font-weight: 800;
   line-height: 1;
+}
+
+.stat-meta {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-track {
+  display: block;
+  width: 100%;
+  height: 5px;
+  margin-top: auto;
+  overflow: hidden;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-tertiary);
+}
+
+.stat-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-team);
+}
+
+.stat-track.success span {
+  background: var(--color-success);
+}
+
+.stat-track.warning span {
+  background: var(--color-warning);
+}
+
+.stat-track.info span {
+  background: var(--color-info);
 }
 
 /* Quick Navigation */
@@ -337,8 +343,8 @@ onMounted(loadOverview)
 }
 
 .quick-nav-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-sm);
 }
 
@@ -346,38 +352,16 @@ onMounted(loadOverview)
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: 12px 14px;
   text-decoration: none;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  transition: all var(--transition-normal);
+  border-radius: var(--border-radius-md);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
   cursor: pointer;
 }
 
 .quick-nav-card:hover {
   border-color: var(--border-color-strong);
-  box-shadow: var(--card-shadow);
-  transform: translateX(4px);
-}
-
-.quick-nav-card:hover .quick-nav-icon.accent-blue {
-  box-shadow: 0 0 0 3px rgba(15, 106, 191, 0.1);
-}
-
-.quick-nav-card:hover .quick-nav-icon.accent-green {
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-}
-
-.quick-nav-card:hover .quick-nav-icon.accent-amber {
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
-}
-
-.quick-nav-card:hover .quick-nav-icon.accent-purple {
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.quick-nav-card:hover .quick-nav-icon.accent-slate {
-  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
 }
 
 .quick-nav-card:hover .quick-nav-arrow {
@@ -387,8 +371,8 @@ onMounted(loadOverview)
 
 .quick-nav-icon {
   display: inline-flex;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
@@ -453,12 +437,25 @@ onMounted(loadOverview)
 }
 
 @media (max-width: 768px) {
-  .page-header {
+  .console-header {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .segmented-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .segmented-tabs a {
+    flex: 0 0 auto;
+  }
+
+  .quick-nav-grid {
     grid-template-columns: 1fr;
   }
 }
