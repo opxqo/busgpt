@@ -189,8 +189,8 @@
                 <strong class="spec-val">{{ onboardSeats }} 人</strong>
               </div>
               <div class="spec-item">
-                <span class="spec-label">新增上车</span>
-                <strong class="spec-val">{{ ride.purchase_count || 0 }} 人</strong>
+                <span class="spec-label">解锁查看</span>
+                <strong class="spec-val">{{ ride.purchase_count || 0 }} 次</strong>
               </div>
             </div>
           </section>
@@ -233,7 +233,7 @@
               </div>
               <div class="trust-item">
                 <ReceiptText :size="14" class="trust-icon" />
-                <span>已成功对接 {{ ride.purchase_count || 0 }} 位车友</span>
+                <span>已解锁查看 {{ ride.purchase_count || 0 }} 次</span>
               </div>
               <div class="trust-item">
                 <Clock :size="14" class="trust-icon" />
@@ -577,7 +577,7 @@ const onboardSeats = computed(() => {
 
 const occupiedSeats = computed(() => {
   if (!ride.value) return 0
-  return Math.min(onboardSeats.value + Number(ride.value.purchase_count || 0), totalSeats.value)
+  return Math.min(onboardSeats.value, totalSeats.value)
 })
 
 const remainingSeats = computed(() => {

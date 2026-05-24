@@ -151,7 +151,7 @@ async def test_duplicate_order_returns_existing_paid_unlock(db_session):
 
 
 @pytest.mark.asyncio
-async def test_owner_cannot_buy_and_full_ride_cannot_be_paid(db_session):
+async def test_contact_unlock_does_not_fill_ride(db_session):
     owner = await _user(db_session, 1)
     with pytest.raises(HTTPException) as own_error:
         await orders.create_order(OrderCreate(ride_id=1), owner, db_session)
@@ -159,15 +159,21 @@ async def test_owner_cannot_buy_and_full_ride_cannot_be_paid(db_session):
 
     buyer = await _user(db_session, 2)
     other = await _user(db_session, 3)
-    await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
+    first = await orders.create_order(OrderCreate(ride_id=1), buyer, db_session)
 
     ride = await db_session.get(Ride, 1)
     ride.status = "open"
     await db_session.commit()
 
-    with pytest.raises(HTTPException) as full_error:
-        await orders.create_order(OrderCreate(ride_id=1), other, db_session)
-    assert full_error.value.status_code == 400
+    second = await orders.create_order(OrderCreate(ride_id=1), other, db_session)
+    ride_detail = await rides.get_ride(1, _request(), db_session)
+
+    assert first.status == "paid"
+    assert second.status == "paid"
+    assert ride.status == "open"
+    assert ride_detail.purchase_count == 2
+    assert ride_detail.recruit_seats == 1
+    assert ride_detail.remaining_seats == 1
 
 
 @pytest.mark.asyncio
@@ -284,7 +290,7 @@ async def test_analytics_sales_and_rankings(db_session):
 
     assert overview.paid_orders == 1
     assert overview.total_revenue == Decimal("0.00")
-    assert overview.active_rides == 0
+    assert overview.active_rides == 1
     assert sales_trends[0].orders == 1
     assert sales_trends[0].revenue == Decimal("0.00")
     assert price_trends[0].product == "chatgpt-plus"
@@ -306,4 +312,6 @@ async def test_owner_sales_records_unlock_counts(db_session):
     assert paid.contact_unlocked_at is not None
     assert sales["total_unlocks"] == 1
     assert sales["rides"][0]["unlock_count"] == 1
+    assert sales["rides"][0]["recruit_seats"] == 1
+    assert sales["rides"][0]["remaining_seats"] == 1
     assert sales["rides"][0]["latest_unlock_at"] is not None

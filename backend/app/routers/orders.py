@@ -74,7 +74,7 @@ def build_order_detail(order: Order, ride: Optional[Ride]) -> OrderDetailRespons
     show_contact = order.status == ORDER_STATUS_PAID
     if ride:
         purchase_count = getattr(ride, "_purchase_count", 0)
-        remaining_seats = max(get_available_seats(ride) - purchase_count, 0)
+        remaining_seats = get_available_seats(ride)
 
     return OrderDetailResponse(
         id=order.id,
@@ -168,12 +168,6 @@ async def create_order(
     if ride.status != "open":
         raise HTTPException(status_code=400, detail="该车位已关闭或过期")
 
-    if purchase_count >= get_available_seats(ride):
-        ride.status = "closed"
-        db.add(ride)
-        await db.flush()
-        raise HTTPException(status_code=400, detail="该车位人数已满")
-
     if existing:
         existing.amount = 0
         existing.status = ORDER_STATUS_PAID
@@ -186,9 +180,6 @@ async def create_order(
         existing.idempotency_key = uuid4().hex
         existing.updated_at = datetime.utcnow()
         db.add(existing)
-        if purchase_count + 1 >= get_available_seats(ride):
-            ride.status = "closed"
-            db.add(ride)
         await db.flush()
         ride._purchase_count = purchase_count + 1
         return build_order_detail(existing, ride)
@@ -205,9 +196,6 @@ async def create_order(
         idempotency_key=uuid4().hex,
     )
     db.add(order)
-    if purchase_count + 1 >= get_available_seats(ride):
-        ride.status = "closed"
-        db.add(ride)
     await db.flush()
     ride._purchase_count = purchase_count + 1
     return build_order_detail(order, ride)
@@ -237,11 +225,6 @@ async def pay_order_mock(
         raise HTTPException(status_code=400, detail="该车位已关闭或过期")
 
     purchase_count = await get_ride_purchase_count(db, ride.id)
-    if purchase_count >= get_available_seats(ride):
-        ride.status = "closed"
-        db.add(ride)
-        await db.flush()
-        raise HTTPException(status_code=400, detail="该车位人数已满")
 
     provider = get_payment_provider("mock")
     try:
@@ -257,10 +240,6 @@ async def pay_order_mock(
     order.contact_unlocked_at = payment.paid_at or datetime.utcnow()
     order.updated_at = datetime.utcnow()
     db.add(order)
-
-    if purchase_count + 1 >= get_available_seats(ride):
-        ride.status = "closed"
-        db.add(ride)
 
     await db.flush()
     return await _order_response(db, order)
@@ -349,7 +328,7 @@ async def get_my_sales(
             "revenue": sum(float(o.amount) for o in ride_orders),
             "total_seats": ride.total_seats,
             "recruit_seats": get_onboard_seats(ride),
-            "remaining_seats": max(get_available_seats(ride) - len(ride_orders), 0),
+            "remaining_seats": get_available_seats(ride),
             "status": ride.status,
             "latest_unlock_at": max((o.contact_unlocked_at or o.paid_at or o.created_at for o in ride_orders), default=None),
         })

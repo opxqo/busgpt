@@ -275,7 +275,7 @@ async def list_rides(
                 price_per_month=ride.price_per_month,
                 duration=ride.duration,
                 purchase_count=purchase_count,
-                remaining_seats=max((ride.total_seats or 0) - onboard_seats - purchase_count, 0),
+                remaining_seats=max((ride.total_seats or 0) - onboard_seats, 0),
                 owner_id=ride.owner_id,
                 owner_nickname=row[1],
                 created_at=ride.created_at,
@@ -325,7 +325,7 @@ async def delete_ride(
         )
     ).scalar() or 0
     if paid_order_count > 0:
-        raise HTTPException(status_code=400, detail="该车位存在已付款订单，无法删除")
+        raise HTTPException(status_code=400, detail="该车位存在联系方式解锁记录，无法删除")
 
     await db.delete(ride)
     await db.flush()

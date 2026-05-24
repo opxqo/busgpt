@@ -33,16 +33,14 @@ def get_available_seats(ride: Ride) -> int:
     return max(int(ride.total_seats or 0) - get_onboard_seats(ride), 0)
 
 
-def validate_seats(total_seats: int, onboard_seats: int, product: Product, purchase_count: int = 0) -> None:
+def validate_seats(total_seats: int, onboard_seats: int, product: Product) -> None:
     if total_seats > product.max_seats:
         raise HTTPException(
             status_code=400,
             detail=f"Maximum seats allowed for {product.label} is {product.max_seats}"
         )
-    if onboard_seats >= total_seats:
-        raise HTTPException(status_code=400, detail="上车人数必须小于车位总人数，至少留出 1 个可拼名额")
-    if onboard_seats + purchase_count > total_seats:
-        raise HTTPException(status_code=400, detail="当前总人数不能小于已上车人数与已拼车人数之和")
+    if onboard_seats > total_seats:
+        raise HTTPException(status_code=400, detail="当前上车人数不能超过车位总人数")
 
 
 async def get_ride_purchase_count(db: AsyncSession, ride_id: int) -> int:
@@ -62,7 +60,7 @@ def build_ride_response(
     is_purchased: bool = False,
 ) -> RideDetailResponse:
     onboard_seats = get_onboard_seats(ride)
-    remaining_seats = max((ride.total_seats or 0) - onboard_seats - purchase_count, 0)
+    remaining_seats = get_available_seats(ride)
     warranty_days = ride.warranty_days or default_warranty_days(ride.duration)
     return RideDetailResponse(
         id=ride.id,
@@ -221,6 +219,8 @@ async def create_ride(
         raise HTTPException(status_code=400, detail="Invalid product type")
         
     onboard_seats = ride_in.recruit_seats or max(ride_in.total_seats - 1, 1)
+    if onboard_seats >= ride_in.total_seats:
+        raise HTTPException(status_code=400, detail="发布车位时至少需要留出 1 个可招募名额")
     validate_seats(ride_in.total_seats, onboard_seats, product)
         
     # Calculate expiry date
@@ -336,7 +336,7 @@ async def update_ride(
 
     total_seats = ride_in.total_seats if ride_in.total_seats is not None else ride.total_seats
     onboard_seats = ride_in.recruit_seats if ride_in.recruit_seats is not None else get_onboard_seats(ride)
-    validate_seats(total_seats, onboard_seats, product, purchase_count)
+    validate_seats(total_seats, onboard_seats, product)
 
     if ride_in.title is not None:
         ride.title = ride_in.title
@@ -401,7 +401,7 @@ async def delete_ride(
 
     purchase_count = await get_ride_purchase_count(db, ride_id)
     if purchase_count > 0:
-        raise HTTPException(status_code=400, detail="Ride has paid passengers and cannot be deleted. Close it instead.")
+        raise HTTPException(status_code=400, detail="该车位存在联系方式解锁记录，无法直接删除。请先暂停招募。")
 
     await db.delete(ride)
     await db.commit()

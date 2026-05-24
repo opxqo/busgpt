@@ -185,7 +185,7 @@
                 </div>
               </article>
             </div>
-            <p class="manager-note">已有付费车友的招募不可直接删除，可以先暂停招募，保留订单与联系方式记录。</p>
+            <p class="manager-note">已有联系方式解锁记录的招募不可直接删除，可以先暂停招募，保留订单与联系方式记录。</p>
           </div>
         </div>
 
@@ -197,8 +197,8 @@
               <strong>{{ sales?.total_unlocks || 0 }} 次</strong>
             </div>
             <div class="summary-card">
-              <span>车位总载员</span>
-              <strong>{{ sales?.rides?.reduce((sum, r) => sum + r.order_count, 0) || 0 }} 人</strong>
+              <span>当前上车总人数</span>
+              <strong>{{ sales?.rides?.reduce((sum, r) => sum + r.recruit_seats, 0) || 0 }} 人</strong>
             </div>
           </div>
           <div class="table-wrap">
@@ -218,13 +218,13 @@
                   <td>{{ item.unlock_count || item.order_count }} 人已解锁</td>
                   <td>
                     <div class="seat-metric">
-                      <strong>{{ Math.min(item.recruit_seats + item.order_count, item.total_seats) }}/{{ item.total_seats }} 人</strong>
+                      <strong>{{ item.recruit_seats }}/{{ item.total_seats }} 人</strong>
                       <span>空位 {{ item.remaining_seats }} 个</span>
                     </div>
                   </td>
                 </tr>
                 <tr v-if="!sales?.rides?.length">
-                  <td colspan="3" class="empty-cell">暂无车友加入您的车位</td>
+                  <td colspan="3" class="empty-cell">暂无联系方式解锁记录</td>
                 </tr>
               </tbody>
             </table>
@@ -320,7 +320,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="edit-recruit-seats">上车人数</label>
-            <input id="edit-recruit-seats" v-model.number="rideForm.recruit_seats" class="form-control" type="number" min="1" :max="Math.max(rideForm.total_seats - 1, 1)" required />
+            <input id="edit-recruit-seats" v-model.number="rideForm.recruit_seats" class="form-control" type="number" min="1" :max="rideForm.total_seats" required />
           </div>
           <div class="form-group">
             <label class="form-label" for="edit-duration">有效期限(月)</label>
@@ -420,9 +420,9 @@ const tabs = [
 
 const unlockedOrders = computed(() => orders.value.filter((order) => order.status === 'paid'))
 const rideOnboardSeats = (ride: Ride) => Number(ride.recruit_seats || Math.max((ride.total_seats || 1) - 1, 1))
-const rideOccupiedSeats = (ride: Ride) => Math.min(rideOnboardSeats(ride) + Number(ride.purchase_count || 0), Number(ride.total_seats || 0))
+const rideOccupiedSeats = (ride: Ride) => Math.min(rideOnboardSeats(ride), Number(ride.total_seats || 0))
 const orderOnboardSeats = (order: Order) => Number(order.ride_recruit_seats || Math.max((order.ride_total_seats || 1) - 1, 1))
-const orderOccupiedSeats = (order: Order) => Math.min(orderOnboardSeats(order) + Number(order.ride_purchase_count || 0), Number(order.ride_total_seats || 0))
+const orderOccupiedSeats = (order: Order) => Math.min(orderOnboardSeats(order), Number(order.ride_total_seats || 0))
 
 const editForm = reactive({
   nickname: '',
@@ -548,8 +548,7 @@ const validateRideForm = () => {
   if (!rideForm.title.trim()) return '请填写车位标题'
   if (!rideForm.contact_info.trim() && !rideForm.contact_website.trim()) return '请至少保留一种联系方式'
   if (rideForm.contact_website && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(rideForm.contact_website)) return '个人网站需要以 http:// 或 https:// 开头'
-  if (rideForm.recruit_seats >= rideForm.total_seats) return '上车人数必须小于总人数，至少留出 1 个可拼名额'
-  if (editingRide.value && rideForm.recruit_seats + Number(editingRide.value.purchase_count || 0) > rideForm.total_seats) return '上车人数与已新增人数不能超过总人数'
+  if (rideForm.recruit_seats > rideForm.total_seats) return '上车人数不能超过总人数'
   return ''
 }
 

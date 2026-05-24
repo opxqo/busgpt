@@ -41,13 +41,13 @@
       <!-- GMV Section -->
       <section class="gmv-section surface-card anim-fade-up anim-d2">
         <h2 class="section-title">平台 GMV 估算</h2>
-        <p class="section-desc">基于车位价格、时长和已拼座位数，估算平台促成的拼车交易规模</p>
+        <p class="section-desc">基于联系方式解锁订单，估算平台促成的交易规模</p>
 
         <div class="gmv-cards">
           <div class="gmv-card gmv-primary">
             <span class="gmv-label">已成交 GMV</span>
             <strong class="gmv-value">¥{{ formatMoney(animGmvExercised) }}</strong>
-            <span class="gmv-sub">{{ gmv.exercised_count }} 个座位已拼</span>
+            <span class="gmv-sub">{{ gmv.exercised_count }} 次联系方式解锁</span>
           </div>
           <div class="gmv-card">
             <span class="gmv-label">潜在 GMV</span>
@@ -57,7 +57,7 @@
           <div class="gmv-card">
             <span class="gmv-label">剩余 GMV</span>
             <strong class="gmv-value">¥{{ formatMoney(animGmvRemaining) }}</strong>
-            <span class="gmv-sub">{{ gmv.potential_count - gmv.exercised_count }} 个座位待填充</span>
+            <span class="gmv-sub">{{ gmv.potential_count - gmv.exercised_count }} 个潜在名额</span>
           </div>
           <div class="gmv-card">
             <span class="gmv-label">官方基准 GMV</span>
@@ -74,7 +74,7 @@
               <tr>
                 <th>产品</th>
                 <th>车位数</th>
-                <th>已拼/总座位</th>
+                <th>解锁/招募名额</th>
                 <th class="text-right">已成交 GMV</th>
                 <th class="text-right">潜在 GMV</th>
                 <th class="text-right">剩余 GMV</th>

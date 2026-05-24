@@ -109,7 +109,7 @@
             <td>{{ ride.recruit_seats }}人已上车</td>
             <td>
               <div class="seat-metric">
-                <strong>{{ Math.min(ride.recruit_seats + ride.purchase_count, ride.total_seats) }}/{{ ride.total_seats }}</strong>
+                <strong>{{ ride.recruit_seats }}/{{ ride.total_seats }}</strong>
                 <span class="remaining">余{{ ride.remaining_seats }}</span>
               </div>
             </td>
@@ -247,7 +247,7 @@ const deleteRide = async (ride: AdminRideListItem) => {
     total.value--
     message.value = `已删除车位「${ride.title}」`
   } catch {
-    message.value = '删除失败，可能存在已付款订单'
+    message.value = '删除失败，可能存在联系方式解锁记录'
   }
 }
 

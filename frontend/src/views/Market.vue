@@ -295,8 +295,7 @@ const statusTone = (status: Ride['status']) => {
 
 const occupiedSeats = (ride: Ride) => {
   const total = Number(ride.total_seats || 0)
-  const base = Number(ride.recruit_seats || Math.max(total - 1, 1))
-  return Math.min(base + Number(ride.purchase_count || 0), total)
+  return Math.min(Number(ride.recruit_seats || Math.max(total - 1, 1)), total)
 }
 
 const remainingSeats = (ride: Ride) => {

@@ -226,7 +226,7 @@ async def get_ride_rankings(
                 owner_nickname=row[7],
                 orders=orders,
                 revenue=_decimal(row[9]),
-                remaining_seats=max((row[3] or 0) - onboard_seats - orders, 0),
+                remaining_seats=max((row[3] or 0) - onboard_seats, 0),
             )
         )
     return items
