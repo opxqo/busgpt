@@ -141,6 +141,69 @@ def _ensure_nullable_column(conn, table_name: str, column_name: str, definition:
         conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} MODIFY COLUMN {_quote_identifier(column_name)} {definition}"))
 
 
+def _table_exists(conn, table_name: str) -> bool:
+    exists = conn.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = :schema
+              AND TABLE_NAME = :table_name
+            """
+        ),
+        {"schema": settings.database_name, "table_name": table_name},
+    ).scalar()
+    return bool(exists)
+
+
+def _column_exists(conn, table_name: str, column_name: str) -> bool:
+    exists = conn.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = :schema
+              AND TABLE_NAME = :table_name
+              AND COLUMN_NAME = :column_name
+            """
+        ),
+        {
+            "schema": settings.database_name,
+            "table_name": table_name,
+            "column_name": column_name,
+        },
+    ).scalar()
+    return bool(exists)
+
+
+def _repair_datetime_columns_before_create_all():
+    if not _is_mysql_database():
+        return
+
+    datetime_columns = [
+        ("users", "created_at", "DATETIME NOT NULL"),
+        ("users", "updated_at", "DATETIME NOT NULL"),
+        ("rides", "created_at", "DATETIME NOT NULL"),
+        ("rides", "updated_at", "DATETIME NOT NULL"),
+        ("orders", "created_at", "DATETIME NOT NULL"),
+        ("orders", "updated_at", "DATETIME NOT NULL"),
+        ("ride_members", "joined_at", "DATETIME NOT NULL"),
+        ("activation_tokens", "created_at", "DATETIME NOT NULL"),
+    ]
+
+    with sync_engine.begin() as conn:
+        for table_name, column_name, definition in datetime_columns:
+            if not _table_exists(conn, table_name) or not _column_exists(conn, table_name, column_name):
+                continue
+            logger.info("Repairing datetime column default before create_all: %s.%s", table_name, column_name)
+            conn.execute(
+                text(
+                    f"ALTER TABLE {_quote_identifier(table_name)} "
+                    f"MODIFY COLUMN {_quote_identifier(column_name)} {definition}"
+                )
+            )
+
+
 def _run_lightweight_migrations():
     if not _is_mysql_database():
         logger.info("Skipping lightweight migrations because database is not MySQL")
@@ -162,7 +225,7 @@ def _run_lightweight_migrations():
         _ensure_column(conn, "orders", "contact_unlocked_at", "DATETIME NULL")
         _ensure_column(conn, "orders", "expired_at", "DATETIME NULL")
         _ensure_column(conn, "orders", "idempotency_key", "VARCHAR(64)")
-        _ensure_column(conn, "orders", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+        _ensure_column(conn, "orders", "updated_at", "DATETIME NULL")
         _ensure_column(conn, "users", "email", "VARCHAR(255) NULL")
         _ensure_column(conn, "users", "email_verified_at", "DATETIME NULL")
         _ensure_nullable_column(conn, "users", "phone", "VARCHAR(20) NULL")
@@ -234,6 +297,7 @@ def init_db():
     from app.models.activation_token import ActivationToken
 
     # Create tables
+    _repair_datetime_columns_before_create_all()
     logger.info("Creating missing tables with SQLAlchemy metadata")
     Base.metadata.create_all(bind=sync_engine)
     logger.info("Table creation step completed")

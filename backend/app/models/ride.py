@@ -1,4 +1,6 @@
-from sqlalchemy import Column, BigInteger, String, Numeric, Integer, Text, DateTime, ForeignKey, func
+from datetime import datetime
+
+from sqlalchemy import Column, BigInteger, String, Numeric, Integer, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -19,9 +21,9 @@ class Ride(Base):
     contact_website = Column(String(255), default="")
     contact_price = Column(Numeric(10, 2), nullable=False, default=0)  # Price to view contact info (CNY)
     status = Column(String(20), nullable=False, default="open", index=True)  # open, closed, expired
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     owner = relationship("User", back_populates="rides_owned")

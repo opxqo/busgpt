@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, BigInteger, Integer, String, Numeric, DateTime, ForeignKey, func, UniqueConstraint
+from sqlalchemy import Column, BigInteger, Integer, String, Numeric, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -22,8 +22,8 @@ class Order(Base):
     contact_unlocked_at = Column(DateTime, nullable=True, index=True)
     expired_at = Column(DateTime, nullable=True, index=True)
     idempotency_key = Column(String(64), nullable=True, index=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow, server_default=func.now())
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="orders")

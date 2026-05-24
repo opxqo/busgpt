@@ -1,4 +1,6 @@
-from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, UniqueConstraint, func
+from datetime import datetime
+
+from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import backref, relationship
 from app.database import Base
 
@@ -9,7 +11,7 @@ class RideMember(Base):
     ride_id = Column(BigInteger, ForeignKey("rides.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     role = Column(String(20), nullable=False, default="passenger")  # owner, passenger
-    joined_at = Column(DateTime, nullable=False, server_default=func.now())
+    joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     ride = relationship("Ride", backref=backref("members", cascade="all, delete-orphan"))

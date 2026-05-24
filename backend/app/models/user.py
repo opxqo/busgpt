@@ -1,4 +1,6 @@
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String, func
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -15,8 +17,8 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     password_hash = Column(String(255), nullable=False)
     email_verified_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     rides_owned = relationship("Ride", back_populates="owner", cascade="all, delete-orphan")
