@@ -10,8 +10,10 @@ from app.config import settings
 
 logger = logging.getLogger("busgpt.database")
 
-# Create async engine and sessionmaker
-async_engine = create_async_engine(settings.async_database_url, echo=True, pool_pre_ping=True)
+# Create async engine and sessionmaker.
+# SQLAlchemy's pool_pre_ping is currently incompatible with aiomysql's ping()
+# signature in this stack, causing intermittent TypeError on connection reuse.
+async_engine = create_async_engine(settings.async_database_url, echo=True, pool_recycle=1800)
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
     autocommit=False,
