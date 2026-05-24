@@ -180,28 +180,54 @@ def _repair_datetime_columns_before_create_all():
     if not _is_mysql_database():
         return
 
-    datetime_columns = [
-        ("users", "created_at", "DATETIME NOT NULL"),
-        ("users", "updated_at", "DATETIME NOT NULL"),
-        ("rides", "created_at", "DATETIME NOT NULL"),
-        ("rides", "updated_at", "DATETIME NOT NULL"),
-        ("orders", "created_at", "DATETIME NOT NULL"),
-        ("orders", "updated_at", "DATETIME NOT NULL"),
-        ("ride_members", "joined_at", "DATETIME NOT NULL"),
-        ("activation_tokens", "created_at", "DATETIME NOT NULL"),
-    ]
+    datetime_columns_by_table = {
+        "users": [
+            ("created_at", "DATETIME NOT NULL"),
+            ("updated_at", "DATETIME NOT NULL"),
+        ],
+        "rides": [
+            ("created_at", "DATETIME NOT NULL"),
+            ("updated_at", "DATETIME NOT NULL"),
+        ],
+        "orders": [
+            ("created_at", "DATETIME NOT NULL"),
+            ("updated_at", "DATETIME NOT NULL"),
+            ("paid_at", "DATETIME NULL"),
+            ("contact_unlocked_at", "DATETIME NULL"),
+            ("expired_at", "DATETIME NULL"),
+        ],
+        "ride_members": [
+            ("joined_at", "DATETIME NOT NULL"),
+        ],
+        "activation_tokens": [
+            ("created_at", "DATETIME NOT NULL"),
+            ("expires_at", "DATETIME NOT NULL"),
+        ],
+    }
 
     with sync_engine.begin() as conn:
-        for table_name, column_name, definition in datetime_columns:
-            if not _table_exists(conn, table_name) or not _column_exists(conn, table_name, column_name):
+        for table_name, columns in datetime_columns_by_table.items():
+            if not _table_exists(conn, table_name):
                 continue
-            logger.info("Repairing datetime column default before create_all: %s.%s", table_name, column_name)
-            conn.execute(
-                text(
-                    f"ALTER TABLE {_quote_identifier(table_name)} "
-                    f"MODIFY COLUMN {_quote_identifier(column_name)} {definition}"
-                )
+
+            existing_columns = [
+                (column_name, definition)
+                for column_name, definition in columns
+                if _column_exists(conn, table_name, column_name)
+            ]
+            if not existing_columns:
+                continue
+
+            logger.info(
+                "Repairing datetime column defaults before create_all: %s.%s",
+                table_name,
+                ",".join(column_name for column_name, _ in existing_columns),
             )
+            modifications = [
+                f"MODIFY COLUMN {_quote_identifier(column_name)} {definition}"
+                for column_name, definition in existing_columns
+            ]
+            conn.execute(text(f"ALTER TABLE {_quote_identifier(table_name)} {', '.join(modifications)}"))
 
 
 def _run_lightweight_migrations():

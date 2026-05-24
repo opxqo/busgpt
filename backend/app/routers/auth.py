@@ -1,4 +1,5 @@
 import secrets
+import logging
 from hashlib import sha256
 from datetime import datetime, timedelta
 
@@ -33,6 +34,7 @@ from app.utils.email import send_activation_email
 from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger("busgpt.auth")
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login-oauth2"
@@ -43,6 +45,15 @@ ACTIVATION_TOKEN_EXPIRE_HOURS = 24
 
 def _activation_token_hash(token: str) -> str:
     return sha256(token.encode("utf-8")).hexdigest()
+
+
+def _try_send_activation_email(email: str, token: str) -> bool:
+    try:
+        send_activation_email(email, token)
+        return True
+    except Exception:
+        logger.exception("Activation email delivery failed for %s", email)
+        return False
 
 
 async def get_current_user(
@@ -156,8 +167,11 @@ async def register(
     await db.commit()
     await db.refresh(db_user)
 
-    send_activation_email(db_user.email, token)
+    email_sent = _try_send_activation_email(db_user.email, token)
     record_auth_success(rate_limit_key)
+
+    if not email_sent:
+        logger.warning("User registered but activation email was not delivered: %s", db_user.email)
 
     return db_user
 
@@ -309,8 +323,11 @@ async def resend_activation(
     token = await _generate_activation_token(db, user.id)
     await db.commit()
 
-    send_activation_email(user.email, token)
+    email_sent = _try_send_activation_email(user.email, token)
     record_auth_success(rate_limit_key)
+
+    if not email_sent:
+        return {"detail": "激活邮件暂时发送失败，请稍后重试或联系管理员。"}
 
     return {"detail": "激活邮件已重新发送，请查收。"}
 
