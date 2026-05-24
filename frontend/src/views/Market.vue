@@ -938,13 +938,26 @@ onUnmounted(() => {
   .market-page {
     gap: var(--spacing-md);
   }
-  .page-header {
+  .console-header {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-sm);
+    padding-bottom: 0;
+  }
+  .console-title-block {
+    width: 100%;
+    min-width: 0;
+  }
+  .page-title,
+  .page-subtitle,
+  .eyebrow {
+    max-width: 100%;
+    overflow-wrap: normal;
+    word-break: keep-all;
   }
   .publish-btn {
     width: 100%;
+    justify-content: center;
   }
   .market-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
