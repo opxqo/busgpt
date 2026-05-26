@@ -116,8 +116,9 @@
             <span>退出登录</span>
           </button>
         </template>
-        <router-link v-else to="/login" class="login-btn" @click="mobileOpen = false">
-          登录 / 注册
+        <router-link v-else to="/login" class="login-btn" title="登录 / 注册" @click="mobileOpen = false">
+          <LogIn :size="14" class="login-icon" />
+          <span>登录 / 注册</span>
         </router-link>
       </div>
     </div>
@@ -127,7 +128,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Boxes, Home, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
+import { Boxes, Home, LogIn, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
 import logoMarkUrl from '../../assets/logo-mark.svg'
 
@@ -301,7 +302,7 @@ const handleLogout = () => {
 }
 
 .brand-block {
-  padding: 0 34px var(--spacing-md) 6px;
+  padding: 0 4px var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -326,26 +327,26 @@ const handleLogout = () => {
 .sidebar-collapse-btn {
   display: inline-flex;
   position: absolute;
-  top: 25px;
-  right: 12px;
+  top: 28px;
+  right: 14px;
   z-index: 2;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-full);
-  background: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
   color: var(--text-muted);
   cursor: pointer;
-  box-shadow: var(--card-shadow-hover);
+  box-shadow: none;
   transition: all var(--transition-fast);
 }
 
 .sidebar-collapse-btn:hover {
   color: var(--text-primary);
   border-color: var(--border-color-strong);
-  background: var(--bg-primary);
+  background: var(--bg-tertiary);
   transform: translateY(-1px);
 }
 
@@ -392,9 +393,9 @@ const handleLogout = () => {
   display: flex;
   min-height: 34px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 9px;
-  padding: 0 10px;
+  padding: 0 12px;
 }
 
 .nav-item-inner span {
@@ -618,6 +619,10 @@ const handleLogout = () => {
   overflow: hidden;
 }
 
+.login-icon {
+  flex: 0 0 auto;
+}
+
 .login-btn::after {
   content: '';
   position: absolute;
@@ -679,7 +684,7 @@ const handleLogout = () => {
 .sidebar.collapsed .theme-toggle-switch,
 .sidebar.collapsed .user-info,
 .sidebar.collapsed .logout-btn span,
-.sidebar.collapsed .login-btn {
+.sidebar.collapsed .login-btn span {
   display: none;
 }
 
@@ -707,6 +712,7 @@ const handleLogout = () => {
 
 .sidebar.collapsed .theme-toggle-row,
 .sidebar.collapsed .user-card,
+.sidebar.collapsed .login-btn,
 .sidebar.collapsed .logout-btn {
   width: 44px;
   min-height: 40px;
@@ -720,15 +726,9 @@ const handleLogout = () => {
 
 .sidebar.collapsed .login-btn {
   display: inline-flex;
-  width: 44px;
-  min-height: 40px;
-  padding: 0;
-  font-size: 0;
-}
-
-.sidebar.collapsed .login-btn::before {
-  content: '登';
-  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
 }
 
 .sidebar.collapsed .user-card {

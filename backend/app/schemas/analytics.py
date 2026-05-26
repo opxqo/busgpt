@@ -13,6 +13,12 @@ class SalesOverviewResponse(BaseModel):
     average_order_amount: Decimal
 
 
+class PlatformStatsResponse(BaseModel):
+    total_users: int
+    active_rides: int
+    total_rides: int
+
+
 class SalesTrendPoint(BaseModel):
     date: date
     orders: int

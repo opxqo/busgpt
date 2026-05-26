@@ -8,6 +8,12 @@ export interface SalesOverview {
   average_order_amount: number
 }
 
+export interface PlatformStats {
+  total_users: number
+  active_rides: number
+  total_rides: number
+}
+
 export interface PriceTrendPoint {
   date: string
   product: string
@@ -63,6 +69,10 @@ export interface GmvResponse {
 }
 
 export const analyticsApi = {
+  getPlatformStats() {
+    return apiClient.get<PlatformStats>('/analytics/platform/stats')
+  },
+
   getSalesOverview(days = 30) {
     return apiClient.get<SalesOverview>('/analytics/sales/overview', { params: { days } })
   },

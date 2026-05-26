@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.analytics import (
     GmvByProduct,
     GmvResponse,
+    PlatformStatsResponse,
     PriceTrendPoint,
     ProductRankingItem,
     RideRankingItem,
@@ -35,6 +36,25 @@ def _decimal(value) -> Decimal:
     if value is None:
         return Decimal("0")
     return Decimal(str(value))
+
+
+@router.get("/platform/stats", response_model=PlatformStatsResponse)
+async def get_platform_stats(
+    db: AsyncSession = Depends(get_db),
+):
+    total_users = (
+        await db.execute(select(func.count(User.id)).filter(User.is_active.is_(True)))
+    ).scalar() or 0
+    active_rides = (
+        await db.execute(select(func.count(Ride.id)).filter(Ride.status == "open"))
+    ).scalar() or 0
+    total_rides = (await db.execute(select(func.count(Ride.id)))).scalar() or 0
+
+    return PlatformStatsResponse(
+        total_users=total_users,
+        active_rides=active_rides,
+        total_rides=total_rides,
+    )
 
 
 @router.get("/sales/overview", response_model=SalesOverviewResponse)

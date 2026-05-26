@@ -1,10 +1,7 @@
 <template>
   <div class="login-page container">
-    <!-- Background ambient shapes -->
+    <!-- Background texture -->
     <div class="login-ambient">
-      <div class="ambient-shape shape-1"></div>
-      <div class="ambient-shape shape-2"></div>
-      <div class="ambient-shape shape-3"></div>
     </div>
 
     <div class="login-wrapper surface-card">
@@ -137,7 +134,7 @@
         <div class="trust-divider"></div>
         <div class="trust-item">
           <Users :size="14" />
-          <span>已有 2,400+ 用户</span>
+          <span>{{ formattedUserCount }}</span>
         </div>
       </div>
     </div>
@@ -149,6 +146,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Check, CheckCircle, ShieldCheck, Users, MailCheck } from '@lucide/vue'
 import { useUserStore } from '../stores/user'
+import { analyticsApi } from '../api/analytics'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -159,6 +157,7 @@ const agreementChecked = ref(false)
 const registrationSuccess = ref(false)
 const resendLoading = ref(false)
 const resendMessage = ref('')
+const totalUsers = ref<number | null>(null)
 
 const showActivationSuccess = computed(() => route.query.activated === 'true')
 
@@ -166,6 +165,11 @@ const form = reactive({
   email: '',
   nickname: '',
   password: '',
+})
+
+const formattedUserCount = computed(() => {
+  if (totalUsers.value === null) return '用户增长中'
+  return `已有 ${new Intl.NumberFormat('zh-CN').format(totalUsers.value)} 位用户`
 })
 
 const switchMode = (login: boolean) => {
@@ -213,7 +217,17 @@ onMounted(() => {
   if (route.query.activated === 'true') {
     isLoginMode.value = true
   }
+  loadPlatformStats()
 })
+
+const loadPlatformStats = async () => {
+  try {
+    const res = await analyticsApi.getPlatformStats()
+    totalUsers.value = res.data.total_users
+  } catch (err) {
+    console.error('Failed to load platform stats', err)
+  }
+}
 </script>
 
 <style scoped>
@@ -225,55 +239,38 @@ onMounted(() => {
   padding: var(--spacing-xl) 0;
   position: relative;
   overflow: hidden;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 70%, transparent), var(--bg-primary) 72%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(59, 130, 246, 0.04) 48%, rgba(139, 92, 246, 0.04));
 }
 
-/* Background ambient shapes */
+/* Background texture */
 .login-ambient {
   position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  background:
+    linear-gradient(var(--border-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.28;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
 }
 
-.ambient-shape {
+.login-ambient::after {
+  content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.12;
-}
-
-.shape-1 {
-  width: 400px;
-  height: 400px;
-  background: var(--color-plus);
-  top: -100px;
-  right: -80px;
-  animation: ambientFloat 20s ease-in-out infinite;
-}
-
-.shape-2 {
-  width: 300px;
-  height: 300px;
-  background: var(--color-team);
-  bottom: -60px;
-  left: -60px;
-  animation: ambientFloat 25s ease-in-out infinite reverse;
-}
-
-.shape-3 {
-  width: 200px;
-  height: 200px;
-  background: var(--color-pro);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: ambientFloat 18s ease-in-out infinite 5s;
-}
-
-@keyframes ambientFloat {
-  0%, 100% { transform: translate(0, 0); }
-  33% { transform: translate(30px, -20px); }
-  66% { transform: translate(-20px, 15px); }
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 16px,
+      color-mix(in srgb, var(--color-team) 12%, transparent) 16px,
+      color-mix(in srgb, var(--color-team) 12%, transparent) 17px
+    );
+  opacity: 0.18;
 }
 
 .login-wrapper {
@@ -281,10 +278,13 @@ onMounted(() => {
   max-width: 420px;
   padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-lg);
   border-color: var(--border-color-strong);
-  box-shadow: var(--card-shadow-hover);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.08), var(--card-shadow);
   position: relative;
   overflow: hidden;
   animation: cardEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 @keyframes cardEntrance {
@@ -659,13 +659,19 @@ onMounted(() => {
 }
 
 /* Dark mode */
-:global([data-theme="dark"] .ambient-shape ){
-  opacity: 0.08;
-  filter: blur(100px);
+:global([data-theme="dark"] .login-page ){
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 78%, transparent), var(--bg-primary) 74%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(96, 165, 250, 0.04) 48%, rgba(167, 139, 250, 0.04));
+}
+
+:global([data-theme="dark"] .login-ambient ){
+  opacity: 0.16;
 }
 
 :global([data-theme="dark"] .login-wrapper ){
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32), var(--card-shadow);
 }
 
 :global([data-theme="dark"] .login-form .form-group:nth-child(1) .form-control:focus ){
@@ -689,10 +695,6 @@ onMounted(() => {
   border-color: var(--border-color-strong);
 }
 
-:global([data-theme="dark"] .ambient-shape.shape-3 ){
-  opacity: 0.06;
-}
-
 /* Responsive */
 @media (max-width: 480px) {
   .login-wrapper {
@@ -709,8 +711,8 @@ onMounted(() => {
     font-size: 20px;
   }
 
-  .ambient-shape {
-    opacity: 0.06;
+  .login-ambient {
+    opacity: 0.16;
   }
 
   .login-trust {
