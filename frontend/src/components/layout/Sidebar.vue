@@ -20,6 +20,16 @@
   <aside class="sidebar" :class="{ open: mobileOpen, collapsed: sidebarCollapsed }">
     <button class="sidebar-scrim" type="button" aria-label="关闭导航" @click="mobileOpen = false"></button>
     <div class="sidebar-panel">
+      <button
+        class="sidebar-collapse-btn"
+        type="button"
+        :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+        :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+        @click="toggleSidebar"
+      >
+        <PanelLeftOpen v-if="sidebarCollapsed" :size="15" />
+        <PanelLeftClose v-else :size="15" />
+      </button>
       <div class="brand-block">
         <router-link to="/" class="brand" @click="mobileOpen = false">
           <span class="logo-mark" aria-hidden="true">
@@ -30,16 +40,6 @@
             <small>AI 订阅拼车平台</small>
           </span>
         </router-link>
-        <button
-          class="sidebar-collapse-btn"
-          type="button"
-          :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-          :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-          @click="toggleSidebar"
-        >
-          <PanelLeftOpen v-if="sidebarCollapsed" :size="16" />
-          <PanelLeftClose v-else :size="16" />
-        </button>
       </div>
 
       <nav class="nav-list" aria-label="主导航">
@@ -297,13 +297,10 @@ const handleLogout = () => {
   flex-direction: column;
   padding: 18px 12px;
   overflow-x: hidden;
+  position: relative;
 }
 
 .brand-block {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   padding: 0 6px var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
 }
@@ -328,23 +325,28 @@ const handleLogout = () => {
 
 .sidebar-collapse-btn {
   display: inline-flex;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  position: absolute;
+  top: 26px;
+  right: -13px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-inset);
+  border-radius: var(--border-radius-full);
+  background: var(--bg-secondary);
   color: var(--text-muted);
   cursor: pointer;
+  box-shadow: var(--card-shadow-hover);
   transition: all var(--transition-fast);
 }
 
 .sidebar-collapse-btn:hover {
   color: var(--text-primary);
   border-color: var(--border-color-strong);
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
+  transform: translateX(1px);
 }
 
 .nav-list {
@@ -659,7 +661,6 @@ const handleLogout = () => {
 }
 
 .sidebar.collapsed .brand-block {
-  flex-direction: column;
   padding-right: 0;
   padding-left: 0;
 }
@@ -757,7 +758,6 @@ const handleLogout = () => {
   }
 
   .sidebar.collapsed .brand-block {
-    flex-direction: row;
     padding: 0 6px var(--spacing-md);
   }
 
