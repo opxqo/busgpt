@@ -237,11 +237,22 @@
             <form class="settings-form settings-panel" @submit.prevent="handleSave">
               <div class="settings-panel-heading">
                 <h3>基本信息</h3>
-                <p>更新账户公开展示昵称。</p>
+                <p>更新账户公开展示昵称和头像。</p>
+              </div>
+              <div class="avatar-setting">
+                <img :src="avatarPreviewUrl" alt="头像预览" class="avatar-preview" @error="handleAvatarError" />
+                <div>
+                  <strong>头像预览</strong>
+                  <span>支持 HTTPS 图片链接，留空则使用默认头像。</span>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label" for="nickname">设置新的昵称</label>
                 <input id="nickname" v-model.trim="editForm.nickname" class="form-control" type="text" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="avatar">头像图片链接</label>
+                <input id="avatar" v-model.trim="editForm.avatar" class="form-control" type="url" placeholder="https://example.com/avatar.png" />
               </div>
               <button type="submit" class="btn btn-primary submit-btn-save" :disabled="saving">
                 <Save :size="16" />
@@ -426,6 +437,7 @@ const orderOccupiedSeats = (order: Order) => Math.min(orderOnboardSeats(order), 
 
 const editForm = reactive({
   nickname: '',
+  avatar: '',
 })
 
 const passwordForm = reactive({
@@ -454,6 +466,8 @@ const formattedRegisterDate = computed(() => {
   return formatDate(userStore.user.created_at)
 })
 
+const avatarPreviewUrl = computed(() => editForm.avatar || userStore.user?.avatar || defaultAvatar)
+
 const loadProfileData = async () => {
   loading.value = true
   try {
@@ -466,6 +480,7 @@ const loadProfileData = async () => {
     ownedRides.value = ownedRes.data
     sales.value = salesRes.data
     editForm.nickname = userStore.user?.nickname || ''
+    editForm.avatar = userStore.user?.avatar || ''
   } catch (err) {
     console.error('Failed to load profile data', err)
   } finally {
@@ -480,12 +495,19 @@ const handleSave = async () => {
   saving.value = true
   saveMessage.value = ''
   try {
-    await userStore.updateProfile(editForm.nickname)
+    await userStore.updateProfile(editForm.nickname, editForm.avatar)
     saveMessage.value = '基本信息已成功更新'
   } catch {
     saveMessage.value = '更新失败，请稍后重试'
   } finally {
     saving.value = false
+  }
+}
+
+const handleAvatarError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  if (target.src !== defaultAvatar) {
+    target.src = defaultAvatar
   }
 }
 
@@ -1476,6 +1498,44 @@ const formatDate = (dateText: string) => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.avatar-setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+}
+
+.avatar-preview {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--border-color-strong);
+  background: var(--bg-secondary);
+  object-fit: cover;
+}
+
+.avatar-setting strong,
+.avatar-setting span {
+  display: block;
+}
+
+.avatar-setting strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.avatar-setting span {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .submit-btn-save {
