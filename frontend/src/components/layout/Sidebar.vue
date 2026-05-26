@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <aside class="sidebar" :class="{ open: mobileOpen }">
+  <aside class="sidebar" :class="{ open: mobileOpen, collapsed: sidebarCollapsed }">
     <button class="sidebar-scrim" type="button" aria-label="关闭导航" @click="mobileOpen = false"></button>
     <div class="sidebar-panel">
       <div class="brand-block">
@@ -30,6 +30,16 @@
             <small>AI 订阅拼车平台</small>
           </span>
         </router-link>
+        <button
+          class="sidebar-collapse-btn"
+          type="button"
+          :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+          :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+          @click="toggleSidebar"
+        >
+          <PanelLeftOpen v-if="sidebarCollapsed" :size="16" />
+          <PanelLeftClose v-else :size="16" />
+        </button>
       </div>
 
       <nav class="nav-list" aria-label="主导航">
@@ -39,6 +49,7 @@
           :to="item.to"
           class="nav-item"
           active-class="active"
+          :title="item.label"
           @click="mobileOpen = false"
         >
           <div class="nav-item-inner">
@@ -56,6 +67,7 @@
           :to="item.to"
           class="nav-item"
           active-class="active"
+          :title="item.label"
           @click="mobileOpen = false"
         >
           <div class="nav-item-inner">
@@ -86,20 +98,20 @@
             <Moon v-else :size="15" />
             <span>{{ theme === 'dark' ? '暗色模式' : '亮色模式' }}</span>
           </span>
-          <button type="button" class="theme-toggle-switch" :aria-label="theme === 'light' ? '切换至暗色模式' : '切换至亮色模式'" @click="toggleTheme">
+          <button type="button" class="theme-toggle-switch" :aria-label="theme === 'light' ? '切换至暗色模式' : '切换至亮色模式'" :title="theme === 'light' ? '切换至暗色模式' : '切换至亮色模式'" @click="toggleTheme">
             <span class="toggle-slider" :class="{ 'is-dark': theme === 'dark' }"></span>
           </button>
         </div>
 
         <template v-if="userStore.isLoggedIn">
-          <router-link to="/profile" class="user-card" @click="mobileOpen = false">
+          <router-link to="/profile" class="user-card" :title="userStore.user?.nickname || '我的账户'" @click="mobileOpen = false">
             <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar" />
             <div class="user-info">
               <strong :title="userStore.user?.nickname || ''">{{ userStore.user?.nickname }}</strong>
               <small :title="userStore.user?.email || ''">{{ userStore.user?.email }}</small>
             </div>
           </router-link>
-          <button type="button" class="logout-btn" @click="handleLogout">
+          <button type="button" class="logout-btn" title="退出登录" @click="handleLogout">
             <LogOut :size="14" />
             <span>退出登录</span>
           </button>
@@ -115,13 +127,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Boxes, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
+import { Boxes, Home, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
 import logoMarkUrl from '../../assets/logo-mark.svg'
 
 const userStore = useUserStore()
 const router = useRouter()
 const mobileOpen = ref(false)
+const sidebarCollapsed = ref(false)
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
 
 const theme = ref<'light' | 'dark'>('light')
@@ -137,6 +150,21 @@ const initTheme = () => {
   document.documentElement.setAttribute('data-theme', theme.value)
 }
 
+const applySidebarState = () => {
+  document.documentElement.classList.toggle('sidebar-collapsed', sidebarCollapsed.value)
+}
+
+const initSidebar = () => {
+  sidebarCollapsed.value = localStorage.getItem('sidebar-collapsed') === 'true'
+  applySidebarState()
+}
+
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  localStorage.setItem('sidebar-collapsed', String(sidebarCollapsed.value))
+  applySidebarState()
+}
+
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
   document.documentElement.setAttribute('data-theme', theme.value)
@@ -145,6 +173,7 @@ const toggleTheme = () => {
 
 onMounted(() => {
   initTheme()
+  initSidebar()
 })
 
 const navItems = computed(() => [
@@ -249,6 +278,7 @@ const handleLogout = () => {
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
   box-shadow: var(--sidebar-shadow);
+  transition: width var(--transition-normal);
 }
 
 :global([data-theme="dark"] .sidebar ){
@@ -266,9 +296,14 @@ const handleLogout = () => {
   height: 100%;
   flex-direction: column;
   padding: 18px 12px;
+  overflow-x: hidden;
 }
 
 .brand-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 0 6px var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
 }
@@ -289,6 +324,27 @@ const handleLogout = () => {
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
+}
+
+.sidebar-collapse-btn {
+  display: inline-flex;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-color-strong);
+  background: var(--bg-tertiary);
 }
 
 .nav-list {
@@ -335,6 +391,10 @@ const handleLogout = () => {
   align-items: center;
   gap: 9px;
   padding: 0 10px;
+}
+
+.nav-item-inner span {
+  white-space: nowrap;
 }
 
 .nav-icon {
@@ -593,6 +653,91 @@ const handleLogout = () => {
   border-color: rgba(239, 68, 68, 0.2);
 }
 
+.sidebar.collapsed .sidebar-panel {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.sidebar.collapsed .brand-block {
+  flex-direction: column;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.sidebar.collapsed .brand {
+  justify-content: center;
+}
+
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .nav-item-inner span,
+.sidebar.collapsed .nav-divider,
+.sidebar.collapsed .legal-links,
+.sidebar.collapsed .theme-label span,
+.sidebar.collapsed .theme-toggle-switch,
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .logout-btn span,
+.sidebar.collapsed .login-btn {
+  display: none;
+}
+
+.sidebar.collapsed .nav-list {
+  align-items: center;
+}
+
+.sidebar.collapsed .admin-nav {
+  width: 100%;
+  align-items: center;
+}
+
+.sidebar.collapsed .nav-item {
+  width: 44px;
+}
+
+.sidebar.collapsed .nav-item-inner {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  align-items: center;
+}
+
+.sidebar.collapsed .theme-toggle-row,
+.sidebar.collapsed .user-card,
+.sidebar.collapsed .logout-btn {
+  width: 44px;
+  min-height: 40px;
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar.collapsed .theme-toggle-row {
+  display: none;
+}
+
+.sidebar.collapsed .login-btn {
+  display: inline-flex;
+  width: 44px;
+  min-height: 40px;
+  padding: 0;
+  font-size: 0;
+}
+
+.sidebar.collapsed .login-btn::before {
+  content: '登';
+  font-size: 13px;
+}
+
+.sidebar.collapsed .user-card {
+  border-radius: var(--border-radius-lg);
+}
+
+.sidebar.collapsed .avatar {
+  flex-basis: 28px;
+  width: 28px;
+  height: 28px;
+}
+
 @media (max-width: 768px) {
   .mobile-top-bar {
     display: flex;
@@ -605,6 +750,66 @@ const handleLogout = () => {
     border-right: 0;
     box-shadow: none;
     transform: none;
+  }
+
+  .sidebar.collapsed .sidebar-panel {
+    padding: 18px 12px;
+  }
+
+  .sidebar.collapsed .brand-block {
+    flex-direction: row;
+    padding: 0 6px var(--spacing-md);
+  }
+
+  .sidebar.collapsed .brand-text,
+  .sidebar.collapsed .nav-item-inner span,
+  .sidebar.collapsed .nav-divider,
+  .sidebar.collapsed .legal-links,
+  .sidebar.collapsed .theme-label span,
+  .sidebar.collapsed .theme-toggle-switch,
+  .sidebar.collapsed .user-info,
+  .sidebar.collapsed .logout-btn span,
+  .sidebar.collapsed .login-btn {
+    display: initial;
+  }
+
+  .sidebar.collapsed .brand-text,
+  .sidebar.collapsed .user-info,
+  .sidebar.collapsed .theme-label {
+    display: flex;
+  }
+
+  .sidebar.collapsed .nav-divider {
+    display: block;
+  }
+
+  .sidebar.collapsed .legal-links,
+  .sidebar.collapsed .theme-toggle-row,
+  .sidebar.collapsed .logout-btn,
+  .sidebar.collapsed .login-btn {
+    display: flex;
+  }
+
+  .sidebar.collapsed .nav-list,
+  .sidebar.collapsed .admin-nav,
+  .sidebar.collapsed .sidebar-footer {
+    align-items: stretch;
+  }
+
+  .sidebar.collapsed .nav-item,
+  .sidebar.collapsed .theme-toggle-row,
+  .sidebar.collapsed .user-card,
+  .sidebar.collapsed .logout-btn {
+    width: auto;
+  }
+
+  .sidebar.collapsed .nav-item-inner {
+    justify-content: flex-start;
+    padding: 0 10px;
+  }
+
+  .sidebar-collapse-btn {
+    display: none;
   }
 
   .sidebar-scrim {

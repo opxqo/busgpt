@@ -41,6 +41,10 @@ onMounted(() => {
   background-color: var(--bg-primary);
 }
 
+:root.sidebar-collapsed {
+  --sidebar-width: 68px;
+}
+
 .main-wrapper {
   flex-grow: 1;
   display: flex;
@@ -49,6 +53,7 @@ onMounted(() => {
   min-height: 100vh;
   min-width: 0;
   width: auto;
+  transition: padding-left var(--transition-normal);
 }
 
 .main-content {
