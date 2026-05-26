@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <aside class="sidebar" :class="{ open: mobileOpen, collapsed: sidebarCollapsed }">
+  <aside ref="sidebarRoot" class="sidebar" :class="{ open: mobileOpen, collapsed: sidebarCollapsed }">
     <button class="sidebar-scrim" type="button" aria-label="关闭导航" @click="mobileOpen = false"></button>
     <div class="sidebar-panel">
       <button
@@ -43,7 +43,7 @@
       </div>
 
       <nav class="nav-list" aria-label="主导航">
-        <div class="nav-track" :style="navIndicatorStyle(mainActiveIndex)">
+        <div class="nav-track" data-nav-track="main" :style="mainIndicatorStyle">
           <span v-if="mainActiveIndex >= 0" class="nav-active-block"></span>
           <router-link
             v-for="item in navItems"
@@ -51,8 +51,9 @@
             :to="item.to"
             class="nav-item"
             :class="{ active: isRouteActive(item.to) }"
+            :data-active="isRouteActive(item.to) ? 'true' : undefined"
             :title="item.label"
-            @click="mobileOpen = false"
+            @click="handleNavClick('main')"
           >
             <div class="nav-item-inner">
               <component :is="item.icon" :size="20" class="nav-icon" />
@@ -64,7 +65,7 @@
 
       <nav v-if="userStore.isAdmin" class="nav-list admin-nav" aria-label="管理后台导航">
         <span class="nav-divider">管理后台</span>
-        <div class="nav-track" :style="navIndicatorStyle(adminActiveIndex)">
+        <div class="nav-track" data-nav-track="admin" :style="adminIndicatorStyle">
           <span v-if="adminActiveIndex >= 0" class="nav-active-block admin"></span>
           <router-link
             v-for="item in adminNavItems"
@@ -72,8 +73,9 @@
             :to="item.to"
             class="nav-item"
             :class="{ active: isRouteActive(item.to) }"
+            :data-active="isRouteActive(item.to) ? 'true' : undefined"
             :title="item.label"
-            @click="mobileOpen = false"
+            @click="handleNavClick('admin')"
           >
             <div class="nav-item-inner">
               <component :is="item.icon" :size="20" class="nav-icon" />
@@ -132,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Boxes, Home, LogIn, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
@@ -143,6 +145,13 @@ const router = useRouter()
 const route = useRoute()
 const mobileOpen = ref(false)
 const sidebarCollapsed = ref(false)
+const sidebarRoot = ref<HTMLElement | null>(null)
+const mainIndicatorStyle = ref<Record<string, string>>({})
+const adminIndicatorStyle = ref<Record<string, string>>({})
+const previousIndicatorY: Record<'main' | 'admin', number | null> = {
+  main: null,
+  admin: null,
+}
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
 
 const theme = ref<'light' | 'dark'>('light')
@@ -160,6 +169,7 @@ const initTheme = () => {
 
 const applySidebarState = () => {
   document.documentElement.classList.toggle('sidebar-collapsed', sidebarCollapsed.value)
+  updateIndicators()
 }
 
 const initSidebar = () => {
@@ -182,6 +192,7 @@ const toggleTheme = () => {
 onMounted(() => {
   initTheme()
   initSidebar()
+  updateIndicators()
 })
 
 const navItems = computed(() => [
@@ -212,12 +223,86 @@ const isRouteActive = (to: string) => {
 const mainActiveIndex = computed(() => navItems.value.findIndex((item) => isRouteActive(item.to)))
 const adminActiveIndex = computed(() => adminNavItems.value.findIndex((item) => isRouteActive(item.to)))
 
-const navIndicatorStyle = (index: number) => {
-  const itemHeight = sidebarCollapsed.value ? 36 : 40
-  const gap = sidebarCollapsed.value ? 6 : 5
+const readIndicatorMetrics = (kind: 'main' | 'admin') => {
+  const track = sidebarRoot.value?.querySelector<HTMLElement>(`.nav-track[data-nav-track="${kind}"]`)
+  const activeItem = track?.querySelector<HTMLElement>('.nav-item.active')
+  if (!track || !activeItem) {
+    return {
+      active: false,
+      y: 0,
+      height: 0,
+      style: {
+        '--nav-active-y': '0px',
+        '--nav-active-h': '0px',
+        '--nav-active-opacity': '0',
+      },
+    }
+  }
+  const y = activeItem.offsetTop
+  const height = activeItem.offsetHeight
   return {
-    '--nav-active-y': `${Math.max(index, 0) * (itemHeight + gap)}px`,
-    '--nav-active-h': `${itemHeight}px`,
+    active: true,
+    y,
+    height,
+    style: {
+      '--nav-active-y': `${y}px`,
+      '--nav-active-h': `${height}px`,
+      '--nav-active-opacity': '1',
+    },
+  }
+}
+
+const animateIndicatorTravel = (kind: 'main' | 'admin', nextY: number) => {
+  const previousY = previousIndicatorY[kind]
+  previousIndicatorY[kind] = nextY
+  if (previousY === null || Math.abs(previousY - nextY) < 1) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  const block = sidebarRoot.value?.querySelector<HTMLElement>(`.nav-track[data-nav-track="${kind}"] .nav-active-block`)
+  if (!block) return
+
+  const midY = (previousY + nextY) / 2
+  block.animate(
+    [
+      { transform: `translateY(${previousY}px) scale(1, 1)` },
+      { transform: `translateY(${midY}px) scale(0.72, 0.58)`, offset: 0.5 },
+      { transform: `translateY(${nextY}px) scale(1, 1)` },
+    ],
+    {
+      duration: 560,
+      easing: 'cubic-bezier(0.34, 1.18, 0.24, 1)',
+    },
+  )
+}
+
+const updateIndicators = () => {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const mainMetrics = readIndicatorMetrics('main')
+      const adminMetrics = readIndicatorMetrics('admin')
+      mainIndicatorStyle.value = mainMetrics.style
+      adminIndicatorStyle.value = adminMetrics.style
+
+      if (mainMetrics.active) {
+        animateIndicatorTravel('main', mainMetrics.y)
+      } else {
+        previousIndicatorY.main = null
+      }
+
+      if (adminMetrics.active) {
+        animateIndicatorTravel('admin', adminMetrics.y)
+      } else {
+        previousIndicatorY.admin = null
+      }
+    })
+  })
+}
+
+const handleNavClick = (kind: 'main' | 'admin') => {
+  mobileOpen.value = false
+  const metrics = readIndicatorMetrics(kind)
+  if (metrics.active) {
+    previousIndicatorY[kind] = metrics.y
   }
 }
 
@@ -226,6 +311,14 @@ const handleLogout = () => {
   mobileOpen.value = false
   router.push('/')
 }
+
+watch(
+  [() => route.path, sidebarCollapsed, () => userStore.isLoggedIn, () => userStore.isAdmin],
+  () => {
+    updateIndicators()
+  },
+  { flush: 'post' },
+)
 </script>
 
 <style scoped>
@@ -395,21 +488,30 @@ const handleLogout = () => {
   inset: 0 0 auto;
   z-index: 0;
   height: var(--nav-active-h);
+  opacity: var(--nav-active-opacity, 1);
   border-radius: var(--border-radius-md);
   background: var(--text-primary);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  transform-origin: center;
   transform: translateY(var(--nav-active-y));
   transition:
-    transform 320ms cubic-bezier(0.2, 0.9, 0.2, 1),
-    height var(--transition-fast),
+    transform 560ms cubic-bezier(0.34, 1.18, 0.24, 1),
+    opacity var(--transition-fast),
+    height 300ms cubic-bezier(0.22, 1, 0.36, 1),
     background-color var(--transition-fast),
     box-shadow var(--transition-fast);
-  will-change: transform;
+  will-change: transform, scale;
 }
 
 .nav-active-block.admin {
   background: var(--color-pro);
   box-shadow: 0 8px 18px rgba(139, 92, 246, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-active-block {
+    transition-duration: 0ms;
+  }
 }
 
 .admin-nav {
