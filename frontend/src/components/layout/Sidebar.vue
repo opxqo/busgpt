@@ -301,7 +301,7 @@ const handleLogout = () => {
 }
 
 .brand-block {
-  padding: 0 6px var(--spacing-md);
+  padding: 0 34px var(--spacing-md) 6px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -326,8 +326,8 @@ const handleLogout = () => {
 .sidebar-collapse-btn {
   display: inline-flex;
   position: absolute;
-  top: 26px;
-  right: -13px;
+  top: 25px;
+  right: 12px;
   z-index: 2;
   width: 26px;
   height: 26px;
@@ -346,7 +346,7 @@ const handleLogout = () => {
   color: var(--text-primary);
   border-color: var(--border-color-strong);
   background: var(--bg-primary);
-  transform: translateX(1px);
+  transform: translateY(-1px);
 }
 
 .nav-list {
@@ -374,6 +374,7 @@ const handleLogout = () => {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
+  text-align: center;
 }
 
 .nav-item {
@@ -391,6 +392,7 @@ const handleLogout = () => {
   display: flex;
   min-height: 34px;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   padding: 0 10px;
 }
