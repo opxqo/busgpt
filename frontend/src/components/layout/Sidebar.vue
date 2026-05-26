@@ -96,8 +96,8 @@
           <router-link to="/profile" class="user-card" @click="mobileOpen = false">
             <img :src="userStore.user?.avatar || defaultAvatar" alt="用户头像" class="avatar" />
             <div class="user-info">
-              <strong>{{ userStore.user?.nickname }}</strong>
-              <small>{{ userStore.user?.email }}</small>
+              <strong :title="userStore.user?.nickname || ''">{{ userStore.user?.nickname }}</strong>
+              <small :title="userStore.user?.email || ''">{{ userStore.user?.email }}</small>
             </div>
           </router-link>
           <button type="button" class="logout-btn" @click="handleLogout">
@@ -492,6 +492,9 @@ const handleLogout = () => {
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   text-decoration: none;
   padding: 7px 8px;
   border-radius: var(--border-radius-md);
@@ -509,6 +512,7 @@ const handleLogout = () => {
 }
 
 .avatar {
+  flex: 0 0 30px;
   width: 30px;
   height: 30px;
   border-radius: var(--border-radius-full);
@@ -517,11 +521,16 @@ const handleLogout = () => {
 
 .user-info {
   display: flex;
+  flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
   flex-direction: column;
 }
 
 .user-info strong {
+  display: block;
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   font-size: 13px;
   font-weight: 700;
@@ -531,8 +540,15 @@ const handleLogout = () => {
 }
 
 .user-info small {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .login-btn {
