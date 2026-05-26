@@ -53,6 +53,7 @@ onMounted(() => {
 
 .main-content {
   flex-grow: 1;
+  min-height: 100vh;
   min-width: 0;
   padding: 0 0 var(--spacing-xxl);
 }
@@ -83,6 +84,7 @@ onMounted(() => {
     width: 100%;
   }
   .main-content {
+    min-height: calc(100vh - 56px);
     padding: 0 0 var(--spacing-lg);
   }
 }
