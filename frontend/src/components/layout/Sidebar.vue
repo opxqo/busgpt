@@ -43,38 +43,44 @@
       </div>
 
       <nav class="nav-list" aria-label="主导航">
-        <router-link
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="nav-item"
-          active-class="active"
-          :title="item.label"
-          @click="mobileOpen = false"
-        >
-          <div class="nav-item-inner">
-            <component :is="item.icon" :size="18" class="nav-icon" />
-            <span>{{ item.label }}</span>
-          </div>
-        </router-link>
+        <div class="nav-track" :style="navIndicatorStyle(mainActiveIndex)">
+          <span v-if="mainActiveIndex >= 0" class="nav-active-block"></span>
+          <router-link
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="nav-item"
+            :class="{ active: isRouteActive(item.to) }"
+            :title="item.label"
+            @click="mobileOpen = false"
+          >
+            <div class="nav-item-inner">
+              <component :is="item.icon" :size="20" class="nav-icon" />
+              <span>{{ item.label }}</span>
+            </div>
+          </router-link>
+        </div>
       </nav>
 
       <nav v-if="userStore.isAdmin" class="nav-list admin-nav" aria-label="管理后台导航">
         <span class="nav-divider">管理后台</span>
-        <router-link
-          v-for="item in adminNavItems"
-          :key="item.to"
-          :to="item.to"
-          class="nav-item"
-          active-class="active"
-          :title="item.label"
-          @click="mobileOpen = false"
-        >
-          <div class="nav-item-inner">
-            <component :is="item.icon" :size="18" class="nav-icon" />
-            <span>{{ item.label }}</span>
-          </div>
-        </router-link>
+        <div class="nav-track" :style="navIndicatorStyle(adminActiveIndex)">
+          <span v-if="adminActiveIndex >= 0" class="nav-active-block admin"></span>
+          <router-link
+            v-for="item in adminNavItems"
+            :key="item.to"
+            :to="item.to"
+            class="nav-item"
+            :class="{ active: isRouteActive(item.to) }"
+            :title="item.label"
+            @click="mobileOpen = false"
+          >
+            <div class="nav-item-inner">
+              <component :is="item.icon" :size="20" class="nav-icon" />
+              <span>{{ item.label }}</span>
+            </div>
+          </router-link>
+        </div>
       </nav>
 
       <div class="notice-card">
@@ -127,13 +133,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Boxes, Home, LogIn, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
-import logoMarkUrl from '../../assets/logo-mark.svg'
+import logoMarkUrl from '../../assets/logo-mark.png'
 
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 const mobileOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
@@ -194,6 +201,25 @@ const adminNavItems = computed(() => [
   { to: '/admin/analytics', label: '数据分析', icon: BarChart3 },
   { to: '/admin/products', label: '产品维护', icon: Boxes },
 ])
+
+const isRouteActive = (to: string) => {
+  if (to === '/' || to === '/admin') {
+    return route.path === to
+  }
+  return route.path === to || route.path.startsWith(`${to}/`)
+}
+
+const mainActiveIndex = computed(() => navItems.value.findIndex((item) => isRouteActive(item.to)))
+const adminActiveIndex = computed(() => adminNavItems.value.findIndex((item) => isRouteActive(item.to)))
+
+const navIndicatorStyle = (index: number) => {
+  const itemHeight = sidebarCollapsed.value ? 36 : 40
+  const gap = sidebarCollapsed.value ? 6 : 5
+  return {
+    '--nav-active-y': `${Math.max(index, 0) * (itemHeight + gap)}px`,
+    '--nav-active-h': `${itemHeight}px`,
+  }
+}
 
 const handleLogout = () => {
   userStore.logout()
@@ -352,17 +378,45 @@ const handleLogout = () => {
 
 .nav-list {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
-  gap: 4px;
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-md) 0 0;
+}
+
+.nav-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav-active-block {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 0;
+  height: var(--nav-active-h);
+  border-radius: var(--border-radius-md);
+  background: var(--text-primary);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  transform: translateY(var(--nav-active-y));
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    height var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  will-change: transform;
+}
+
+.nav-active-block.admin {
+  background: var(--color-pro);
+  box-shadow: 0 8px 18px rgba(139, 92, 246, 0.18);
 }
 
 .admin-nav {
   flex: 0;
   border-top: 1px solid var(--border-color);
   padding: var(--spacing-md) 0 var(--spacing-xs);
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-md);
   background: transparent;
   border-radius: 0;
 }
@@ -380,37 +434,42 @@ const handleLogout = () => {
 
 .nav-item {
   display: block;
+  box-sizing: border-box;
   text-decoration: none;
+  border: 1px solid transparent;
   border-radius: var(--border-radius-md);
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 13px;
-  transition: all var(--transition-fast);
+  font-size: 14px;
+  transition: color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   position: relative;
+  z-index: 1;
 }
 
 .nav-item-inner {
   display: flex;
-  min-height: 34px;
+  min-height: 40px;
   align-items: center;
   justify-content: flex-start;
-  gap: 9px;
+  gap: 10px;
   padding: 0 12px;
 }
 
 .nav-item-inner span {
   white-space: nowrap;
+  line-height: 1;
 }
 
 .nav-icon {
+  flex: 0 0 20px;
   color: var(--text-muted);
   transition: color var(--transition-fast);
 }
 
 .nav-item:hover {
   color: var(--text-primary);
-  background: var(--bg-tertiary);
-  box-shadow: inset 0 0 0 1px var(--border-color);
+  border-color: var(--border-color);
+  transform: translateX(1px);
 }
 
 .nav-item:hover .nav-icon {
@@ -418,11 +477,11 @@ const handleLogout = () => {
 }
 
 .nav-item.active {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--card-shadow);
+  color: var(--text-inverse);
+  border-color: transparent;
+  box-shadow: none;
   font-weight: 700;
+  transform: translateX(0);
 }
 
 .nav-item.active::before {
@@ -430,21 +489,15 @@ const handleLogout = () => {
 }
 
 .admin-nav .nav-item.active {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-}
-
-.admin-nav .nav-item.active::before {
-  background: var(--color-pro);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
+  color: white;
 }
 
 .admin-nav .nav-item.active .nav-icon {
-  color: var(--text-primary);
+  color: white;
 }
 
 .nav-item.active .nav-icon {
-  color: var(--text-primary);
+  color: var(--text-inverse);
 }
 
 .notice-card {
@@ -489,6 +542,7 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: auto;
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--border-color);
 }
@@ -702,8 +756,17 @@ const handleLogout = () => {
 }
 
 .sidebar.collapsed .nav-item-inner {
+  min-height: 36px;
   justify-content: center;
   padding: 0;
+}
+
+.sidebar.collapsed .nav-track {
+  gap: 6px;
+}
+
+.sidebar.collapsed .nav-icon {
+  flex-basis: 20px;
 }
 
 .sidebar.collapsed .sidebar-footer {
