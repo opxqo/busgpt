@@ -4,7 +4,7 @@
       <div class="footer-info">
         <router-link to="/" class="footer-brand">
           <span class="footer-logo-mark">
-            <Car :size="16" stroke-width="2.4" />
+            <img :src="logoMarkUrl" alt="" />
           </span>
           <span>BusGPT</span>
         </router-link>
@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { Car } from '@lucide/vue'
+import logoMarkUrl from '../../assets/logo-mark.svg'
 </script>
 
 <style scoped>
@@ -96,9 +96,14 @@ import { Car } from '@lucide/vue'
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-sm);
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  background: transparent;
   transition: transform var(--transition-fast);
+}
+
+.footer-logo-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .footer-desc {

@@ -2,7 +2,7 @@
   <div class="mobile-top-bar">
     <router-link to="/" class="mobile-logo">
       <span class="logo-mark" aria-hidden="true">
-        <Car :size="20" stroke-width="2.4" />
+        <img :src="logoMarkUrl" alt="" />
       </span>
       <span>BusGPT</span>
     </router-link>
@@ -23,7 +23,7 @@
       <div class="brand-block">
         <router-link to="/" class="brand" @click="mobileOpen = false">
           <span class="logo-mark" aria-hidden="true">
-            <Car :size="20" stroke-width="2.4" />
+            <img :src="logoMarkUrl" alt="" />
           </span>
           <span class="brand-text">
             <strong>BusGPT</strong>
@@ -116,8 +116,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Boxes, Car, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
+import { Boxes, Home, LogOut, Menu, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
+import logoMarkUrl from '../../assets/logo-mark.svg'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -218,15 +219,13 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-size: 18px;
-  font-weight: 900;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--card-shadow);
+  background: transparent;
 }
 
-.logo-mark svg {
+.logo-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
   flex-shrink: 0;
 }
 
