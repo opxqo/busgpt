@@ -44,7 +44,6 @@
           <div class="nav-item-inner">
             <component :is="item.icon" :size="18" class="nav-icon" />
             <span>{{ item.label }}</span>
-            <kbd v-if="item.shortcut" class="nav-shortcut">{{ item.shortcut }}</kbd>
           </div>
         </router-link>
       </nav>
@@ -149,11 +148,11 @@ onMounted(() => {
 })
 
 const navItems = computed(() => [
-  { to: '/', label: '首页市场', icon: Home, shortcut: '' },
-  { to: '/market', label: '发现车位', icon: Search, shortcut: '/' },
-  { to: '/create', label: '发布车位', icon: PlusCircle, shortcut: '' },
+  { to: '/', label: '首页市场', icon: Home },
+  { to: '/market', label: '发现车位', icon: Search },
+  { to: '/create', label: '发布车位', icon: PlusCircle },
   ...(userStore.isLoggedIn
-    ? [{ to: '/profile', label: '我的账户', icon: UserRound, shortcut: '' }]
+    ? [{ to: '/profile', label: '我的账户', icon: UserRound }]
     : []),
 ])
 
@@ -383,24 +382,6 @@ const handleLogout = () => {
   color: var(--text-primary);
 }
 
-.nav-shortcut {
-  display: inline-flex;
-  height: 18px;
-  min-width: 18px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  margin-left: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-inset);
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 700;
-  font-family: inherit;
-  line-height: 1;
-}
-
 .notice-card {
   display: none;
   gap: 10px;
@@ -450,13 +431,17 @@ const handleLogout = () => {
 .legal-links {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 var(--spacing-sm);
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0 4px;
 }
 
 .legal-link {
+  flex: 1 1 0;
   color: var(--text-muted);
   font-size: 11px;
+  text-align: center;
   text-decoration: none;
   transition: color var(--transition-fast);
   position: relative;
@@ -484,6 +469,7 @@ const handleLogout = () => {
 }
 
 .legal-sep {
+  flex: 0 0 auto;
   color: var(--border-color);
   font-size: 11px;
 }
