@@ -124,7 +124,7 @@
               <small :title="userStore.user?.email || ''">{{ userStore.user?.email }}</small>
             </div>
           </router-link>
-          <button type="button" class="logout-btn" title="退出登录" @click="handleLogout">
+          <button type="button" class="logout-btn" title="退出登录" @click="openLogoutConfirm">
             <LogOut :size="14" />
             <span>退出登录</span>
           </button>
@@ -136,6 +136,36 @@
       </div>
     </div>
   </aside>
+
+  <Transition name="logout-confirm">
+    <div
+      v-if="showLogoutConfirm"
+      class="logout-confirm-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="logout-confirm-title"
+      tabindex="-1"
+      @click.self="closeLogoutConfirm"
+      @keydown.esc="closeLogoutConfirm"
+    >
+      <div class="logout-confirm-modal surface-card">
+        <div class="logout-confirm-icon" aria-hidden="true">
+          <LogOut :size="20" />
+        </div>
+        <div class="logout-confirm-copy">
+          <h2 id="logout-confirm-title">确认退出登录？</h2>
+          <p>退出后将回到首页，继续发布或管理车位需要重新登录。</p>
+        </div>
+        <div class="logout-confirm-actions">
+          <button type="button" class="btn btn-secondary" @click="closeLogoutConfirm">取消</button>
+          <button type="button" class="btn btn-danger" autofocus @click="confirmLogout">
+            <LogOut :size="14" />
+            <span>确认退出</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -153,7 +183,7 @@ const sidebarCollapsed = ref(false)
 const sidebarRoot = ref<HTMLElement | null>(null)
 const navIndicatorStyle = ref<Record<string, string>>({})
 const activeNavKind = ref<'main' | 'admin' | null>(null)
-const previousIndicator = ref<{ x: number; y: number } | null>(null)
+const showLogoutConfirm = ref(false)
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
 
 const theme = ref<'light' | 'dark'>('light')
@@ -254,30 +284,6 @@ const readIndicatorMetrics = () => {
   }
 }
 
-const animateIndicatorTravel = (nextX: number, nextY: number) => {
-  const previous = previousIndicator.value
-  previousIndicator.value = { x: nextX, y: nextY }
-  if (!previous || Math.hypot(previous.x - nextX, previous.y - nextY) < 1) return
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-  const block = sidebarRoot.value?.querySelector<HTMLElement>('.sidebar-panel > .nav-active-block')
-  if (!block) return
-
-  const midX = (previous.x + nextX) / 2
-  const midY = (previous.y + nextY) / 2
-  block.animate(
-    [
-      { transform: `translate(${previous.x}px, ${previous.y}px) scale(1, 1)` },
-      { transform: `translate(${midX}px, ${midY}px) scale(0.72, 0.58)`, offset: 0.5 },
-      { transform: `translate(${nextX}px, ${nextY}px) scale(1, 1)` },
-    ],
-    {
-      duration: 560,
-      easing: 'cubic-bezier(0.34, 1.18, 0.24, 1)',
-    },
-  )
-}
-
 const updateIndicators = () => {
   nextTick(() => {
     requestAnimationFrame(() => {
@@ -286,10 +292,8 @@ const updateIndicators = () => {
       if (metrics.active) {
         navIndicatorStyle.value = metrics.style
         activeNavKind.value = metrics.kind
-        animateIndicatorTravel(metrics.x, metrics.y)
       } else {
         activeNavKind.value = null
-        previousIndicator.value = null
         navIndicatorStyle.value = {
           '--nav-active-x': '0px',
           '--nav-active-y': '0px',
@@ -305,11 +309,18 @@ const updateIndicators = () => {
 const handleNavClick = (kind: 'main' | 'admin') => {
   mobileOpen.value = false
   activeNavKind.value = kind
-  const metrics = readIndicatorMetrics()
-  if (metrics.active) previousIndicator.value = { x: metrics.x, y: metrics.y }
 }
 
-const handleLogout = () => {
+const openLogoutConfirm = () => {
+  showLogoutConfirm.value = true
+}
+
+const closeLogoutConfirm = () => {
+  showLogoutConfirm.value = false
+}
+
+const confirmLogout = () => {
+  closeLogoutConfirm()
   userStore.logout()
   mobileOpen.value = false
   router.push('/')
@@ -500,12 +511,13 @@ watch(
   transform-origin: center;
   transform: translate(var(--nav-active-x), var(--nav-active-y));
   transition:
-    transform 560ms cubic-bezier(0.34, 1.18, 0.24, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity var(--transition-fast),
-    height 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    width var(--transition-fast),
+    height var(--transition-fast),
     background-color var(--transition-fast),
     box-shadow var(--transition-fast);
-  will-change: transform, scale;
+  will-change: transform;
 }
 
 .nav-active-block.admin {
@@ -821,6 +833,87 @@ watch(
   color: var(--color-danger);
   background: var(--color-danger-soft);
   border-color: rgba(239, 68, 68, 0.2);
+}
+
+.logout-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.logout-confirm-modal {
+  display: grid;
+  width: min(420px, 100%);
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+  padding: 18px;
+}
+
+.logout-confirm-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+}
+
+.logout-confirm-copy {
+  min-width: 0;
+}
+
+.logout-confirm-copy h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.logout-confirm-copy p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.logout-confirm-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.logout-confirm-enter-active,
+.logout-confirm-leave-active {
+  transition: opacity var(--transition-fast);
+}
+
+.logout-confirm-enter-active .logout-confirm-modal,
+.logout-confirm-leave-active .logout-confirm-modal {
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.logout-confirm-enter-from,
+.logout-confirm-leave-to {
+  opacity: 0;
+}
+
+.logout-confirm-enter-from .logout-confirm-modal,
+.logout-confirm-leave-to .logout-confirm-modal {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
 }
 
 .sidebar.collapsed .sidebar-panel {
