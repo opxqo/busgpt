@@ -99,7 +99,7 @@ const totalSeats = computed(() => Number(props.ride.total_seats || 0))
 const onboardSeats = computed(() => Number(props.ride.recruit_seats || Math.max((totalSeats.value || 1) - 1, 1)))
 const occupiedSeats = computed(() => Math.min(onboardSeats.value, totalSeats.value))
 const remainingSeats = computed(() => Math.max(Number(props.ride.remaining_seats ?? (totalSeats.value - occupiedSeats.value)), 0))
-const warrantyDays = computed(() => Number(props.ride.warranty_days || (props.ride.duration >= 12 ? 365 : props.ride.duration * 30)))
+const warrantyDays = computed(() => Number(props.ride.warranty_days || (props.ride.duration >= 12 ? Math.round((props.ride.duration / 12) * 365) : props.ride.duration * 30)))
 const fillPercent = computed(() => {
   if (totalSeats.value <= 0) return 0
   return Math.min(Math.round((occupiedSeats.value / totalSeats.value) * 100), 100)

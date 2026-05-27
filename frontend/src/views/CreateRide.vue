@@ -65,61 +65,103 @@
             </div>
           </div>
 
-          <div class="form-row-3">
-            <div class="form-group">
-              <label class="form-label" for="total-seats">车位可容纳总人数</label>
-              <input
-                id="total-seats"
-                v-model.number="form.total_seats"
-                class="form-control"
-                type="number"
-                :min="2"
-                :max="maxSeatsAllowed"
-                required
-              />
-              <span class="form-help">该车位包含车主本人的总拼车位数。</span>
+          <div class="ride-param-grid">
+            <div class="param-card">
+              <label class="param-label" for="total-seats">
+                <span>车位可容纳总人数</span>
+                <CircleHelp :size="13" />
+              </label>
+              <div class="stepper-control">
+                <button type="button" class="stepper-btn" :disabled="form.total_seats <= 2" aria-label="减少车位总人数" @click="stepTotalSeats(-1)">
+                  <Minus :size="15" />
+                </button>
+                <input
+                  id="total-seats"
+                  v-model.number="form.total_seats"
+                  class="stepper-input"
+                  type="number"
+                  :min="2"
+                  :max="maxSeatsAllowed"
+                  required
+                />
+                <button type="button" class="stepper-btn" :disabled="form.total_seats >= maxSeatsAllowed" aria-label="增加车位总人数" @click="stepTotalSeats(1)">
+                  <Plus :size="15" />
+                </button>
+                <span class="param-unit">人</span>
+              </div>
+              <span class="param-help">包含车主本人，共 {{ form.total_seats }} 人</span>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="recruit-seats">上车人数</label>
-              <input
-                id="recruit-seats"
-                v-model.number="form.recruit_seats"
-                class="form-control"
-                type="number"
-                :min="1"
-                :max="maxOnboardSeats"
-                required
-              />
-              <span class="form-help">包含车主本人，表示当前已经在车上的人数。</span>
+
+            <div class="param-card">
+              <label class="param-label" for="recruit-seats">
+                <span>上车人数</span>
+                <CircleHelp :size="13" />
+              </label>
+              <div class="stepper-control">
+                <button type="button" class="stepper-btn" :disabled="form.recruit_seats <= 1" aria-label="减少上车人数" @click="stepRecruitSeats(-1)">
+                  <Minus :size="15" />
+                </button>
+                <input
+                  id="recruit-seats"
+                  v-model.number="form.recruit_seats"
+                  class="stepper-input"
+                  type="number"
+                  :min="1"
+                  :max="maxOnboardSeats"
+                  required
+                />
+                <button type="button" class="stepper-btn" :disabled="form.recruit_seats >= maxOnboardSeats" aria-label="增加上车人数" @click="stepRecruitSeats(1)">
+                  <Plus :size="15" />
+                </button>
+                <span class="param-unit">人</span>
+              </div>
+              <span class="param-help">当前已有 {{ form.recruit_seats }} 人加入，还可上车 {{ previewRemainingSeats }} 人</span>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="duration">车位有效期限</label>
-              <div class="select-wrapper">
-                <select id="duration" v-model.number="form.duration" class="form-control" required>
+
+            <div class="param-card">
+              <label class="param-label" for="seat-price">
+                <span>分摊月费（¥）</span>
+                <CircleHelp :size="13" />
+              </label>
+              <input id="seat-price" v-model.number="form.price_per_month" class="param-input" type="number" min="1" required />
+              <span class="param-help">每位车友每月需支付给您的订阅分摊</span>
+            </div>
+
+            <div class="param-card param-card-wide">
+              <label class="param-label" for="duration">
+                <span>车位有效期限</span>
+                <CircleHelp :size="13" />
+              </label>
+              <div class="param-select">
+                <CalendarDays :size="17" class="param-select-icon" />
+                <select id="duration" v-model.number="form.duration" required>
                   <option :value="1">1 个月</option>
                   <option :value="3">3 个月</option>
                   <option :value="6">6 个月</option>
                   <option :value="12">12 个月</option>
+                  <option :value="48">48 个月</option>
                 </select>
               </div>
+              <span class="param-help">到期后将自动结束，成员将无法继续使用</span>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="seat-price">分摊月费 (¥)</label>
-              <input id="seat-price" v-model.number="form.price_per_month" class="form-control" type="number" min="1" required />
-              <span class="form-help">每位车友每月需支付给您的订阅分摊。</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="warranty-days">质保天数</label>
-              <input
-                id="warranty-days"
-                v-model.number="form.warranty_days"
-                class="form-control"
-                type="number"
-                min="1"
-                max="730"
-                required
-              />
-              <span class="form-help">保障可用天数，同步展示在市场卡片和详情页。</span>
+
+            <div class="param-card param-card-wide">
+              <label class="param-label" for="warranty-days">
+                <span>质保天数</span>
+                <CircleHelp :size="13" />
+              </label>
+              <div class="unit-input">
+                <input
+                  id="warranty-days"
+                  v-model.number="form.warranty_days"
+                  type="number"
+                  min="1"
+                  max="1460"
+                  required
+                />
+                <span>天</span>
+              </div>
+              <span class="param-help">保障可用天数，同步展示在市场卡片</span>
             </div>
           </div>
 
@@ -159,19 +201,24 @@
             >
               <div class="input-box-header">
                 <div class="method-icon-wrap">
-                  <component :is="method.icon" :size="16" />
+                  <component :is="method.icon" :size="24" />
                 </div>
                 <div class="method-meta">
-                  <strong>{{ method.label }}</strong>
+                  <div class="method-title-row">
+                    <strong>{{ method.label }}</strong>
+                    <span v-if="method.badge" class="method-badge">{{ method.badge }}</span>
+                  </div>
                   <span>{{ method.help }}</span>
                 </div>
               </div>
-              <input
-                v-model.trim="form.contacts[method.value]"
-                class="form-control"
-                :type="method.value === 'email' ? 'email' : method.value === 'website' ? 'url' : 'text'"
-                :placeholder="method.placeholder"
-              />
+              <div class="contact-control">
+                <input
+                  v-model.trim="form.contacts[method.value]"
+                  :type="method.value === 'email' ? 'email' : method.value === 'website' ? 'url' : 'text'"
+                  :placeholder="method.placeholder"
+                />
+                <component :is="method.icon" :size="22" class="contact-control-icon" />
+              </div>
             </div>
           </div>
 
@@ -180,8 +227,8 @@
             <textarea
               id="contact-note"
               v-model.trim="form.contact_note"
-              class="form-control textarea-control"
-              rows="3"
+              class="form-control textarea-control contact-note-control"
+              rows="2"
               placeholder="例如：添加好友请备注“BusGPT拼车”，收到后会在晚上统一处理。"
             ></textarea>
           </div>
@@ -273,7 +320,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
-import { CalendarClock, Check, Globe, Mail, MessageCircle, Package, ReceiptText, Send, SendHorizontal, ShieldCheck, Users } from '@lucide/vue'
+import { CalendarClock, CalendarDays, Check, CircleHelp, Globe, Mail, MessageCircle, Minus, Package, Plus, ReceiptText, Send, SendHorizontal, ShieldCheck, Users } from '@lucide/vue'
 import { ridesApi } from '../api/rides'
 import type { ContactType, Product, ProductType } from '../types'
 
@@ -313,6 +360,7 @@ type ContactMethod = {
   value: ContactType
   label: string
   icon: Component
+  badge?: string
   placeholder: string
   help: string
 }
@@ -340,6 +388,7 @@ const contactMethods: ContactMethod[] = [
     value: 'wechat' as ContactType,
     label: '微信账号',
     icon: MessageCircle,
+    badge: '推荐',
     placeholder: '例如：wechat_account',
     help: '最常用的联系渠道。请准确填写微信号。',
   },
@@ -361,6 +410,7 @@ const contactMethods: ContactMethod[] = [
     value: 'website' as ContactType,
     label: '个人网站',
     icon: Globe,
+    badge: '可选',
     placeholder: '例如：https://example.com',
     help: '可填写个人主页、作品集或可信资料页。',
   },
@@ -381,7 +431,7 @@ const activeProductObj = computed(() => {
   return products.value.find((product) => product.type === form.product) || products.value[0]
 })
 
-const durationToWarrantyDays = (duration: number) => (duration >= 12 ? 365 : duration * 30)
+const durationToWarrantyDays = (duration: number) => (duration >= 12 ? Math.round((duration / 12) * 365) : duration * 30)
 const activeProductLabel = computed(() => activeProductObj.value?.label || 'Plus')
 const maxSeatsAllowed = computed(() => activeProductObj.value?.max_seats || 4)
 const maxOnboardSeats = computed(() => Math.max(form.total_seats - 1, 1))
@@ -408,13 +458,34 @@ watch(
   }
 )
 
+const clampNumber = (value: number, min: number, max: number) => {
+  const numberValue = Number.isFinite(Number(value)) ? Number(value) : min
+  return Math.min(Math.max(Math.round(numberValue), min), max)
+}
+
 watch(
   () => form.total_seats,
   () => {
+    form.total_seats = clampNumber(form.total_seats, 2, maxSeatsAllowed.value)
     if (form.recruit_seats > maxOnboardSeats.value) form.recruit_seats = maxOnboardSeats.value
     if (form.recruit_seats < 1) form.recruit_seats = 1
   }
 )
+
+watch(
+  () => form.recruit_seats,
+  () => {
+    form.recruit_seats = clampNumber(form.recruit_seats, 1, maxOnboardSeats.value)
+  }
+)
+
+const stepTotalSeats = (step: number) => {
+  form.total_seats = clampNumber(form.total_seats + step, 2, maxSeatsAllowed.value)
+}
+
+const stepRecruitSeats = (step: number) => {
+  form.recruit_seats = clampNumber(form.recruit_seats + step, 1, maxOnboardSeats.value)
+}
 
 const selectProduct = (product: Product) => {
   form.product = product.type
@@ -871,6 +942,200 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   row-gap: 18px;
 }
 
+.ride-param-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.param-card {
+  display: flex;
+  grid-column: span 2;
+  min-width: 0;
+  min-height: 132px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.param-card:hover,
+.param-card:focus-within {
+  border-color: var(--border-color-strong);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.param-card-wide {
+  grid-column: span 3;
+}
+
+.param-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.param-label svg {
+  color: var(--text-muted);
+  stroke-width: 2;
+}
+
+.stepper-control {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 38px auto;
+  align-items: center;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+}
+
+.stepper-control:focus-within {
+  border-color: var(--color-team);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.stepper-btn {
+  display: inline-flex;
+  height: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.stepper-btn:hover:not(:disabled) {
+  background: var(--color-team-soft);
+  color: var(--color-team);
+}
+
+.stepper-btn:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.stepper-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  appearance: textfield;
+}
+
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.param-unit {
+  padding: 0 12px 0 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.param-input,
+.unit-input,
+.param-select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-inset);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.param-input {
+  padding: 0 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+}
+
+.param-input:focus,
+.unit-input:focus-within,
+.param-select:focus-within {
+  border-color: var(--color-team);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.unit-input,
+.param-select {
+  display: flex;
+  align-items: center;
+}
+
+.unit-input input,
+.param-select select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+}
+
+.unit-input input {
+  padding: 0 10px 0 12px;
+}
+
+.unit-input span {
+  padding-right: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.param-select {
+  position: relative;
+  padding-left: 12px;
+}
+
+.param-select-icon {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+
+.param-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 34px 0 10px;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+.param-help {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .textarea-control {
   min-height: 112px;
   resize: vertical;
@@ -892,150 +1157,167 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 
 /* Contacts boxes */
 .contacts-form-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .contact-input-box {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-md);
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   background: var(--bg-inset);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .contact-input-box:hover {
-  border-color: var(--border-color-strong);
+  border-color: color-mix(in srgb, var(--contact-color, var(--color-team)) 30%, var(--border-color));
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
 }
 
 .contact-input-box:focus-within {
-  border-color: var(--color-team);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--contact-color, var(--color-team));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--contact-color, var(--color-team)) 12%, transparent);
 }
 
-.contact-input-box.wechat:focus-within {
-  border-color: #15803d;
-  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.1);
+.contact-input-box.wechat {
+  --contact-color: #10b981;
+  --contact-soft: rgba(16, 185, 129, 0.16);
 }
 
-.contact-input-box.email:focus-within {
-  border-color: #b91c1c;
-  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+.contact-input-box.email {
+  --contact-color: #f87171;
+  --contact-soft: rgba(248, 113, 113, 0.16);
 }
 
-.contact-input-box.telegram:focus-within {
-  border-color: #0369a1;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+.contact-input-box.telegram {
+  --contact-color: #38bdf8;
+  --contact-soft: rgba(56, 189, 248, 0.16);
 }
 
-.contact-input-box.website:focus-within {
-  border-color: var(--color-pro);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-:global([data-theme="dark"] .contact-input-box.wechat:focus-within ){
-  border-color: #34d399;
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
-}
-
-:global([data-theme="dark"] .contact-input-box.email:focus-within ){
-  border-color: #f87171;
-  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
-}
-
-:global([data-theme="dark"] .contact-input-box.telegram:focus-within ){
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
-}
-
-:global([data-theme="dark"] .contact-input-box.website:focus-within ){
-  border-color: #a78bfa;
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+.contact-input-box.website {
+  --contact-color: #8b5cf6;
+  --contact-soft: rgba(139, 92, 246, 0.16);
 }
 
 .input-box-header {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .method-icon-wrap {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-md);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.contact-input-box.wechat .method-icon-wrap {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.contact-input-box.email .method-icon-wrap {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.contact-input-box.telegram .method-icon-wrap {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.contact-input-box.website .method-icon-wrap {
-  background: var(--color-pro-soft);
-  color: var(--color-pro);
-}
-
-:global([data-theme="dark"] .contact-input-box.wechat .method-icon-wrap ){
-  background: rgba(52, 211, 153, 0.12);
-  color: #34d399;
-}
-
-:global([data-theme="dark"] .contact-input-box.email .method-icon-wrap ){
-  background: rgba(248, 113, 113, 0.12);
-  color: #f87171;
-}
-
-:global([data-theme="dark"] .contact-input-box.telegram .method-icon-wrap ){
-  background: rgba(56, 189, 248, 0.12);
-  color: #38bdf8;
-}
-
-:global([data-theme="dark"] .contact-input-box.website .method-icon-wrap ){
-  background: rgba(167, 139, 250, 0.12);
-  color: #a78bfa;
+  border: 1px solid color-mix(in srgb, var(--contact-color) 26%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--contact-color) 12%, var(--bg-secondary));
+  color: var(--contact-color);
 }
 
 .method-meta {
   display: flex;
+  min-width: 0;
   flex-direction: column;
+  gap: 2px;
+  padding-top: 0;
+}
+
+.method-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
 }
 
 .method-meta strong {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--text-primary);
+  line-height: 1.15;
 }
 
 .method-meta span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.method-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--contact-color) 22%, transparent);
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--contact-color) 10%, transparent);
+  color: var(--contact-color);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.contact-control {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 11px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-secondary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.contact-control:focus-within {
+  border-color: var(--contact-color);
+  background: var(--bg-inset);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--contact-color) 14%, transparent);
+}
+
+.contact-control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+
+.contact-control input::placeholder {
+  color: var(--text-muted);
+}
+
+.contact-control-icon {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.contact-control:focus-within .contact-control-icon {
+  color: var(--contact-color);
+  transform: scale(1.04);
+}
+
+.contact-note-control {
+  min-height: 76px;
 }
 
 .agreement-checkbox {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
-  margin-top: var(--spacing-md);
-  padding: 12px 14px;
+  margin-top: 2px;
+  padding: 9px 12px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   background: var(--bg-inset);
@@ -1062,8 +1344,8 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 
 .checkbox-visual {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   margin-top: 1px;
   display: inline-flex;
   align-items: center;
@@ -1082,9 +1364,9 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .checkbox-text {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 .spec-link {
@@ -1100,12 +1382,13 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
 }
 
 .submit-area {
-  padding: 0 32px var(--spacing-xl);
+  padding: 0 32px 22px;
 }
 
 .submit-btn {
   width: 100%;
-  margin-top: var(--spacing-lg);
+  margin-top: 10px;
+  min-height: 42px;
 }
 
 .error-msg {
@@ -1390,6 +1673,19 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   }
 }
 
+@media (max-width: 820px) {
+  .ride-param-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .param-card,
+  .param-card-wide {
+    grid-column: span 1;
+  }
+  .contacts-form-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 700px) {
   .create-form {
     padding: var(--spacing-lg);
@@ -1409,6 +1705,14 @@ const formatMoney = (value: number | string) => Math.round(Number(value || 0))
   }
   .form-row-3 {
     grid-template-columns: 1fr;
+  }
+  .ride-param-grid {
+    grid-template-columns: 1fr;
+  }
+  .param-card,
+  .param-card-wide {
+    grid-column: auto;
+    min-height: auto;
   }
 }
 

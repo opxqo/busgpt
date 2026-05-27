@@ -562,7 +562,7 @@ const statusLabel = computed(() => {
 
 const warrantyDays = computed(() => {
   if (!ride.value) return 0
-  return Number(ride.value.warranty_days || (ride.value.duration >= 12 ? 365 : ride.value.duration * 30))
+  return Number(ride.value.warranty_days || (ride.value.duration >= 12 ? Math.round((ride.value.duration / 12) * 365) : ride.value.duration * 30))
 })
 
 const totalSeats = computed(() => {

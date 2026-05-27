@@ -20,6 +20,13 @@
   <aside ref="sidebarRoot" class="sidebar" :class="{ open: mobileOpen, collapsed: sidebarCollapsed }">
     <button class="sidebar-scrim" type="button" aria-label="关闭导航" @click="mobileOpen = false"></button>
     <div class="sidebar-panel">
+      <span
+        v-if="activeNavKind"
+        class="nav-active-block"
+        :class="{ admin: activeNavKind === 'admin' }"
+        :style="navIndicatorStyle"
+        aria-hidden="true"
+      ></span>
       <button
         class="sidebar-collapse-btn"
         type="button"
@@ -43,8 +50,7 @@
       </div>
 
       <nav class="nav-list" aria-label="主导航">
-        <div class="nav-track" data-nav-track="main" :style="mainIndicatorStyle">
-          <span v-if="mainActiveIndex >= 0" class="nav-active-block"></span>
+        <div class="nav-track" data-nav-track="main">
           <router-link
             v-for="item in navItems"
             :key="item.to"
@@ -65,8 +71,7 @@
 
       <nav v-if="userStore.isAdmin" class="nav-list admin-nav" aria-label="管理后台导航">
         <span class="nav-divider">管理后台</span>
-        <div class="nav-track" data-nav-track="admin" :style="adminIndicatorStyle">
-          <span v-if="adminActiveIndex >= 0" class="nav-active-block admin"></span>
+        <div class="nav-track" data-nav-track="admin">
           <router-link
             v-for="item in adminNavItems"
             :key="item.to"
@@ -146,12 +151,9 @@ const route = useRoute()
 const mobileOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const sidebarRoot = ref<HTMLElement | null>(null)
-const mainIndicatorStyle = ref<Record<string, string>>({})
-const adminIndicatorStyle = ref<Record<string, string>>({})
-const previousIndicatorY: Record<'main' | 'admin', number | null> = {
-  main: null,
-  admin: null,
-}
+const navIndicatorStyle = ref<Record<string, string>>({})
+const activeNavKind = ref<'main' | 'admin' | null>(null)
+const previousIndicator = ref<{ x: number; y: number } | null>(null)
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
 
 const theme = ref<'light' | 'dark'>('light')
@@ -220,53 +222,54 @@ const isRouteActive = (to: string) => {
   return route.path === to || route.path.startsWith(`${to}/`)
 }
 
-const mainActiveIndex = computed(() => navItems.value.findIndex((item) => isRouteActive(item.to)))
-const adminActiveIndex = computed(() => adminNavItems.value.findIndex((item) => isRouteActive(item.to)))
+const readIndicatorMetrics = () => {
+  const panel = sidebarRoot.value?.querySelector<HTMLElement>('.sidebar-panel')
+  const activeItem = panel?.querySelector<HTMLElement>('.nav-item.active')
+  const track = activeItem?.closest<HTMLElement>('.nav-track')
 
-const readIndicatorMetrics = (kind: 'main' | 'admin') => {
-  const track = sidebarRoot.value?.querySelector<HTMLElement>(`.nav-track[data-nav-track="${kind}"]`)
-  const activeItem = track?.querySelector<HTMLElement>('.nav-item.active')
-  if (!track || !activeItem) {
-    return {
-      active: false,
-      y: 0,
-      height: 0,
-      style: {
-        '--nav-active-y': '0px',
-        '--nav-active-h': '0px',
-        '--nav-active-opacity': '0',
-      },
-    }
+  if (!panel || !activeItem || !track) {
+    return { active: false as const }
   }
-  const y = activeItem.offsetTop
+
+  const panelRect = panel.getBoundingClientRect()
+  const itemRect = activeItem.getBoundingClientRect()
+  const y = itemRect.top - panelRect.top
+  const x = itemRect.left - panelRect.left
   const height = activeItem.offsetHeight
+  const width = activeItem.offsetWidth
+  const kind: 'main' | 'admin' = track.dataset.navTrack === 'admin' ? 'admin' : 'main'
+
   return {
-    active: true,
+    active: true as const,
+    kind,
+    x,
     y,
-    height,
     style: {
+      '--nav-active-x': `${x}px`,
       '--nav-active-y': `${y}px`,
+      '--nav-active-w': `${width}px`,
       '--nav-active-h': `${height}px`,
       '--nav-active-opacity': '1',
     },
   }
 }
 
-const animateIndicatorTravel = (kind: 'main' | 'admin', nextY: number) => {
-  const previousY = previousIndicatorY[kind]
-  previousIndicatorY[kind] = nextY
-  if (previousY === null || Math.abs(previousY - nextY) < 1) return
+const animateIndicatorTravel = (nextX: number, nextY: number) => {
+  const previous = previousIndicator.value
+  previousIndicator.value = { x: nextX, y: nextY }
+  if (!previous || Math.hypot(previous.x - nextX, previous.y - nextY) < 1) return
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-  const block = sidebarRoot.value?.querySelector<HTMLElement>(`.nav-track[data-nav-track="${kind}"] .nav-active-block`)
+  const block = sidebarRoot.value?.querySelector<HTMLElement>('.sidebar-panel > .nav-active-block')
   if (!block) return
 
-  const midY = (previousY + nextY) / 2
+  const midX = (previous.x + nextX) / 2
+  const midY = (previous.y + nextY) / 2
   block.animate(
     [
-      { transform: `translateY(${previousY}px) scale(1, 1)` },
-      { transform: `translateY(${midY}px) scale(0.72, 0.58)`, offset: 0.5 },
-      { transform: `translateY(${nextY}px) scale(1, 1)` },
+      { transform: `translate(${previous.x}px, ${previous.y}px) scale(1, 1)` },
+      { transform: `translate(${midX}px, ${midY}px) scale(0.72, 0.58)`, offset: 0.5 },
+      { transform: `translate(${nextX}px, ${nextY}px) scale(1, 1)` },
     ],
     {
       duration: 560,
@@ -278,21 +281,22 @@ const animateIndicatorTravel = (kind: 'main' | 'admin', nextY: number) => {
 const updateIndicators = () => {
   nextTick(() => {
     requestAnimationFrame(() => {
-      const mainMetrics = readIndicatorMetrics('main')
-      const adminMetrics = readIndicatorMetrics('admin')
-      mainIndicatorStyle.value = mainMetrics.style
-      adminIndicatorStyle.value = adminMetrics.style
+      const metrics = readIndicatorMetrics()
 
-      if (mainMetrics.active) {
-        animateIndicatorTravel('main', mainMetrics.y)
+      if (metrics.active) {
+        navIndicatorStyle.value = metrics.style
+        activeNavKind.value = metrics.kind
+        animateIndicatorTravel(metrics.x, metrics.y)
       } else {
-        previousIndicatorY.main = null
-      }
-
-      if (adminMetrics.active) {
-        animateIndicatorTravel('admin', adminMetrics.y)
-      } else {
-        previousIndicatorY.admin = null
+        activeNavKind.value = null
+        previousIndicator.value = null
+        navIndicatorStyle.value = {
+          '--nav-active-x': '0px',
+          '--nav-active-y': '0px',
+          '--nav-active-w': '0px',
+          '--nav-active-h': '0px',
+          '--nav-active-opacity': '0',
+        }
       }
     })
   })
@@ -300,10 +304,9 @@ const updateIndicators = () => {
 
 const handleNavClick = (kind: 'main' | 'admin') => {
   mobileOpen.value = false
-  const metrics = readIndicatorMetrics(kind)
-  if (metrics.active) {
-    previousIndicatorY[kind] = metrics.y
-  }
+  activeNavKind.value = kind
+  const metrics = readIndicatorMetrics()
+  if (metrics.active) previousIndicator.value = { x: metrics.x, y: metrics.y }
 }
 
 const handleLogout = () => {
@@ -485,15 +488,17 @@ watch(
 
 .nav-active-block {
   position: absolute;
-  inset: 0 0 auto;
+  top: 0;
+  left: 0;
   z-index: 0;
+  width: var(--nav-active-w);
   height: var(--nav-active-h);
   opacity: var(--nav-active-opacity, 1);
   border-radius: var(--border-radius-md);
   background: var(--text-primary);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
   transform-origin: center;
-  transform: translateY(var(--nav-active-y));
+  transform: translate(var(--nav-active-x), var(--nav-active-y));
   transition:
     transform 560ms cubic-bezier(0.34, 1.18, 0.24, 1),
     opacity var(--transition-fast),

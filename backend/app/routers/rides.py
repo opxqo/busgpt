@@ -21,7 +21,7 @@ router = APIRouter(tags=["rides"])
 
 
 def default_warranty_days(duration: int) -> int:
-    return 365 if duration >= 12 else duration * 30
+    return round((duration / 12) * 365) if duration >= 12 else duration * 30
 
 
 def get_onboard_seats(ride: Ride) -> int:

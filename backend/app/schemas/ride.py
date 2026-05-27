@@ -11,8 +11,8 @@ class RideBase(BaseModel):
     total_seats: int = Field(..., gt=1, le=20)
     recruit_seats: Optional[int] = Field(None, gt=0, le=20, description="Current onboard people, including owner")
     price_per_month: Decimal = Field(..., gt=0)
-    duration: int = Field(..., gt=0, le=24, description="Duration in months")
-    warranty_days: Optional[int] = Field(None, gt=0, le=730, description="Guaranteed service days")
+    duration: int = Field(..., gt=0, le=48, description="Duration in months")
+    warranty_days: Optional[int] = Field(None, gt=0, le=1460, description="Guaranteed service days")
     description: Optional[str] = ""
     contact_info: str = Field(..., min_length=1, description="Owner contact info (WeChat, phone, etc.)")
     contact_website: Optional[str] = Field("", max_length=255, description="Owner personal website")
@@ -27,8 +27,8 @@ class RideUpdate(BaseModel):
     total_seats: Optional[int] = Field(None, gt=1, le=20)
     recruit_seats: Optional[int] = Field(None, gt=0, le=20)
     price_per_month: Optional[Decimal] = Field(None, gt=0)
-    duration: Optional[int] = Field(None, gt=0, le=24)
-    warranty_days: Optional[int] = Field(None, gt=0, le=730)
+    duration: Optional[int] = Field(None, gt=0, le=48)
+    warranty_days: Optional[int] = Field(None, gt=0, le=1460)
     description: Optional[str] = None
     contact_info: Optional[str] = None
     contact_website: Optional[str] = Field(None, max_length=255)

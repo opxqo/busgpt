@@ -335,7 +335,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="edit-duration">有效期限(月)</label>
-            <input id="edit-duration" v-model.number="rideForm.duration" class="form-control" type="number" min="1" max="24" required />
+            <input id="edit-duration" v-model.number="rideForm.duration" class="form-control" type="number" min="1" max="48" required />
           </div>
           <div class="form-group">
             <label class="form-label" for="edit-price">分摊月费(¥)</label>
@@ -343,7 +343,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="edit-warranty">质保天数</label>
-            <input id="edit-warranty" v-model.number="rideForm.warranty_days" class="form-control" type="number" min="1" max="730" required />
+            <input id="edit-warranty" v-model.number="rideForm.warranty_days" class="form-control" type="number" min="1" max="1460" required />
           </div>
 
           <div class="form-group full">

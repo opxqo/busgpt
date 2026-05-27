@@ -273,7 +273,7 @@ def _run_lightweight_migrations():
         _ensure_index(conn, "rides", "ix_rides_status_created_at", "`status`, `created_at`")
         conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
         conn.execute(text("UPDATE rides SET status = 'open' WHERE status = 'full'"))
-        conn.execute(text("UPDATE rides SET warranty_days = IF(duration >= 12, 365, duration * 30) WHERE warranty_days IS NULL OR warranty_days <= 0 OR (warranty_days = 30 AND duration <> 1)"))
+        conn.execute(text("UPDATE rides SET warranty_days = IF(duration >= 12, ROUND(duration / 12 * 365), duration * 30) WHERE warranty_days IS NULL OR warranty_days <= 0 OR (warranty_days = 30 AND duration <> 1)"))
         if recruit_seats_added:
             conn.execute(text("UPDATE rides SET recruit_seats = GREATEST(total_seats - 1, 1)"))
         else:
