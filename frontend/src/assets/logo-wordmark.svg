@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 72" role="img" aria-labelledby="title desc">
+  <title id="title">BusGPT wordmark</title>
+  <desc id="desc">BusGPT wordmark with three subscription dots.</desc>
+  <g fill="#111827">
+    <text x="0" y="43" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="42" font-weight="850" letter-spacing="0">
+      BusGPT
+    </text>
+    <text x="2" y="64" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="0">
+      AI subscription ride-sharing
+    </text>
+  </g>
+  <g transform="translate(210 18)">
+    <rect x="0" y="0" width="78" height="30" rx="15" fill="#f3f4f6" />
+    <circle cx="21" cy="15" r="5" fill="#10b981" />
+    <circle cx="39" cy="15" r="5" fill="#2563eb" />
+    <circle cx="57" cy="15" r="5" fill="#8b5cf6" />
+  </g>
+</svg>

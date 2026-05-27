@@ -589,9 +589,9 @@ onBeforeUnmount(() => {
   --hero-pattern-cell-size: 36px;
   --hero-pattern-half-move-size: -36px;
   --hero-pattern-move-size: -72px;
-  --hero-pattern-color: 174, 140, 98;
-  --hero-pattern-dot-opacity: 0.4;
-  --hero-pattern-icon-opacity: 0.46;
+  --hero-pattern-color: 17, 24, 39;
+  --hero-pattern-dot-opacity: 0.1;
+  --hero-pattern-icon-opacity: 0.12;
   --hero-pattern-duration: 7.6s;
   --hero-pattern-ease: cubic-bezier(0.45, 0, 0.12, 1);
   background-color: var(--hero-pattern-bg);
@@ -746,7 +746,48 @@ onBeforeUnmount(() => {
 }
 
 .gradient-text {
-  color: var(--color-team);
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    #8a7a00 0%,
+    #4f8508 50%,
+    #003149 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hero-gradient-flow 8s ease-in-out infinite alternate;
+}
+
+:global([data-theme="dark"] .hero-title ){
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"] .gradient-text ){
+  background-image: linear-gradient(
+    90deg,
+    #ffff97 0%,
+    #a0db0e 50%,
+    #003149 100%
+  );
+}
+
+@keyframes hero-gradient-flow {
+  from {
+    background-position: 0% 50%;
+  }
+
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text {
+    animation: none;
+    background-position: 50% 50%;
+  }
 }
 
 .hero-subtitle {

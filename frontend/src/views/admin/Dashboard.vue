@@ -437,26 +437,154 @@ onMounted(loadOverview)
 }
 
 @media (max-width: 768px) {
+  .admin-page {
+    gap: 14px;
+    padding-top: 14px;
+  }
+
   .console-header {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .console-title-block {
+    flex: 1 1 auto;
+  }
+
+  .console-header .btn {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding-inline: 12px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .console-meta {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .stat-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat-card {
+    min-height: 118px;
+    padding: 13px;
+    gap: 6px;
+  }
+
+  .stat-icon-wrap {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 2px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-meta {
+    font-size: 11px;
   }
 
   .segmented-tabs {
     width: 100%;
     overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .segmented-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .segmented-tabs a {
-    flex: 0 0 auto;
+    flex: 1 0 auto;
+    justify-content: center;
+    min-width: 52px;
+    padding: 0 10px;
   }
 
   .quick-nav-grid {
     grid-template-columns: 1fr;
+  }
+
+  .quick-nav-section {
+    gap: 12px;
+  }
+
+  .quick-nav-card {
+    min-height: 64px;
+    padding: 12px;
+  }
+
+  .quick-nav-info p {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .console-header {
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .console-header .btn {
+    width: auto;
+    min-width: 72px;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-card {
+    min-height: 104px;
+    padding: 11px;
+    gap: 5px;
+  }
+
+  .stat-icon-wrap {
+    width: 26px;
+    height: 26px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .stat-meta {
+    font-size: 10px;
+  }
+
+  .stat-track {
+    height: 4px;
+  }
+
+  .segmented-tabs {
+    gap: 1px;
+    padding: 2px;
+  }
+
+  .segmented-tabs a {
+    min-width: 43px;
+    min-height: 30px;
+    padding: 0 6px;
+    font-size: 12px;
   }
 }
 

@@ -4,7 +4,7 @@
       <div class="footer-info">
         <router-link to="/" class="footer-brand">
           <span class="footer-logo-mark">
-            <img :src="logoMarkUrl" alt="" />
+            <img :src="logoMarkUrl" alt="" width="28" height="28" />
           </span>
           <span>BusGPT</span>
         </router-link>
@@ -77,7 +77,7 @@ import logoMarkUrl from '../../assets/logo-mark.svg'
   font-size: 18px;
   font-weight: 800;
   text-decoration: none;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   transition: opacity var(--transition-fast);
 }
 

@@ -2,7 +2,7 @@
   <div class="mobile-top-bar">
     <router-link to="/" class="mobile-logo">
       <span class="logo-mark" aria-hidden="true">
-        <img :src="logoMarkUrl" alt="" />
+        <img :src="logoMarkUrl" alt="" width="28" height="28" />
       </span>
       <span>BusGPT</span>
     </router-link>
@@ -17,36 +17,46 @@
     </div>
   </div>
 
-  <aside ref="sidebarRoot" class="sidebar" :class="{ open: mobileOpen, collapsed: sidebarCollapsed }">
+  <aside
+    ref="sidebarRoot"
+    class="sidebar"
+    :class="{ open: mobileOpen, collapsed: sidebarCollapsed }"
+    @transitionend="handleSidebarTransitionEnd"
+  >
     <button class="sidebar-scrim" type="button" aria-label="关闭导航" @click="mobileOpen = false"></button>
     <div class="sidebar-panel">
       <span
         v-if="activeNavKind"
-        class="nav-active-block"
+        class="nav-jelly-block"
         :class="{ admin: activeNavKind === 'admin' }"
         :style="navIndicatorStyle"
         aria-hidden="true"
       ></span>
-      <button
-        class="sidebar-collapse-btn"
-        type="button"
-        :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-        :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-        @click="toggleSidebar"
-      >
-        <PanelLeftOpen v-if="sidebarCollapsed" :size="15" />
-        <PanelLeftClose v-else :size="15" />
-      </button>
       <div class="brand-block">
-        <router-link to="/" class="brand" @click="mobileOpen = false">
+        <router-link
+          :to="sidebarCollapsed ? route.fullPath : '/'"
+          class="brand"
+          :title="sidebarCollapsed ? '展开侧边栏' : '返回首页'"
+          @click="handleBrandClick"
+        >
           <span class="logo-mark" aria-hidden="true">
-            <img :src="logoMarkUrl" alt="" />
+            <img :src="logoMarkUrl" alt="" width="28" height="28" />
           </span>
           <span class="brand-text">
             <strong>BusGPT</strong>
             <small>AI 订阅拼车平台</small>
           </span>
         </router-link>
+        <button
+          class="sidebar-collapse-btn"
+          type="button"
+          :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+          :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+          @click="toggleSidebar"
+        >
+          <PanelLeftOpen v-if="sidebarCollapsed" :size="15" />
+          <PanelLeftClose v-else :size="15" />
+        </button>
       </div>
 
       <nav class="nav-list" aria-label="主导航">
@@ -59,7 +69,7 @@
             :class="{ active: isRouteActive(item.to) }"
             :data-active="isRouteActive(item.to) ? 'true' : undefined"
             :title="item.label"
-            @click="handleNavClick('main')"
+            @click="handleNavClick"
           >
             <div class="nav-item-inner">
               <component :is="item.icon" :size="20" class="nav-icon" />
@@ -80,7 +90,7 @@
             :class="{ active: isRouteActive(item.to) }"
             :data-active="isRouteActive(item.to) ? 'true' : undefined"
             :title="item.label"
-            @click="handleNavClick('admin')"
+            @click="handleNavClick"
           >
             <div class="nav-item-inner">
               <component :is="item.icon" :size="20" class="nav-icon" />
@@ -169,11 +179,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Boxes, Home, LogIn, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PlusCircle, Search, ShieldCheck, UserRound, Sun, Moon, LayoutDashboard, Users, ParkingSquare, ClipboardList, BarChart3 } from '@lucide/vue'
 import { useUserStore } from '../../stores/user'
-import logoMarkUrl from '../../assets/logo-mark.png'
+import logoMarkUrl from '../../assets/logo-mark.svg'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -185,6 +195,8 @@ const navIndicatorStyle = ref<Record<string, string>>({})
 const activeNavKind = ref<'main' | 'admin' | null>(null)
 const showLogoutConfirm = ref(false)
 const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=busgpt&backgroundColor=0f172a'
+const sidebarTransitionSettleMs = 480
+let indicatorRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
 const theme = ref<'light' | 'dark'>('light')
 
@@ -201,7 +213,8 @@ const initTheme = () => {
 
 const applySidebarState = () => {
   document.documentElement.classList.toggle('sidebar-collapsed', sidebarCollapsed.value)
-  updateIndicators()
+  updateIndicator()
+  scheduleIndicatorUpdate(sidebarTransitionSettleMs)
 }
 
 const initSidebar = () => {
@@ -224,7 +237,15 @@ const toggleTheme = () => {
 onMounted(() => {
   initTheme()
   initSidebar()
-  updateIndicators()
+  updateIndicator()
+  window.addEventListener('resize', updateIndicator)
+})
+
+onBeforeUnmount(() => {
+  if (indicatorRefreshTimer) {
+    clearTimeout(indicatorRefreshTimer)
+  }
+  window.removeEventListener('resize', updateIndicator)
 })
 
 const navItems = computed(() => [
@@ -263,28 +284,22 @@ const readIndicatorMetrics = () => {
 
   const panelRect = panel.getBoundingClientRect()
   const itemRect = activeItem.getBoundingClientRect()
-  const y = itemRect.top - panelRect.top
-  const x = itemRect.left - panelRect.left
-  const height = activeItem.offsetHeight
-  const width = activeItem.offsetWidth
   const kind: 'main' | 'admin' = track.dataset.navTrack === 'admin' ? 'admin' : 'main'
 
   return {
     active: true as const,
     kind,
-    x,
-    y,
     style: {
-      '--nav-active-x': `${x}px`,
-      '--nav-active-y': `${y}px`,
-      '--nav-active-w': `${width}px`,
-      '--nav-active-h': `${height}px`,
-      '--nav-active-opacity': '1',
+      '--nav-jelly-x': `${itemRect.left - panelRect.left}px`,
+      '--nav-jelly-y': `${itemRect.top - panelRect.top}px`,
+      '--nav-jelly-w': `${activeItem.offsetWidth}px`,
+      '--nav-jelly-h': `${activeItem.offsetHeight}px`,
+      '--nav-jelly-opacity': '1',
     },
   }
 }
 
-const updateIndicators = () => {
+const updateIndicator = () => {
   nextTick(() => {
     requestAnimationFrame(() => {
       const metrics = readIndicatorMetrics()
@@ -295,20 +310,54 @@ const updateIndicators = () => {
       } else {
         activeNavKind.value = null
         navIndicatorStyle.value = {
-          '--nav-active-x': '0px',
-          '--nav-active-y': '0px',
-          '--nav-active-w': '0px',
-          '--nav-active-h': '0px',
-          '--nav-active-opacity': '0',
+          '--nav-jelly-x': '0px',
+          '--nav-jelly-y': '0px',
+          '--nav-jelly-w': '0px',
+          '--nav-jelly-h': '0px',
+          '--nav-jelly-opacity': '0',
         }
       }
     })
   })
 }
 
-const handleNavClick = (kind: 'main' | 'admin') => {
+const scheduleIndicatorUpdate = (delay = 0) => {
+  if (indicatorRefreshTimer) {
+    clearTimeout(indicatorRefreshTimer)
+    indicatorRefreshTimer = null
+  }
+
+  if (delay <= 0) {
+    updateIndicator()
+    return
+  }
+
+  indicatorRefreshTimer = setTimeout(() => {
+    updateIndicator()
+    indicatorRefreshTimer = null
+  }, delay)
+}
+
+const handleSidebarTransitionEnd = (event: TransitionEvent) => {
+  if (event.target !== sidebarRoot.value || event.propertyName !== 'width') {
+    return
+  }
+
+  updateIndicator()
+}
+
+const handleNavClick = () => {
   mobileOpen.value = false
-  activeNavKind.value = kind
+}
+
+const handleBrandClick = (event: MouseEvent) => {
+  if (sidebarCollapsed.value) {
+    event.preventDefault()
+    toggleSidebar()
+    return
+  }
+
+  mobileOpen.value = false
 }
 
 const openLogoutConfirm = () => {
@@ -329,10 +378,11 @@ const confirmLogout = () => {
 watch(
   [() => route.path, sidebarCollapsed, () => userStore.isLoggedIn, () => userStore.isAdmin],
   () => {
-    updateIndicators()
+    updateIndicator()
   },
   { flush: 'post' },
 )
+
 </script>
 
 <style scoped>
@@ -370,8 +420,10 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   color: var(--text-primary);
   text-decoration: none;
+  border-radius: var(--border-radius-md);
 }
 
 .logo-mark {
@@ -435,12 +487,18 @@ watch(
 }
 
 .brand-block {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 0 4px var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
 }
 
 .brand-text {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 1px;
 }
@@ -459,10 +517,7 @@ watch(
 
 .sidebar-collapse-btn {
   display: inline-flex;
-  position: absolute;
-  top: 28px;
-  right: 14px;
-  z-index: 2;
+  flex: 0 0 auto;
   width: 24px;
   height: 24px;
   align-items: center;
@@ -494,39 +549,38 @@ watch(
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
 }
 
-.nav-active-block {
+.nav-jelly-block {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 0;
-  width: var(--nav-active-w);
-  height: var(--nav-active-h);
-  opacity: var(--nav-active-opacity, 1);
+  width: var(--nav-jelly-w);
+  height: var(--nav-jelly-h);
+  opacity: var(--nav-jelly-opacity, 1);
   border-radius: var(--border-radius-md);
-  background: var(--text-primary);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  background: var(--bg-tertiary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border-color) 72%, transparent);
+  transform: translate(var(--nav-jelly-x), var(--nav-jelly-y)) scale(1);
   transform-origin: center;
-  transform: translate(var(--nav-active-x), var(--nav-active-y));
   transition:
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.2, 1.48, 0.34, 1),
+    width 260ms cubic-bezier(0.2, 1, 0.36, 1),
+    height 260ms cubic-bezier(0.2, 1, 0.36, 1),
     opacity var(--transition-fast),
-    width var(--transition-fast),
-    height var(--transition-fast),
     background-color var(--transition-fast),
     box-shadow var(--transition-fast);
-  will-change: transform;
+  will-change: transform, width, height;
 }
 
-.nav-active-block.admin {
-  background: var(--color-pro);
-  box-shadow: 0 8px 18px rgba(139, 92, 246, 0.18);
+.nav-jelly-block.admin {
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, var(--color-pro));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-active-block {
+  .nav-jelly-block {
     transition-duration: 0ms;
   }
 }
@@ -542,36 +596,36 @@ watch(
 
 .nav-divider {
   display: block;
-  padding: 0 14px var(--spacing-sm);
+  padding: 0 12px 7px;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
-  text-align: center;
+  text-align: left;
 }
 
 .nav-item {
   display: block;
   box-sizing: border-box;
   text-decoration: none;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--border-radius-md);
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 14px;
-  transition: color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   position: relative;
   z-index: 1;
 }
 
 .nav-item-inner {
   display: flex;
-  min-height: 40px;
+  min-height: 36px;
   align-items: center;
   justify-content: flex-start;
   gap: 10px;
-  padding: 0 12px;
+  padding: 0 11px;
 }
 
 .nav-item-inner span {
@@ -587,8 +641,7 @@ watch(
 
 .nav-item:hover {
   color: var(--text-primary);
-  border-color: var(--border-color);
-  transform: translateX(1px);
+  background: var(--bg-tertiary);
 }
 
 .nav-item:hover .nav-icon {
@@ -596,27 +649,17 @@ watch(
 }
 
 .nav-item.active {
-  color: var(--text-inverse);
-  border-color: transparent;
-  box-shadow: none;
+  color: var(--text-primary);
+  background: transparent;
   font-weight: 700;
-  transform: translateX(0);
 }
 
 .nav-item.active::before {
   display: none;
 }
 
-.admin-nav .nav-item.active {
-  color: white;
-}
-
-.admin-nav .nav-item.active .nav-icon {
-  color: white;
-}
-
 .nav-item.active .nav-icon {
-  color: var(--text-inverse);
+  color: var(--text-primary);
 }
 
 .notice-card {
@@ -922,12 +965,40 @@ watch(
 }
 
 .sidebar.collapsed .brand-block {
+  justify-content: center;
   padding-right: 0;
   padding-left: 0;
 }
 
 .sidebar.collapsed .brand {
+  width: 44px;
+  height: 40px;
   justify-content: center;
+}
+
+.sidebar.collapsed .brand:hover {
+  background: var(--bg-tertiary);
+}
+
+.sidebar.collapsed .sidebar-collapse-btn {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.92);
+}
+
+.sidebar.collapsed .brand-block:hover .sidebar-collapse-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.sidebar.collapsed .sidebar-collapse-btn:hover {
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .sidebar.collapsed .brand-text,
@@ -1023,7 +1094,14 @@ watch(
   }
 
   .sidebar.collapsed .brand-block {
+    justify-content: space-between;
     padding: 0 6px var(--spacing-md);
+  }
+
+  .sidebar.collapsed .brand {
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
   }
 
   .sidebar.collapsed .brand-text,
@@ -1074,6 +1152,10 @@ watch(
   }
 
   .sidebar-collapse-btn {
+    display: none;
+  }
+
+  .sidebar.collapsed .sidebar-collapse-btn {
     display: none;
   }
 
@@ -1186,12 +1268,29 @@ watch(
 }
 
 /* Dark mode */
-:global([data-theme="dark"] .nav-item.active::before ){
-  box-shadow: 0 0 8px rgba(243, 240, 233, 0.15);
+:global([data-theme="dark"] .nav-item:hover ){
+  background: rgba(255, 255, 255, 0.08);
+  color: #f9fafb;
 }
 
-:global([data-theme="dark"] .admin-nav .nav-item.active::before ){
-  box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+:global([data-theme="dark"] .nav-item.active ){
+  background: transparent;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"] .nav-jelly-block ){
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+:global([data-theme="dark"] .nav-jelly-block.admin ){
+  background: rgba(167, 139, 250, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.12);
+}
+
+:global([data-theme="dark"] .nav-item:hover .nav-icon ),
+:global([data-theme="dark"] .nav-item.active .nav-icon ){
+  color: #ffffff;
 }
 
 :global([data-theme="dark"] .notice-card ){

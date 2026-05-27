@@ -1,61 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 112" role="img" aria-labelledby="title desc">
   <title id="title">BusGPT logo</title>
-  <desc id="desc">A route-shaped B mark with AI subscription nodes and the BusGPT wordmark.</desc>
+  <desc id="desc">BusGPT wordmark paired with a compact B-shaped route mark.</desc>
   <defs>
-    <linearGradient id="routeGradient" x1="34" x2="126" y1="26" y2="132" gradientUnits="userSpaceOnUse">
+    <linearGradient id="busgpt-route-gradient" x1="25" y1="22" x2="76" y2="87" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#10b981" />
       <stop offset="0.5" stop-color="#2563eb" />
       <stop offset="1" stop-color="#8b5cf6" />
     </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#111827" flood-opacity="0.12" />
-    </filter>
+    <linearGradient id="busgpt-panel-gradient" x1="18" y1="18" x2="82" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.04" />
+    </linearGradient>
   </defs>
-
-  <g filter="url(#softShadow)">
-    <rect x="24" y="20" width="120" height="120" rx="28" fill="#111827" />
+  <g>
+    <rect x="8" y="8" width="96" height="96" rx="24" fill="#111827" />
     <path
-      d="M63 112V48h27c18 0 29 9 29 24 0 8-4 15-11 19 9 4 15 12 15 23 0 17-12 27-32 27H63Z"
+      d="M27 31c0-5.7 4.6-10.3 10.3-10.3h33.4C76.4 20.7 81 25.3 81 31v30c0 5.7-4.6 10.3-10.3 10.3H37.3C31.6 71.3 27 66.7 27 61V31Z"
+      fill="url(#busgpt-panel-gradient)"
+    />
+    <path
+      d="M35 80V32h22c13.6 0 22.2 7.1 22.2 17.8 0 6-3.5 11.2-9.2 13.6 7 2.6 11.4 8.6 11.4 16.5 0 11.6-9 18.1-23.7 18.1H35Z"
       fill="none"
-      stroke="url(#routeGradient)"
-      stroke-width="12"
+      stroke="url(#busgpt-route-gradient)"
+      stroke-width="9.2"
       stroke-linecap="round"
       stroke-linejoin="round"
     />
-    <path
-      d="M63 80h28"
-      fill="none"
-      stroke="#f9fafb"
-      stroke-width="10"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <circle cx="92" cy="51" r="7" fill="#34d399" />
-    <circle cx="105" cy="80" r="7" fill="#60a5fa" />
-    <circle cx="95" cy="111" r="7" fill="#a78bfa" />
-    <path
-      d="M56 122c0 9 7 16 16 16h9"
-      fill="none"
-      stroke="#f9fafb"
-      stroke-width="6"
-      stroke-linecap="round"
-      opacity="0.82"
-    />
+    <path d="M35 55.4h22" fill="none" stroke="#f9fafb" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="58" cy="33" r="5.8" fill="#34d399" />
+    <circle cx="68" cy="55.4" r="5.8" fill="#60a5fa" />
+    <circle cx="59" cy="79" r="5.8" fill="#a78bfa" />
+    <path d="M30 86c0 6.6 5.4 12 12 12h10" fill="none" stroke="#f9fafb" stroke-width="4.4" stroke-linecap="round" opacity="0.82" />
   </g>
-
   <g fill="#111827">
-    <text x="176" y="84" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="54" font-weight="850" letter-spacing="0">
+    <text x="126" y="58" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="43" font-weight="850" letter-spacing="0">
       BusGPT
     </text>
-    <text x="180" y="116" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="18" font-weight="650" letter-spacing="1.2">
-      AI SUBSCRIPTION RIDE-SHARING
+    <text x="128" y="84" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="0">
+      AI subscription ride-sharing
     </text>
   </g>
-
-  <g transform="translate(436 54)">
-    <rect x="0" y="0" width="76" height="40" rx="20" fill="#f3f4f6" />
-    <circle cx="22" cy="20" r="6" fill="#10b981" />
-    <circle cx="38" cy="20" r="6" fill="#2563eb" />
-    <circle cx="54" cy="20" r="6" fill="#8b5cf6" />
+  <g transform="translate(319 38)">
+    <rect x="0" y="0" width="82" height="32" rx="16" fill="#f3f4f6" />
+    <circle cx="23" cy="16" r="5.5" fill="#10b981" />
+    <circle cx="41" cy="16" r="5.5" fill="#2563eb" />
+    <circle cx="59" cy="16" r="5.5" fill="#8b5cf6" />
   </g>
 </svg>
